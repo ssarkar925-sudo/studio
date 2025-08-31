@@ -18,15 +18,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { invoices, Invoice } from '@/lib/data';
+import { invoicesDAO, Invoice } from '@/lib/data';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function InvoicesPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+
+  useEffect(() => {
+    setInvoices(invoicesDAO.load());
+  }, []);
 
   const handleAction = (action: string, invoiceId: string, invoiceNumber: string) => {
     toast({

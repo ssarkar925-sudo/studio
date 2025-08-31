@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { customersDAO } from '@/lib/data';
 
 export default function NewCustomerPage() {
   const { toast } = useToast();
@@ -24,6 +25,28 @@ export default function NewCustomerPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
+    const email = formData.get('email') as string;
+    const phone = formData.get('phone') as string;
+    const address = formData.get('address') as string;
+
+    if (!name || !email) {
+       toast({
+        variant: 'destructive',
+        title: 'Missing Required Fields',
+        description: 'Please enter a name and email for the customer.',
+      });
+      return;
+    }
+
+    customersDAO.add({
+      name,
+      email,
+      phone,
+      address,
+      totalInvoiced: 0,
+      totalPaid: 0,
+      invoices: 0,
+    });
     
     toast({
       title: 'Customer Created',
@@ -50,7 +73,7 @@ export default function NewCustomerPage() {
               <div className="grid gap-6">
                 <div className="grid gap-3">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" name="name" type="text" className="w-full" placeholder="John Doe" />
+                  <Input id="name" name="name" type="text" className="w-full" placeholder="John Doe" required />
                 </div>
                  <div className="grid gap-3">
                   <Label htmlFor="phone">Phone</Label>
@@ -58,7 +81,7 @@ export default function NewCustomerPage() {
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" className="w-full" placeholder="john.doe@example.com" />
+                  <Input id="email" name="email" type="email" className="w-full" placeholder="john.doe@example.com" required />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="address">Address</Label>

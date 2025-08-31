@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { productsDAO } from '@/lib/data';
 
 export default function NewInventoryItemPage() {
   const { toast } = useToast();
@@ -23,6 +24,23 @@ export default function NewInventoryItemPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
+    const price = parseFloat(formData.get('price') as string);
+    const stock = parseInt(formData.get('stock') as string, 10);
+
+     if (!name || isNaN(price) || isNaN(stock)) {
+       toast({
+        variant: 'destructive',
+        title: 'Missing Required Fields',
+        description: 'Please fill out all fields correctly.',
+      });
+      return;
+    }
+
+    productsDAO.add({
+      name,
+      price,
+      stock,
+    });
     
     toast({
       title: 'Item Created',
@@ -49,16 +67,16 @@ export default function NewInventoryItemPage() {
               <div className="grid gap-6">
                 <div className="grid gap-3">
                   <Label htmlFor="name">Item Name</Label>
-                  <Input id="name" name="name" type="text" className="w-full" placeholder="e.g. Web Design Service" />
+                  <Input id="name" name="name" type="text" className="w-full" placeholder="e.g. Web Design Service" required />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-3">
                         <Label htmlFor="price">Price</Label>
-                        <Input id="price" name="price" type="number" placeholder="0.00" />
+                        <Input id="price" name="price" type="number" placeholder="0.00" required />
                     </div>
                     <div className="grid gap-3">
                         <Label htmlFor="stock">Stock</Label>
-                        <Input id="stock" name="stock" type="number" placeholder="0" />
+                        <Input id="stock" name="stock" type="number" placeholder="0" required />
                     </div>
                 </div>
               </div>

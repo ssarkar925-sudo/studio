@@ -17,14 +17,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { customers } from '@/lib/data';
+import { customersDAO } from '@/lib/data';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import type { Customer } from '@/lib/data';
 
 export default function CustomersPage() {
   const { toast } = useToast();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+
+  useEffect(() => {
+    setCustomers(customersDAO.load());
+  }, []);
 
   const handleAction = (action: string, customerName: string) => {
     toast({

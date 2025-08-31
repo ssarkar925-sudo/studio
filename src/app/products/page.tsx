@@ -17,13 +17,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { products } from '@/lib/data';
+import { productsDAO } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import type { Product } from '@/lib/data';
+
 
 export default function ProductsPage() {
   const { toast } = useToast();
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    setProducts(productsDAO.load());
+  }, []);
 
   const handleAction = (action: string, productName: string) => {
     toast({
@@ -70,7 +78,7 @@ export default function ProductsPage() {
               {products.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell className='text-right'>${product.price.toFixed(2)}</TableCell>
+                  <TableCell className='text-right'>₹{product.price.toFixed(2)}</TableCell>
                   <TableCell className='text-right'>{product.stock}</TableCell>
                   <TableCell>
                     <DropdownMenu>

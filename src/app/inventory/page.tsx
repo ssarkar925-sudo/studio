@@ -17,13 +17,21 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { products } from '@/lib/data';
+import { productsDAO } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Upload } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { useEffect, useState } from 'react';
+import type { Product } from '@/lib/data';
 
 export default function InventoryPage() {
   const { toast } = useToast();
+  const [products, setProducts] = useState<Product[]>([]);
+
+  useEffect(() => {
+    setProducts(productsDAO.load());
+  }, []);
+
 
   const handleAction = (action: string, productName: string) => {
     toast({

@@ -21,25 +21,66 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { customers, invoiceTemplates } from '@/lib/data';
+import { customersDAO, invoiceTemplates, invoicesDAO } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
+import type { Customer } from '@/lib/data';
 
 export default function NewInvoicePage() {
   const { toast } = useToast();
   const router = useRouter();
   const [issueDate, setIssueDate] = useState<Date | undefined>(new Date());
   const [dueDate, setDueDate] = useState<Date | undefined>();
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  
+  useEffect(() => {
+    setCustomers(customersDAO.load());
+  }, []);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const invoiceNumber = formData.get('invoiceNumber') as string;
+    const customerId = formData.get('customer') as string;
+    // This is a simplified version. A real app would parse items and calculate amount.
+    const amount = Math.floor(Math.random() * 5000) + 1000;
+
+    if (!invoiceNumber || !customerId || !issueDate) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Required Fields',
+        description: 'Please fill out all invoice details.',
+      });
+      return;
+    }
+
+    const customer = customers.find(c => c.id === customerId);
+    if (!customer) {
+       toast({
+        variant: 'destructive',
+        title: 'Invalid Customer',
+        description: 'Selected customer could not be found.',
+      });
+      return;
+    }
+
+    invoicesDAO.add({
+      invoiceNumber,
+      customer: {
+        id: customer.id,
+        name: customer.name,
+        email: customer.email,
+      },
+      issueDate: format(issueDate, 'PPP'),
+      dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
+      status: 'Pending', // Default status
+      amount,
+    });
 
     toast({
       title: 'Invoice Created',
@@ -67,11 +108,11 @@ export default function NewInvoicePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-3">
                     <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                    <Input id="invoiceNumber" name="invoiceNumber" type="text" placeholder="INV-006" />
+                    <Input id="invoiceNumber" name="invoiceNumber" type="text" placeholder="INV-006" required />
                   </div>
                   <div className="grid gap-3">
                     <Label htmlFor="customer">Customer</Label>
-                    <Select name="customer">
+                    <Select name="customer" required>
                       <SelectTrigger>
                         <SelectValue placeholder="Select a customer" />
                       </SelectTrigger>

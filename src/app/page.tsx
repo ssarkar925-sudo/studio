@@ -3,7 +3,7 @@
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { invoices, Invoice } from '@/lib/data';
+import { invoicesDAO, Invoice } from '@/lib/data';
 import { DollarSign, FileText, Clock } from 'lucide-react';
 import {
   ChartContainer,
@@ -13,6 +13,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 const chartData = [
   { month: 'January', total: 0, paid: 0 },
@@ -35,6 +36,12 @@ const chartConfig = {
 } satisfies import('@/components/ui/chart').ChartConfig;
 
 export default function DashboardPage() {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+
+  useEffect(() => {
+    setInvoices(invoicesDAO.load());
+  }, []);
+
   const totalRevenue = invoices
     .filter((i) => i.status === 'Paid')
     .reduce((sum, i) => sum + i.amount, 0);
@@ -130,7 +137,7 @@ export default function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent>
-            <RecentInvoices />
+            <RecentInvoices invoices={invoices} />
           </CardContent>
         </Card>
       </div>
@@ -138,7 +145,7 @@ export default function DashboardPage() {
   );
 }
 
-function RecentInvoices() {
+function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
     if (invoices.length === 0) {
     return (
       <div className="text-center text-muted-foreground py-8">
