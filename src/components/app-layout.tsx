@@ -10,6 +10,7 @@ import {
   Settings,
   UserCircle,
   Menu,
+  Building,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/invoices', label: 'Invoices', icon: FileText },
   { href: '/customers', label: 'Customers', icon: Users },
+  { href: '/vendors', label: 'Vendors', icon: Building },
   { href: '/inventory', label: 'Inventory', icon: Package },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];

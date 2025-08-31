@@ -30,9 +30,19 @@ export type Product = {
   stock: number;
 };
 
+export type Vendor = {
+  id: string;
+  vendorName: string;
+  contactPerson?: string;
+  contactNumber?: string;
+  email?: string;
+  gstn?: string;
+};
+
 const DUMMY_CUSTOMERS: Customer[] = [];
 const DUMMY_INVOICES: Invoice[] = [];
 const DUMMY_PRODUCTS: Product[] = [];
+const DUMMY_VENDORS: Vendor[] = [];
 
 
 function createLocalStorageDAO<T extends {id: string}>(key: string, initialData: T[]) {
@@ -76,6 +86,7 @@ function createLocalStorageDAO<T extends {id: string}>(key: string, initialData:
 export const customersDAO = createLocalStorageDAO<Customer>('customers', DUMMY_CUSTOMERS);
 export const invoicesDAO = createLocalStorageDAO<Invoice>('invoices', DUMMY_INVOICES);
 export const productsDAO = createLocalStorageDAO<Product>('products', DUMMY_PRODUCTS);
+export const vendorsDAO = createLocalStorageDAO<Vendor>('vendors', DUMMY_VENDORS);
 
 
 export const invoiceTemplates: string[] = [
