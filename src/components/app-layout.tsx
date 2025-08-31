@@ -40,28 +40,56 @@ const menuItems = [
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
-  const getPageTitle = () => {
-    if (pathname.startsWith('/invoices/new')) return 'New Invoice';
-    if (pathname.match(/\/invoices\/.+/)) return 'Invoice Details';
-    
-    const allItems = [...menuItems, { href: '/settings', label: 'Settings' }];
-    const item = allItems.find((item) =>
-      pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
-    );
-    return item?.label || 'Dashboard';
-  };
-
   return (
     <div className="flex min-h-screen w-full flex-col">
       <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
-        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-          <Link
+        <div className="flex items-center md:flex-1">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="shrink-0 md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle navigation menu</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <nav className="grid gap-6 text-lg font-medium">
+                <Link
+                  href="#"
+                  className="flex items-center gap-2 text-lg font-semibold"
+                >
+                  <Icons.logo className="h-6 w-6 text-primary" />
+                  <span >Sarkar Co</span>
+                </Link>
+                {menuItems.map((item) => (
+                   <Link
+                      key={item.label}
+                      href={item.href}
+                      className={`transition-colors hover:text-foreground ${
+                        pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
+                          ? 'text-foreground'
+                          : 'text-muted-foreground'
+                      }`}
+                    >
+                      {item.label}
+                    </Link>
+                ))}
+              </nav>
+            </SheetContent>
+          </Sheet>
+           <Link
             href="/"
             className="flex items-center gap-2 text-lg font-semibold md:text-base"
           >
             <Icons.logo className="h-6 w-6 text-primary" />
             <span className="sr-only">Sarkar Co</span>
           </Link>
+        </div>
+
+        <nav className="hidden flex-1 justify-center flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
           {menuItems.map((item) => (
             <Link
               key={item.label}
@@ -76,43 +104,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0 md:hidden"
-            >
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle navigation menu</span>
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left">
-            <nav className="grid gap-6 text-lg font-medium">
-              <Link
-                href="#"
-                className="flex items-center gap-2 text-lg font-semibold"
-              >
-                <Icons.logo className="h-6 w-6 text-primary" />
-                <span >Sarkar Co</span>
-              </Link>
-              {menuItems.map((item) => (
-                 <Link
-                    key={item.label}
-                    href={item.href}
-                    className={`transition-colors hover:text-foreground ${
-                      pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
-                        ? 'text-foreground'
-                        : 'text-muted-foreground'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-              ))}
-            </nav>
-          </SheetContent>
-        </Sheet>
-        <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
+        
+        <div className="flex items-center justify-end gap-4 md:flex-1 md:gap-2 lg:gap-4">
            <UserMenu />
         </div>
       </header>
