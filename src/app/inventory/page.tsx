@@ -18,10 +18,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { productsDAO } from '@/lib/data';
-import { MoreHorizontal, PlusCircle, Upload } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Upload, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import type { Product } from '@/lib/data';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -37,15 +37,36 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+
 
 export default function InventoryPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
-
+  const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  
   useEffect(() => {
     setProducts(productsDAO.load());
   }, []);
+
+  const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(products.map(p => p.id));
+    } else {
+      setSelectedProducts([]);
+    }
+  };
+
+  const handleSelectProduct = (productId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(prev => [...prev, productId]);
+    } else {
+      setSelectedProducts(prev => prev.filter(id => id !== productId));
+    }
+  };
 
   const handleDelete = (productId: string) => {
     productsDAO.remove(productId);
@@ -54,6 +75,17 @@ export default function InventoryPage() {
       title: 'Item Deleted',
       description: 'The inventory item has been successfully deleted.',
     });
+  };
+
+  const handleDeleteSelected = () => {
+    selectedProducts.forEach(id => productsDAO.remove(id));
+    const remainingProducts = productsDAO.load();
+    setProducts(remainingProducts);
+    toast({
+        title: 'Items Deleted',
+        description: `${selectedProducts.length} item(s) have been deleted.`,
+    });
+    setSelectedProducts([]);
   };
 
   const handleAction = (action: string, productId: string, productName: string) => {
@@ -86,9 +118,30 @@ export default function InventoryPage() {
         <TabsContent value="stock">
           <Card className="mt-4">
             <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>All Inventory</CardTitle>
-                <CardDescription>Manage your inventory, services, and their prices.</CardDescription>
+              <div className='flex items-center gap-4'>
+                <div>
+                  <CardTitle>All Inventory</CardTitle>
+                  <CardDescription>Manage your inventory, services, and their prices.</CardDescription>
+                </div>
+                 {selectedProducts.length > 0 && (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedProducts.length})</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete {selectedProducts.length} item(s).
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </div>
                <Button asChild>
                 <Link href="/inventory/new">
@@ -101,6 +154,13 @@ export default function InventoryPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                     <TableHead className="w-12">
+                        <Checkbox
+                          checked={allProductsSelected}
+                          onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                          aria-label="Select all"
+                        />
+                      </TableHead>
                     <TableHead>Item</TableHead>
                     <TableHead className="text-right">Price</TableHead>
                     <TableHead className="text-right">Stock</TableHead>
@@ -111,7 +171,14 @@ export default function InventoryPage() {
                 </TableHeader>
                 <TableBody>
                   {products.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow key={product.id} data-state={selectedProducts.includes(product.id) && "selected"}>
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedProducts.includes(product.id)}
+                          onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
+                          aria-label="Select row"
+                        />
+                      </TableCell>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell className="text-right">₹{product.price.toFixed(2)}</TableCell>
                       <TableCell className="text-right">{product.stock}</TableCell>

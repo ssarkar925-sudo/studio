@@ -19,24 +19,73 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { invoicesDAO, Invoice } from '@/lib/data';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function InvoicesPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
 
   useEffect(() => {
     setInvoices(invoicesDAO.load());
   }, []);
+  
+  const allInvoicesSelected = useMemo(() => selectedInvoices.length > 0 && selectedInvoices.length === invoices.length, [selectedInvoices, invoices]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedInvoices(invoices.map(i => i.id));
+    } else {
+      setSelectedInvoices([]);
+    }
+  };
+
+  const handleSelectInvoice = (invoiceId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedInvoices(prev => [...prev, invoiceId]);
+    } else {
+      setSelectedInvoices(prev => prev.filter(id => id !== invoiceId));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    selectedInvoices.forEach(id => invoicesDAO.remove(id));
+    const remainingInvoices = invoicesDAO.load();
+    setInvoices(remainingInvoices);
+     toast({
+        title: 'Invoices Deleted',
+        description: `${selectedInvoices.length} invoice(s) have been deleted.`,
+    });
+    setSelectedInvoices([]);
+  };
 
   const handleAction = (action: string, invoiceId: string, invoiceNumber: string) => {
     if (action === 'View') {
         router.push(`/invoices/${invoiceId}`);
+    } else if (action === 'Delete') {
+        invoicesDAO.remove(invoiceId);
+        setInvoices(invoicesDAO.load());
+        toast({
+          title: `Invoice Deleted`,
+          description: `Invoice ${invoiceNumber} has been deleted.`,
+        });
     } else {
         toast({
           title: `${action} Invoice`,
@@ -48,7 +97,28 @@ export default function InvoicesPage() {
   return (
     <AppLayout>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Invoices</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-semibold">Invoices</h1>
+          {selectedInvoices.length > 0 && (
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedInvoices.length})</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete {selectedInvoices.length} invoice(s).
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
         <Button asChild>
           <Link href="/invoices/new">
             <PlusCircle />
@@ -65,6 +135,13 @@ export default function InvoicesPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                 <TableHead className="w-12">
+                   <Checkbox
+                    checked={allInvoicesSelected}
+                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                    aria-label="Select all"
+                  />
+                 </TableHead>
                 <TableHead>Invoice #</TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead className='text-right'>Amount</TableHead>
@@ -77,7 +154,14 @@ export default function InvoicesPage() {
             </TableHeader>
             <TableBody>
               {invoices.map((invoice) => (
-                <TableRow key={invoice.id}>
+                <TableRow key={invoice.id} data-state={selectedInvoices.includes(invoice.id) && "selected"}>
+                  <TableCell>
+                     <Checkbox
+                      checked={selectedInvoices.includes(invoice.id)}
+                      onCheckedChange={(checked) => handleSelectInvoice(invoice.id, checked as boolean)}
+                      aria-label="Select row"
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">
                     {invoice.invoiceNumber}
                   </TableCell>
@@ -88,19 +172,35 @@ export default function InvoicesPage() {
                   </TableCell>
                   <TableCell>{invoice.dueDate}</TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', invoice.id, invoice.invoiceNumber)}>View</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id, invoice.invoiceNumber)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Delete', invoice.id, invoice.invoiceNumber)}>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                     <AlertDialog>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleAction('View', invoice.id, invoice.invoiceNumber)}>View</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id, invoice.invoiceNumber)}>Edit</DropdownMenuItem>
+                           <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                          </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete invoice {invoice.invoiceNumber}.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleAction('Delete', invoice.id, invoice.invoiceNumber)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}

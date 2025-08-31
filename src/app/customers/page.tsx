@@ -18,22 +18,66 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { customersDAO } from '@/lib/data';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import type { Customer } from '@/lib/data';
 import { useRouter } from 'next/navigation';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+
 
 export default function CustomersPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
 
   useEffect(() => {
     setCustomers(customersDAO.load());
   }, []);
+  
+  const allCustomersSelected = useMemo(() => selectedCustomers.length > 0 && selectedCustomers.length === customers.length, [selectedCustomers, customers]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedCustomers(customers.map(c => c.id));
+    } else {
+      setSelectedCustomers([]);
+    }
+  };
+
+  const handleSelectCustomer = (customerId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCustomers(prev => [...prev, customerId]);
+    } else {
+      setSelectedCustomers(prev => prev.filter(id => id !== customerId));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    selectedCustomers.forEach(id => customersDAO.remove(id));
+    const remainingCustomers = customersDAO.load();
+    setCustomers(remainingCustomers);
+    toast({
+        title: 'Customers Deleted',
+        description: `${selectedCustomers.length} customer(s) have been deleted.`,
+    });
+    setSelectedCustomers([]);
+  };
+
 
   const handleAction = (action: string, customerId: string, customerName: string) => {
     if (action === 'View') {
@@ -49,7 +93,28 @@ export default function CustomersPage() {
   return (
     <AppLayout>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Customers</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-semibold">Customers</h1>
+           {selectedCustomers.length > 0 && (
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedCustomers.length})</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete {selectedCustomers.length} customer(s).
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
         <Button asChild>
           <Link href="/customers/new">
             <PlusCircle />
@@ -66,6 +131,13 @@ export default function CustomersPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                 <TableHead className="w-12">
+                   <Checkbox
+                    checked={allCustomersSelected}
+                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                    aria-label="Select all"
+                  />
+                 </TableHead>
                 <TableHead>Customer</TableHead>
                 <TableHead className='text-right'>Total Invoiced</TableHead>
                 <TableHead className='text-right'>Total Paid</TableHead>
@@ -77,7 +149,14 @@ export default function CustomersPage() {
             </TableHeader>
             <TableBody>
               {customers.map((customer) => (
-                <TableRow key={customer.id}>
+                <TableRow key={customer.id} data-state={selectedCustomers.includes(customer.id) && "selected"}>
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedCustomers.includes(customer.id)}
+                      onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked as boolean)}
+                      aria-label="Select row"
+                    />
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className='h-9 w-9'>

@@ -18,25 +18,75 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { vendorsDAO } from '@/lib/data';
-import { MoreHorizontal, PlusCircle } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import type { Vendor } from '@/lib/data';
 import { useRouter } from 'next/navigation';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export default function VendorsPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
 
   useEffect(() => {
     setVendors(vendorsDAO.load());
   }, []);
+  
+  const allVendorsSelected = useMemo(() => selectedVendors.length > 0 && selectedVendors.length === vendors.length, [selectedVendors, vendors]);
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedVendors(vendors.map(v => v.id));
+    } else {
+      setSelectedVendors([]);
+    }
+  };
+
+  const handleSelectVendor = (vendorId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedVendors(prev => [...prev, vendorId]);
+    } else {
+      setSelectedVendors(prev => prev.filter(id => id !== vendorId));
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    selectedVendors.forEach(id => vendorsDAO.remove(id));
+    const remainingVendors = vendorsDAO.load();
+    setVendors(remainingVendors);
+    toast({
+        title: 'Vendors Deleted',
+        description: `${selectedVendors.length} vendor(s) have been deleted.`,
+    });
+    setSelectedVendors([]);
+  };
+
 
   const handleAction = (action: string, vendorId: string, vendorName: string) => {
     if (action === 'View') {
       router.push(`/vendors/${vendorId}`);
+    } else if (action === 'Delete') {
+        vendorsDAO.remove(vendorId);
+        setVendors(vendorsDAO.load());
+        toast({
+          title: `Vendor Deleted`,
+          description: `Vendor ${vendorName} has been deleted.`,
+        });
     } else {
       toast({
         title: `${action} Vendor`,
@@ -48,7 +98,28 @@ export default function VendorsPage() {
   return (
     <AppLayout>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Vendors</h1>
+        <div className='flex items-center gap-4'>
+            <h1 className="text-2xl font-semibold">Vendors</h1>
+            {selectedVendors.length > 0 && (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedVendors.length})</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete {selectedVendors.length} vendor(s).
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+            )}
+        </div>
         <Button asChild>
           <Link href="/vendors/new">
             <PlusCircle />
@@ -65,6 +136,13 @@ export default function VendorsPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12">
+                   <Checkbox
+                    checked={allVendorsSelected}
+                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                    aria-label="Select all"
+                  />
+                </TableHead>
                 <TableHead>Vendor Name</TableHead>
                 <TableHead>Contact Person</TableHead>
                 <TableHead>Contact Number</TableHead>
@@ -77,26 +155,49 @@ export default function VendorsPage() {
             </TableHeader>
             <TableBody>
               {vendors.map((vendor) => (
-                <TableRow key={vendor.id}>
+                <TableRow key={vendor.id} data-state={selectedVendors.includes(vendor.id) && "selected"}>
+                   <TableCell>
+                    <Checkbox
+                      checked={selectedVendors.includes(vendor.id)}
+                      onCheckedChange={(checked) => handleSelectVendor(vendor.id, checked as boolean)}
+                      aria-label="Select row"
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{vendor.vendorName}</TableCell>
                   <TableCell>{vendor.contactPerson}</TableCell>
                   <TableCell>{vendor.contactNumber}</TableCell>
                   <TableCell>{vendor.email}</TableCell>
                   <TableCell>{vendor.gstn}</TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', vendor.id, vendor.vendorName)}>View</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Edit', vendor.id, vendor.vendorName)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Delete', vendor.id, vendor.vendorName)}>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                     <AlertDialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handleAction('View', vendor.id, vendor.vendorName)}>View</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Edit', vendor.id, vendor.vendorName)}>Edit</DropdownMenuItem>
+                            <AlertDialogTrigger asChild>
+                                <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                            </AlertDialogTrigger>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                         <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete vendor &quot;{vendor.vendorName}&quot;.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleAction('Delete', vendor.id, vendor.vendorName)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}
