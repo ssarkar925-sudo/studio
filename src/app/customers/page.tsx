@@ -35,6 +35,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 
@@ -73,17 +74,20 @@ export default function CustomersPage() {
     setSelectedCustomers([]);
   };
 
+  const handleDelete = async (customerId: string, customerName: string) => {
+    await customersDAO.remove(customerId);
+    toast({
+        title: 'Customer Deleted',
+        description: `Successfully deleted customer: ${customerName}.`,
+    });
+  };
 
-  const handleAction = (action: string, customerId: string, customerName: string) => {
+
+  const handleAction = (action: string, customerId: string) => {
     if (action === 'View') {
       router.push(`/customers/${customerId}`);
     } else if (action === 'Edit') {
         router.push(`/customers/${customerId}/edit`);
-    } else {
-      toast({
-        title: `${action} Customer`,
-        description: `You have selected to ${action.toLowerCase()} ${customerName}. This feature is not yet implemented.`,
-      });
     }
   };
 
@@ -180,19 +184,35 @@ export default function CustomersPage() {
                   <TableCell className='text-right'>₹{customer.totalPaid.toFixed(2)}</TableCell>
                   <TableCell className='text-right'>{customer.invoices}</TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', customer.id, customer.name)}>View</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Edit', customer.id, customer.name)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Delete', customer.id, customer.name)}>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <AlertDialog>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleAction('View', customer.id)}>View</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Edit', customer.id)}>Edit</DropdownMenuItem>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                          </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete customer "{customer.name}".
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(customer.id, customer.name)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}

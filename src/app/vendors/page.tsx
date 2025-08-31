@@ -84,11 +84,6 @@ export default function VendorsPage() {
           title: `Vendor Deleted`,
           description: `Vendor ${vendorName} has been deleted.`,
         });
-    } else {
-      toast({
-        title: `${action} Vendor`,
-        description: `You have selected to ${action.toLowerCase()} ${vendorName}. This feature is not yet implemented.`,
-      });
     }
   };
 
