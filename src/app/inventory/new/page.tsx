@@ -56,8 +56,8 @@ export default function NewInventoryItemPage() {
     const newProduct = productsDAO.add({
       name,
       price,
-      stock: fromPurchase ? 0 : stock, // Stock is managed by the purchase order
-    });
+      stock: fromPurchase ? 0 : stock,
+    }, fromPurchase);
     
     if (fromPurchase) {
       // Store new product info in session storage and go back

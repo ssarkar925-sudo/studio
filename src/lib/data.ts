@@ -127,7 +127,43 @@ function createLocalStorageDAO<T extends {id: string}>(key: string, initialData:
 
 export const customersDAO = createLocalStorageDAO<Customer>('customers', DUMMY_CUSTOMERS);
 export const invoicesDAO = createLocalStorageDAO<Invoice>('invoices', DUMMY_INVOICES);
-export const productsDAO = createLocalStorageDAO<Product>('products', DUMMY_PRODUCTS);
+
+// Custom DAO for Products to handle special logic
+const createProductsDAO = () => {
+    const baseDAO = createLocalStorageDAO<Product>('products', DUMMY_PRODUCTS);
+
+    const addProduct = (item: Omit<Product, 'id'>, fromPurchase = false) => {
+        const products = baseDAO.load();
+        const newProduct = { ...item, id: new Date().toISOString() + Math.random() } as Product;
+        
+        // Only add to main products list if NOT from a purchase flow.
+        // If from purchase, it will be "uncommitted" until received.
+        if (!fromPurchase) {
+          const updatedProducts = [...products, newProduct];
+          baseDAO.save(updatedProducts);
+        }
+        
+        return newProduct;
+    };
+    
+    const commitProduct = (product: Product) => {
+        const products = baseDAO.load();
+        const existing = products.find(p => p.id === product.id);
+        if (!existing) {
+             const updatedProducts = [...products, product];
+             baseDAO.save(updatedProducts);
+        }
+    }
+
+    return {
+        ...baseDAO,
+        add: addProduct,
+        commit: commitProduct
+    };
+}
+export const productsDAO = createProductsDAO();
+
+
 export const vendorsDAO = createLocalStorageDAO<Vendor>('vendors', DUMMY_VENDORS);
 export const purchasesDAO = createLocalStorageDAO<Purchase>('purchases', DUMMY_PURCHASES);
 

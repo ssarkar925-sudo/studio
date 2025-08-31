@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { productsDAO, purchasesDAO, type Purchase } from '@/lib/data';
+import { productsDAO, purchasesDAO, type Purchase, type Product } from '@/lib/data';
 import { Button } from './ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
@@ -28,13 +28,16 @@ export function PurchaseHistory() {
         if (productIndex > -1) {
             allProducts[productIndex].stock += item.quantity;
         } else {
-            // This case shouldn't happen if new items are handled correctly,
-            // but as a fallback, we can add it.
-            productsDAO.add({
+            // If the product doesn't exist, commit it to the DAO
+            const newProduct: Product = {
+                id: item.productId,
                 name: item.productName,
                 price: item.purchasePrice * 1.5, // Default 50% markup
                 stock: item.quantity,
-            });
+            };
+            productsDAO.commit(newProduct);
+            // After commit, allProducts in memory is stale, we could reload or just add it
+            allProducts.push(newProduct);
         }
     });
 
