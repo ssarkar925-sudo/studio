@@ -25,7 +25,7 @@ export type Customer = {
 };
 
 export type Product = {
-  id: string;
+  id:string;
   name: string;
   price: number;
   stock: number;
@@ -72,14 +72,19 @@ function createLocalStorageDAO<T extends {id: string}>(key: string, initialData:
 
     const load = (): T[] => {
         if (!isClient) {
-            return initialData;
+            return [];
         }
         try {
             const item = window.localStorage.getItem(key);
-            return item ? JSON.parse(item) : initialData;
+            if (!item) {
+                // If no data, initialize with empty array and save it.
+                window.localStorage.setItem(key, JSON.stringify([]));
+                return [];
+            }
+            return JSON.parse(item);
         } catch (error) {
             console.error(`Error reading from localStorage key “${key}”:`, error);
-            return initialData;
+            return [];
         }
     };
 
@@ -96,13 +101,22 @@ function createLocalStorageDAO<T extends {id: string}>(key: string, initialData:
     
     const add = (item: Omit<T, 'id'>) => {
         const items = load();
-        const newItem = { ...item, id: new Date().toISOString() } as T;
+        const newItem = { ...item, id: new Date().toISOString() + Math.random() } as T;
         const updatedItems = [...items, newItem];
         save(updatedItems);
         return newItem;
     }
+    
+    const update = (id: string, updatedItem: Partial<T>) => {
+        const items = load();
+        const index = items.findIndex(i => i.id === id);
+        if (index !== -1) {
+            items[index] = { ...items[index], ...updatedItem };
+            save(items);
+        }
+    };
 
-    return { load, save, add };
+    return { load, save, add, update };
 }
 
 export const customersDAO = createLocalStorageDAO<Customer>('customers', DUMMY_CUSTOMERS);

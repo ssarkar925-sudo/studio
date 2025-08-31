@@ -36,17 +36,25 @@ export default function NewInventoryItemPage() {
       return;
     }
 
-    productsDAO.add({
+    const newProduct = productsDAO.add({
       name,
       price,
       stock,
     });
     
-    toast({
-      title: 'Item Created',
-      description: `Successfully created item: ${name}.`,
-    });
-    router.push('/inventory');
+    // Check if we came from the purchases page
+    const fromPurchase = new URLSearchParams(window.location.search).get('fromPurchase');
+    if (fromPurchase) {
+      // Store new product info in session storage and go back
+      sessionStorage.setItem('newProduct', JSON.stringify(newProduct));
+      router.back();
+    } else {
+       toast({
+        title: 'Item Created',
+        description: `Successfully created item: ${name}.`,
+      });
+      router.push('/inventory');
+    }
   };
 
   return (

@@ -39,6 +39,13 @@ export default function NewPurchasePage() {
   useEffect(() => {
     setVendors(vendorsDAO.load());
     setProducts(productsDAO.load());
+
+    const newProductJson = sessionStorage.getItem('newProduct');
+    if (newProductJson) {
+      const newProduct = JSON.parse(newProductJson);
+      setProducts(prevProducts => [...prevProducts, newProduct]);
+      sessionStorage.removeItem('newProduct');
+    }
   }, []);
 
   const handleAddItem = () => {
@@ -191,7 +198,7 @@ export default function NewPurchasePage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                         <Button variant="ghost" className="w-full mt-2" onClick={() => router.push('/inventory/new')}><PlusCircle className="mr-2"/>Create New Item</Button>
+                                         <Button variant="ghost" className="w-full mt-2" onSelect={(e) => { e.preventDefault(); router.push('/inventory/new?fromPurchase=true'); }}><PlusCircle className="mr-2"/>Create New Item</Button>
                                     </SelectContent>
                                 </Select>
                             </div>

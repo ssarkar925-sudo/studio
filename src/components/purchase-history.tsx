@@ -4,12 +4,13 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { purchasesDAO, type Purchase } from '@/lib/data';
+import { productsDAO, purchasesDAO, type Purchase } from '@/lib/data';
 import { Button } from './ui/button';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
+import { format } from 'date-fns';
 
 export function PurchaseHistory() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -19,11 +20,51 @@ export function PurchaseHistory() {
     setPurchases(purchasesDAO.load());
   }, []);
 
-  const handleAction = (action: string, purchaseId: string) => {
-     toast({
-        title: `${action} Purchase`,
-        description: `You have selected to ${action.toLowerCase()} purchase. This feature is not yet implemented.`,
-      });
+  const handleMarkAsReceived = (purchase: Purchase) => {
+    const allProducts = productsDAO.load();
+
+    purchase.items.forEach(item => {
+        const productIndex = allProducts.findIndex(p => p.id === item.productId);
+        if (productIndex > -1) {
+            allProducts[productIndex].stock += item.quantity;
+        } else {
+            // This case shouldn't happen if new items are handled correctly,
+            // but as a fallback, we can add it.
+            productsDAO.add({
+                name: item.productName,
+                price: item.purchasePrice * 1.5, // Default 50% markup
+                stock: item.quantity,
+            });
+        }
+    });
+
+    productsDAO.save(allProducts);
+
+    const updatedPurchase: Partial<Purchase> = {
+        status: 'Received',
+        receivedDate: format(new Date(), 'PPP'),
+    };
+    purchasesDAO.update(purchase.id, updatedPurchase);
+
+    // Refresh purchase list
+    setPurchases(purchasesDAO.load());
+
+    toast({
+        title: 'Purchase Received',
+        description: `Stock has been updated for purchase order ${purchase.id.slice(0,8)}...`,
+    });
+  }
+
+
+  const handleAction = (action: string, purchase: Purchase) => {
+    if (action === 'Mark as Received') {
+        handleMarkAsReceived(purchase);
+    } else {
+         toast({
+            title: `${action} Purchase`,
+            description: `You have selected to ${action.toLowerCase()} purchase. This feature is not yet implemented.`,
+        });
+    }
   }
 
   return (
@@ -75,8 +116,8 @@ export function PurchaseHistory() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', purchase.id)}>View</DropdownMenuItem>
-                        {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Mark as Received', purchase.id)}>Mark as Received</DropdownMenuItem>}
+                        <DropdownMenuItem onSelect={() => handleAction('View', purchase)}>View</DropdownMenuItem>
+                        {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Mark as Received', purchase)}>Mark as Received</DropdownMenuItem>}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
