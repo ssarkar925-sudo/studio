@@ -1,3 +1,5 @@
+'use client';
+
 import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,8 +20,18 @@ import {
 import { products } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProductsPage() {
+  const { toast } = useToast();
+
+  const handleAction = (action: string, productName: string) => {
+    toast({
+      title: `${action} Product`,
+      description: `You have selected to ${action.toLowerCase()} ${productName}. This feature is not yet implemented.`,
+    });
+  };
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between">
@@ -69,8 +81,9 @@ export default function ProductsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('View', product.name)}>View</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Edit', product.name)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Delete', product.name)}>Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

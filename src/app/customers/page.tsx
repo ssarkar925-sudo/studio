@@ -1,3 +1,5 @@
+'use client';
+
 import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,8 +21,18 @@ import { customers } from '@/lib/data';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CustomersPage() {
+  const { toast } = useToast();
+
+  const handleAction = (action: string, customerName: string) => {
+    toast({
+      title: `${action} Customer`,
+      description: `You have selected to ${action.toLowerCase()} ${customerName}. This feature is not yet implemented.`,
+    });
+  };
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between">
@@ -87,9 +99,9 @@ export default function CustomersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('View', customer.name)}>View</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Edit', customer.name)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Delete', customer.name)}>Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

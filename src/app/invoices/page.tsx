@@ -1,3 +1,5 @@
+'use client';
+
 import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,8 +21,18 @@ import {
 import { invoices, Invoice } from '@/lib/data';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 export default function InvoicesPage() {
+  const { toast } = useToast();
+
+  const handleAction = (action: string, invoiceNumber: string) => {
+    toast({
+      title: `${action} Invoice`,
+      description: `You have selected to ${action.toLowerCase()} invoice ${invoiceNumber}. This feature is not yet implemented.`,
+    });
+  };
+
   return (
     <AppLayout>
       <div className="flex items-center justify-between">
@@ -72,9 +84,9 @@ export default function InvoicesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View</DropdownMenuItem>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Delete</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('View', invoice.invoiceNumber)}>View</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.invoiceNumber)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Delete', invoice.invoiceNumber)}>Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
