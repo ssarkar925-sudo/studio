@@ -23,7 +23,7 @@ export default function NewInventoryItemPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
@@ -40,7 +40,7 @@ export default function NewInventoryItemPage() {
     }
 
     // Create a pending purchase order instead of adding directly to stock
-    purchasesDAO.add({
+    await purchasesDAO.add({
         vendorName: 'N/A (Manual Entry)',
         vendorId: 'manual',
         orderDate: format(new Date(), 'PPP'),

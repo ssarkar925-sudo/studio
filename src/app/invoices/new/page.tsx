@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -30,19 +31,16 @@ import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import type { Customer } from '@/lib/data';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 export default function NewInvoicePage() {
   const { toast } = useToast();
   const router = useRouter();
   const [issueDate, setIssueDate] = useState<Date | undefined>(new Date());
   const [dueDate, setDueDate] = useState<Date | undefined>();
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  
-  useEffect(() => {
-    setCustomers(customersDAO.load());
-  }, []);
+  const { data: customers } = useFirestoreData(customersDAO);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const invoiceNumber = formData.get('invoiceNumber') as string;
@@ -69,7 +67,7 @@ export default function NewInvoicePage() {
       return;
     }
 
-    invoicesDAO.add({
+    await invoicesDAO.add({
       invoiceNumber,
       customer: {
         id: customer.id,

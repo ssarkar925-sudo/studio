@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -14,6 +15,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
   const variant = {
@@ -28,18 +30,20 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
 export default function InvoiceDetailsPage() {
   const router = useRouter();
   const params = useParams();
+  const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
-    const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
-    const invoices = invoicesDAO.load();
-    const foundInvoice = invoices.find((i) => i.id === invoiceId);
-    if (foundInvoice) {
-      setInvoice(foundInvoice);
+    if (!isLoading) {
+      const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
+      const foundInvoice = invoices.find((i) => i.id === invoiceId);
+      if (foundInvoice) {
+        setInvoice(foundInvoice);
+      }
     }
-  }, [params.id]);
+  }, [params.id, invoices, isLoading]);
 
-  if (!invoice) {
+  if (isLoading || !invoice) {
     return (
         <AppLayout>
             <div className="mx-auto grid w-full max-w-2xl gap-2">

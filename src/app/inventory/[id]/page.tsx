@@ -15,22 +15,25 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 export default function ProductDetailsPage() {
   const router = useRouter();
   const params = useParams();
+  const { data: products, isLoading } = useFirestoreData(productsDAO);
   const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    const productId = Array.isArray(params.id) ? params.id[0] : params.id;
-    const products = productsDAO.load();
-    const foundProduct = products.find((p) => p.id === productId);
-    if (foundProduct) {
-      setProduct(foundProduct);
+    if (!isLoading) {
+      const productId = Array.isArray(params.id) ? params.id[0] : params.id;
+      const foundProduct = products.find((p) => p.id === productId);
+      if (foundProduct) {
+        setProduct(foundProduct);
+      }
     }
-  }, [params.id]);
+  }, [params.id, products, isLoading]);
 
-  if (!product) {
+  if (isLoading || !product) {
     return (
         <AppLayout>
             <div className="mx-auto grid w-full max-w-2xl gap-2">

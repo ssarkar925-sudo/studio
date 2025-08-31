@@ -39,14 +39,14 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
-import { useLocalStorageData } from '@/hooks/use-local-storage-data';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 
 export default function InventoryPage() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: products } = useLocalStorageData(productsDAO);
+  const { data: products } = useFirestoreData(productsDAO);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
@@ -67,18 +67,17 @@ export default function InventoryPage() {
     }
   };
 
-  const handleDelete = (productId: string) => {
-    productsDAO.remove(productId);
-    // useLocalStorageData hook will handle re-render
+  const handleDelete = async (productId: string) => {
+    await productsDAO.remove(productId);
     toast({
       title: 'Item Deleted',
       description: 'The inventory item has been successfully deleted.',
     });
   };
 
-  const handleDeleteSelected = () => {
-    selectedProducts.forEach(id => productsDAO.remove(id));
-    // useLocalStorageData hook will handle re-render
+  const handleDeleteSelected = async () => {
+    const promises = selectedProducts.map(id => productsDAO.remove(id));
+    await Promise.all(promises);
     toast({
         title: 'Items Deleted',
         description: `${selectedProducts.length} item(s) have been deleted.`,

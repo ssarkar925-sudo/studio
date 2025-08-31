@@ -12,9 +12,14 @@ type Dao<T> = {
 
 export function useFirestoreData<T>(dao: Dao<T>) {
   const [data, setData] = useState<T[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = dao.subscribe(setData);
+    setIsLoading(true);
+    const unsubscribe = dao.subscribe((newData) => {
+        setData(newData);
+        setIsLoading(false);
+    });
     
     const handleDataChange = () => {
         // The subscription already handles updates. This is for manual refreshes if needed.
@@ -28,7 +33,7 @@ export function useFirestoreData<T>(dao: Dao<T>) {
     };
   }, [dao]);
 
-  return { data, setData };
+  return { data, setData, isLoading };
 }
 
 export function notifyDataChange() {

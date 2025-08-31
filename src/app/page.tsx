@@ -14,7 +14,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useLocalStorageData } from '@/hooks/use-local-storage-data';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 const chartData = [
   { month: 'January', total: 0, paid: 0 },
@@ -37,7 +37,7 @@ const chartConfig = {
 } satisfies import('@/components/ui/chart').ChartConfig;
 
 export default function DashboardPage() {
-  const { data: invoices } = useLocalStorageData(invoicesDAO);
+  const { data: invoices } = useFirestoreData(invoicesDAO);
 
   const totalRevenue = invoices
     .filter((i) => i.status === 'Paid')

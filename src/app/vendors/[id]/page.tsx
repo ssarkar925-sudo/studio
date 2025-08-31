@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -13,22 +14,25 @@ import { vendorsDAO, type Vendor } from '@/lib/data';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 export default function VendorDetailsPage() {
   const router = useRouter();
   const params = useParams();
+  const { data: vendors, isLoading } = useFirestoreData(vendorsDAO);
   const [vendor, setVendor] = useState<Vendor | null>(null);
 
   useEffect(() => {
-    const vendorId = Array.isArray(params.id) ? params.id[0] : params.id;
-    const vendors = vendorsDAO.load();
-    const foundVendor = vendors.find((v) => v.id === vendorId);
-    if (foundVendor) {
-      setVendor(foundVendor);
+    if (!isLoading) {
+      const vendorId = Array.isArray(params.id) ? params.id[0] : params.id;
+      const foundVendor = vendors.find((v) => v.id === vendorId);
+      if (foundVendor) {
+        setVendor(foundVendor);
+      }
     }
-  }, [params.id]);
+  }, [params.id, vendors, isLoading]);
 
-  if (!vendor) {
+  if (isLoading || !vendor) {
     return (
         <AppLayout>
             <div className="mx-auto grid w-full max-w-2xl gap-2">

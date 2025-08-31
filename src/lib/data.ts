@@ -1,6 +1,7 @@
 
-
-import { notifyDataChange } from '@/hooks/use-local-storage-data';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe } from 'firebase/firestore';
+import { notifyDataChange } from '@/hooks/use-firestore-data';
 
 export type Invoice = {
   id: string;
@@ -68,98 +69,86 @@ export type Purchase = {
   deliveryCharges?: number;
 };
 
-const DUMMY_CUSTOMERS: Customer[] = [];
-const DUMMY_INVOICES: Invoice[] = [];
-const DUMMY_PRODUCTS: Product[] = [];
-const DUMMY_VENDORS: Vendor[] = [];
-const DUMMY_PURCHASES: Purchase[] = [];
+function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
+    const collectionRef = collection(db, collectionName);
 
-
-function createLocalStorageDAO<T extends {id: string}>(key: string) {
-    const isClient = typeof window !== 'undefined';
-
-    const load = (): T[] => {
-        if (!isClient) {
-            return [];
-        }
+    const load = async (): Promise<T[]> => {
         try {
-            const item = window.localStorage.getItem(key);
-            if (!item) {
-                // If no data, initialize with empty array and save it.
-                window.localStorage.setItem(key, JSON.stringify([]));
-                return [];
-            }
-            return JSON.parse(item);
+            const snapshot = await getDocs(collectionRef);
+            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
         } catch (error) {
-            console.error(`Error reading from localStorage key “${key}”:`, error);
+            console.error(`Error reading from Firestore collection “${collectionName}”:`, error);
             return [];
         }
     };
-
-    const save = (data: T[]) => {
-        if (isClient) {
-            try {
-                const serializedData = JSON.stringify(data, null, 2);
-                window.localStorage.setItem(key, serializedData);
-                notifyDataChange();
-            } catch (error) {
-                console.error(`Error writing to localStorage key “${key}”:`, error);
-            }
-        }
-    };
     
-    const add = (item: Omit<T, 'id'>) => {
-        const items = load();
-        const newItem = { ...item, id: new Date().toISOString() + Math.random() } as T;
-        const updatedItems = [...items, newItem];
-        save(updatedItems);
-        return newItem;
+    const add = async (item: Omit<T, 'id'>) => {
+        try {
+            const docRef = await addDoc(collectionRef, item);
+            notifyDataChange();
+            return { ...item, id: docRef.id } as T;
+        } catch (error) {
+             console.error(`Error writing to Firestore collection “${collectionName}”:`, error);
+             throw error;
+        }
     }
     
-    const update = (id: string, updatedItem: Partial<T>) => {
-        const items = load();
-        const index = items.findIndex(i => i.id === id);
-        if (index !== -1) {
-            items[index] = { ...items[index], ...updatedItem };
-            save(items);
+    const update = async (id: string, updatedItem: Partial<T>) => {
+        try {
+            const docRef = doc(db, collectionName, id);
+            await updateDoc(docRef, updatedItem);
+            notifyDataChange();
+        } catch (error) {
+            console.error(`Error updating document in Firestore collection “${collectionName}”:`, error);
+            throw error;
         }
     };
 
-    const remove = (id: string) => {
-        const items = load();
-        const updatedItems = items.filter(i => i.id !== id);
-        save(updatedItems);
+    const remove = async (id: string) => {
+       try {
+            const docRef = doc(db, collectionName, id);
+            await deleteDoc(docRef);
+            notifyDataChange();
+       } catch (error) {
+           console.error(`Error deleting document from Firestore collection “${collectionName}”:`, error);
+           throw error;
+       }
     }
 
-    return { load, save, add, update, remove };
+    const subscribe = (callback: (data: T[]) => void): Unsubscribe => {
+        const q = query(collectionRef);
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+            callback(data);
+        });
+        return unsubscribe;
+    }
+
+    return { load, add, update, remove, subscribe };
 }
 
-export const customersDAO = createLocalStorageDAO<Customer>('customers');
-export const invoicesDAO = createLocalStorageDAO<Invoice>('invoices');
+export const customersDAO = createFirestoreDAO<Customer>('customers');
+export const invoicesDAO = createFirestoreDAO<Invoice>('invoices');
 
 // Custom DAO for Products to handle special logic
 const createProductsDAO = () => {
-    const baseDAO = createLocalStorageDAO<Product>('products');
+    const baseDAO = createFirestoreDAO<Product>('products');
     
     return {
         ...baseDAO,
         // The add method is overridden for custom logic, but we still need a way
         // to add without special handling in some cases.
         // The purchase received logic will handle adding and saving.
-        add: (item: Omit<Product, 'id'>): Product => {
-            const products = baseDAO.load();
-            const newProduct = { ...item, id: new Date().toISOString() + Math.random() } as Product;
-            const updatedProducts = [...products, newProduct];
-            baseDAO.save(updatedProducts);
-            return newProduct;
+        add: async (item: Omit<Product, 'id'>): Promise<Product> => {
+            return baseDAO.add(item);
         },
     };
 }
 export const productsDAO = createProductsDAO();
 
 
-export const vendorsDAO = createLocalStorageDAO<Vendor>('vendors');
-export const purchasesDAO = createLocalStorageDAO<Purchase>('purchases');
+export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
+export const purchasesDAO = createFirestoreDAO<Purchase>('purchases');
 
 
 export const invoiceTemplates: string[] = [

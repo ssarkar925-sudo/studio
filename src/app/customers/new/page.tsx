@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -21,7 +22,7 @@ export default function NewCustomerPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
@@ -38,7 +39,7 @@ export default function NewCustomerPage() {
       return;
     }
 
-    customersDAO.add({
+    await customersDAO.add({
       name,
       email,
       phone,

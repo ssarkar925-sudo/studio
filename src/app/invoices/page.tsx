@@ -37,12 +37,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useLocalStorageData } from '@/hooks/use-local-storage-data';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 export default function InvoicesPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { data: invoices } = useLocalStorageData(invoicesDAO);
+  const { data: invoices } = useFirestoreData(invoicesDAO);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   
   const allInvoicesSelected = useMemo(() => selectedInvoices.length > 0 && selectedInvoices.length === invoices.length, [selectedInvoices, invoices]);
@@ -63,8 +63,9 @@ export default function InvoicesPage() {
     }
   };
 
-  const handleDeleteSelected = () => {
-    selectedInvoices.forEach(id => invoicesDAO.remove(id));
+  const handleDeleteSelected = async () => {
+    const promises = selectedInvoices.map(id => invoicesDAO.remove(id));
+    await Promise.all(promises);
      toast({
         title: 'Invoices Deleted',
         description: `${selectedInvoices.length} invoice(s) have been deleted.`,
@@ -72,11 +73,11 @@ export default function InvoicesPage() {
     setSelectedInvoices([]);
   };
 
-  const handleAction = (action: string, invoiceId: string, invoiceNumber: string) => {
+  const handleAction = async (action: string, invoiceId: string, invoiceNumber: string) => {
     if (action === 'View') {
         router.push(`/invoices/${invoiceId}`);
     } else if (action === 'Delete') {
-        invoicesDAO.remove(invoiceId);
+        await invoicesDAO.remove(invoiceId);
         toast({
           title: `Invoice Deleted`,
           description: `Invoice ${invoiceNumber} has been deleted.`,

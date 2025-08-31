@@ -16,7 +16,7 @@ import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
-import { useLocalStorageData } from '@/hooks/use-local-storage-data';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -35,9 +35,9 @@ export default function EditPurchasePage() {
   const { toast } = useToast();
   
   const [purchase, setPurchase] = useState<Purchase | null>(null);
-  const { data: vendors } = useLocalStorageData(vendorsDAO);
-  const { data: products } = useLocalStorageData(productsDAO);
-  const { data: purchases } = useLocalStorageData(purchasesDAO);
+  const { data: vendors, isLoading: vendorsLoading } = useFirestoreData(vendorsDAO);
+  const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
+  const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
   
   const [orderDate, setOrderDate] = useState<Date | undefined>();
   const [items, setItems] = useState<PurchaseItem[]>([]);
@@ -48,13 +48,14 @@ export default function EditPurchasePage() {
   
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const [isLoading, setIsLoading] = useState(true);
+  const isLoading = vendorsLoading || productsLoading || purchasesLoading;
 
   useEffect(() => {
     // We wait until the `purchases` data has been loaded from local storage.
-    if (purchases.length > 0) {
+    if (!purchasesLoading && purchases.length > 0) {
       const foundPurchase = purchases.find(p => p.id === purchaseId);
       if (foundPurchase) {
+        if (purchase) return; // Already loaded
         if (foundPurchase.status !== 'Pending') {
           toast({
               variant: 'destructive',
@@ -80,9 +81,8 @@ export default function EditPurchasePage() {
           });
           router.push('/inventory?tab=purchases');
       }
-      setIsLoading(false);
     }
-  }, [purchaseId, purchases, router, toast]);
+  }, [purchaseId, purchases, router, toast, purchasesLoading, purchase]);
 
 
   const handleAddItem = () => {
@@ -134,7 +134,7 @@ export default function EditPurchasePage() {
 
   const { subtotal, totalAmount, dueAmount } = calculateTotals();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     const vendor = vendors.find(v => v.id === vendorId);
@@ -148,7 +148,7 @@ export default function EditPurchasePage() {
         return;
     }
 
-    purchasesDAO.update(purchaseId, {
+    await purchasesDAO.update(purchaseId, {
         vendorId: vendor.id,
         vendorName: vendor.vendorName,
         orderDate: format(orderDate, 'PPP'),
@@ -169,7 +169,7 @@ export default function EditPurchasePage() {
 
   };
 
-  if (isLoading) {
+  if (isLoading || !purchase) {
     return (
         <AppLayout>
             <div className="mx-auto grid w-full max-w-2xl gap-2">
@@ -177,12 +177,6 @@ export default function EditPurchasePage() {
             </div>
         </AppLayout>
     );
-  }
-  
-  if (!purchase) {
-    // This case should ideally not be reached if the effect logic is correct,
-    // but it's a safe fallback. The redirect is handled in the effect.
-    return null; 
   }
 
   return (
@@ -341,5 +335,3 @@ export default function EditPurchasePage() {
     </AppLayout>
   );
 }
-
-    

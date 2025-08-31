@@ -36,13 +36,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useLocalStorageData } from '@/hooks/use-local-storage-data';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 
 export default function CustomersPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { data: customers, setData: setCustomers } = useLocalStorageData(customersDAO);
+  const { data: customers } = useFirestoreData(customersDAO);
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   
   const allCustomersSelected = useMemo(() => selectedCustomers.length > 0 && selectedCustomers.length === customers.length, [selectedCustomers, customers]);
@@ -63,9 +63,9 @@ export default function CustomersPage() {
     }
   };
 
-  const handleDeleteSelected = () => {
-    selectedCustomers.forEach(id => customersDAO.remove(id));
-    // The useLocalStorageData hook will handle the re-render
+  const handleDeleteSelected = async () => {
+    const promises = selectedCustomers.map(id => customersDAO.remove(id));
+    await Promise.all(promises);
     toast({
         title: 'Customers Deleted',
         description: `${selectedCustomers.length} customer(s) have been deleted.`,

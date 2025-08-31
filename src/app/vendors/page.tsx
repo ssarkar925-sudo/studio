@@ -36,12 +36,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useLocalStorageData } from '@/hooks/use-local-storage-data';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 export default function VendorsPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const { data: vendors } = useLocalStorageData(vendorsDAO);
+  const { data: vendors } = useFirestoreData(vendorsDAO);
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
   
   const allVendorsSelected = useMemo(() => selectedVendors.length > 0 && selectedVendors.length === vendors.length, [selectedVendors, vendors]);
@@ -62,8 +62,9 @@ export default function VendorsPage() {
     }
   };
 
-  const handleDeleteSelected = () => {
-    selectedVendors.forEach(id => vendorsDAO.remove(id));
+  const handleDeleteSelected = async () => {
+    const promises = selectedVendors.map(id => vendorsDAO.remove(id));
+    await Promise.all(promises);
     toast({
         title: 'Vendors Deleted',
         description: `${selectedVendors.length} vendor(s) have been deleted.`,
@@ -72,11 +73,11 @@ export default function VendorsPage() {
   };
 
 
-  const handleAction = (action: string, vendorId: string, vendorName: string) => {
+  const handleAction = async (action: string, vendorId: string, vendorName: string) => {
     if (action === 'View') {
       router.push(`/vendors/${vendorId}`);
     } else if (action === 'Delete') {
-        vendorsDAO.remove(vendorId);
+        await vendorsDAO.remove(vendorId);
         toast({
           title: `Vendor Deleted`,
           description: `Vendor ${vendorName} has been deleted.`,

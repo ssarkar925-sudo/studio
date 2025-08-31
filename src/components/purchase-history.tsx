@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -23,11 +24,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useLocalStorageData } from '@/hooks/use-local-storage-data';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useRouter } from 'next/navigation';
 
 export function PurchaseHistory() {
-  const { data: purchases, setData: setPurchases } = useLocalStorageData(purchasesDAO);
+  const { data: purchases, setData: setPurchases } = useFirestoreData(purchasesDAO);
+  const { data: allProducts, isLoading: productsLoading } = useFirestoreData(productsDAO);
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
@@ -54,11 +56,12 @@ export function PurchaseHistory() {
     }
   };
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = async () => {
+    const deletionPromises: Promise<void>[] = [];
     selectedPurchases.forEach(id => {
       const purchase = purchases.find(p => p.id === id);
       if (purchase?.status !== 'Received') {
-        purchasesDAO.remove(id);
+        deletionPromises.push(purchasesDAO.remove(id));
       } else {
          toast({
             variant: 'destructive',
@@ -67,24 +70,31 @@ export function PurchaseHistory() {
         });
       }
     });
-    // Data will refresh via hook
-    toast({
-        title: 'Purchases Deleted',
-        description: `Selected pending purchase(s) have been deleted.`,
-    });
+
+    await Promise.all(deletionPromises);
+
+    if (deletionPromises.length > 0) {
+      toast({
+          title: 'Purchases Deleted',
+          description: `Selected pending purchase(s) have been deleted.`,
+      });
+    }
     setSelectedPurchases([]);
   };
 
-  const handleMarkAsReceived = (purchase: Purchase) => {
-    const allProducts = productsDAO.load();
+  const handleMarkAsReceived = async (purchase: Purchase) => {
+    if(productsLoading) {
+        toast({ title: "Please wait", description: "Products are still loading."});
+        return;
+    }
     
-    purchase.items.forEach(item => {
+    for (const item of purchase.items) {
         const totalItemsInPurchase = purchase.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
         const perItemDeliveryCharge = (purchase.deliveryCharges || 0) / totalItemsInPurchase;
         const purchasePriceWithCharges = item.purchasePrice * (1 + (purchase.gst || 0) / 100) + perItemDeliveryCharge;
 
         if (item.isNew) {
-            productsDAO.add({
+            await productsDAO.add({
                 name: item.productName,
                 purchasePrice: purchasePriceWithCharges,
                 sellingPrice: purchasePriceWithCharges * 1.5, // 50% markup
@@ -96,7 +106,7 @@ export function PurchaseHistory() {
             const existingProduct = allProducts.find(p => p.id === item.productId);
             // This is a new batch of an existing product, create a new entry.
             if(existingProduct) {
-                productsDAO.add({
+                await productsDAO.add({
                     name: existingProduct.name,
                     purchasePrice: purchasePriceWithCharges,
                     sellingPrice: purchasePriceWithCharges * 1.5,
@@ -106,14 +116,14 @@ export function PurchaseHistory() {
                 });
             }
         }
-    });
+    }
 
 
     const updatedPurchase: Partial<Purchase> = {
         status: 'Received',
         receivedDate: format(new Date(), 'PPP'),
     };
-    purchasesDAO.update(purchase.id, updatedPurchase);
+    await purchasesDAO.update(purchase.id, updatedPurchase);
 
     toast({
         title: 'Purchase Received',

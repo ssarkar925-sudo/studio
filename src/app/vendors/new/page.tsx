@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -20,7 +21,7 @@ export default function NewVendorPage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const vendorName = formData.get('vendorName') as string;
@@ -38,7 +39,7 @@ export default function NewVendorPage() {
       return;
     }
 
-    vendorsDAO.add({
+    await vendorsDAO.add({
       vendorName,
       contactPerson,
       contactNumber,

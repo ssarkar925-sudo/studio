@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { extractPurchaseInfoFromBill } from '@/ai/flows/extract-purchase-info-flow';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -32,8 +33,8 @@ type PurchaseItem = {
 export default function NewPurchasePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const { data: vendors } = useFirestoreData(vendorsDAO);
+  const { data: products } = useFirestoreData(productsDAO);
   const [orderDate, setOrderDate] = useState<Date | undefined>(new Date());
   const [items, setItems] = useState<PurchaseItem[]>([]);
   const [vendorId, setVendorId] = useState<string>('');
@@ -43,16 +44,6 @@ export default function NewPurchasePage() {
   
   const [isExtracting, setIsExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const loadData = useCallback(() => {
-    setVendors(vendorsDAO.load());
-    setProducts(productsDAO.load());
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
 
   const handleAddItem = () => {
     setItems([
@@ -169,7 +160,7 @@ export default function NewPurchasePage() {
     };
   }
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     const vendor = vendors.find(v => v.id === vendorId);
@@ -183,7 +174,7 @@ export default function NewPurchasePage() {
         return;
     }
 
-    purchasesDAO.add({
+    await purchasesDAO.add({
         vendorId: vendor.id,
         vendorName: vendor.vendorName,
         orderDate: format(orderDate, 'PPP'),

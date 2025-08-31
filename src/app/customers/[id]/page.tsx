@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -10,27 +11,30 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { customersDAO, type Customer } from '@/lib/data';
-import { notFound, useRouter, useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 export default function CustomerDetailsPage() {
   const router = useRouter();
   const params = useParams();
+  const { data: customers, isLoading } = useFirestoreData(customersDAO);
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   useEffect(() => {
-    const customerId = Array.isArray(params.id) ? params.id[0] : params.id;
-    const customers = customersDAO.load();
-    const foundCustomer = customers.find((c) => c.id === customerId);
-    if (foundCustomer) {
-      setCustomer(foundCustomer);
-    } else {
-        // Handle not found case if necessary
+    if (!isLoading) {
+      const customerId = Array.isArray(params.id) ? params.id[0] : params.id;
+      const foundCustomer = customers.find((c) => c.id === customerId);
+      if (foundCustomer) {
+        setCustomer(foundCustomer);
+      } else {
+          // Handle not found case if necessary
+      }
     }
-  }, [params.id]);
+  }, [params.id, customers, isLoading]);
 
-  if (!customer) {
+  if (isLoading || !customer) {
     // You can show a loading spinner here
     return (
         <AppLayout>
