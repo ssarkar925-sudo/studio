@@ -63,12 +63,6 @@ export default function InventoryPage() {
               New Item
             </Link>
           </Button>
-           <Button asChild>
-            <Link href="/inventory/purchases/new">
-              <PlusCircle />
-              Add Purchase
-            </Link>
-          </Button>
         </div>
       </div>
       <Tabs defaultValue="stock">

@@ -6,9 +6,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { purchasesDAO, type Purchase } from '@/lib/data';
 import { Button } from './ui/button';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
+import Link from 'next/link';
 
 export function PurchaseHistory() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
@@ -27,9 +28,17 @@ export function PurchaseHistory() {
 
   return (
     <Card className="mt-4">
-      <CardHeader>
-        <CardTitle>Purchase History</CardTitle>
-        <CardDescription>View and manage all your purchase orders.</CardDescription>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+            <CardTitle>Purchase History</CardTitle>
+            <CardDescription>View and manage all your purchase orders.</CardDescription>
+        </div>
+        <Button asChild>
+            <Link href="/inventory/purchases/new">
+                <PlusCircle />
+                Add Purchase
+            </Link>
+        </Button>
       </CardHeader>
       <CardContent>
         <Table>
