@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -25,11 +24,13 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useLocalStorageData } from '@/hooks/use-local-storage-data';
+import { useRouter } from 'next/navigation';
 
 export function PurchaseHistory() {
   const { data: purchases, setData: setPurchases } = useLocalStorageData(purchasesDAO);
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const { toast } = useToast();
+  const router = useRouter();
 
   const sortedPurchases = useMemo(() => {
     return [...purchases].sort((a, b) => b.id.localeCompare(a.id));
@@ -76,41 +77,37 @@ export function PurchaseHistory() {
 
   const handleMarkAsReceived = (purchase: Purchase) => {
     const allProducts = productsDAO.load();
-    const productsToAdd: Product[] = [];
     
     purchase.items.forEach(item => {
         const totalItemsInPurchase = purchase.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
         const perItemDeliveryCharge = (purchase.deliveryCharges || 0) / totalItemsInPurchase;
         const purchasePriceWithCharges = item.purchasePrice * (1 + (purchase.gst || 0) / 100) + perItemDeliveryCharge;
 
-        const existingProduct = allProducts.find(p => p.name.toLowerCase() === item.productName.toLowerCase());
-
-        let newProduct: Omit<Product, 'id'>;
-
-        if (existingProduct) {
-             // This is a new batch of an existing product, create a new entry.
-             newProduct = {
-                name: existingProduct.name,
-                purchasePrice: purchasePriceWithCharges,
-                sellingPrice: purchasePriceWithCharges * 1.5,
-                stock: item.quantity,
-                sku: existingProduct.sku,
-                batchCode: `BCH-${Date.now()}-${Math.random().toString(36).substring(2, 4)}`.toUpperCase(),
-            };
-        } else { // Truly new item
-             newProduct = {
+        if (item.isNew) {
+            productsDAO.add({
                 name: item.productName,
                 purchasePrice: purchasePriceWithCharges,
                 sellingPrice: purchasePriceWithCharges * 1.5, // 50% markup
                 stock: item.quantity,
                 sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
                 batchCode: `BCH-${Date.now()}-${Math.random().toString(36).substring(2, 4)}`.toUpperCase(),
-            };
+            });
+        } else {
+            const existingProduct = allProducts.find(p => p.id === item.productId);
+            // This is a new batch of an existing product, create a new entry.
+            if(existingProduct) {
+                productsDAO.add({
+                    name: existingProduct.name,
+                    purchasePrice: purchasePriceWithCharges,
+                    sellingPrice: purchasePriceWithCharges * 1.5,
+                    stock: item.quantity,
+                    sku: existingProduct.sku,
+                    batchCode: `BCH-${Date.now()}-${Math.random().toString(36).substring(2, 4)}`.toUpperCase(),
+                });
+            }
         }
-        productsToAdd.push({ ...newProduct, id: `prod-${Date.now()}-${Math.random()}`});
     });
 
-    productsDAO.save([...allProducts, ...productsToAdd]);
 
     const updatedPurchase: Partial<Purchase> = {
         status: 'Received',
@@ -128,6 +125,8 @@ export function PurchaseHistory() {
   const handleAction = (action: string, purchase: Purchase) => {
     if (action === 'Mark as Received') {
         handleMarkAsReceived(purchase);
+    } else if (action === 'Edit') {
+        router.push(`/inventory/purchases/${purchase.id}/edit`);
     } else {
          toast({
             title: `${action} Purchase`,
@@ -221,6 +220,7 @@ export function PurchaseHistory() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem onSelect={() => handleAction('View', purchase)}>View</DropdownMenuItem>
+                        {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Edit', purchase)}>Edit</DropdownMenuItem>}
                         {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Mark as Received', purchase)}>Mark as Received</DropdownMenuItem>}
                       </DropdownMenuContent>
                     </DropdownMenu>
