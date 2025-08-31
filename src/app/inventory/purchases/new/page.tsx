@@ -39,41 +39,56 @@ export default function NewPurchasePage() {
   
   const loadData = useCallback(() => {
     setVendors(vendorsDAO.load());
-    const allProducts = productsDAO.load();
-
-    const newProductJson = sessionStorage.getItem('newProduct');
-    if (newProductJson) {
-      const newProduct = JSON.parse(newProductJson);
-      if (!allProducts.some(p => p.id === newProduct.id)) {
-        allProducts.push(newProduct);
-      }
-      setProducts(allProducts);
-      // Logic to add the new product to the items list
-      if (items.some(item => item.productId === '')) {
-         const newItems = [...items];
-         const emptyItemIndex = newItems.findIndex(item => item.productId === '');
-         if (emptyItemIndex !== -1) {
-            newItems[emptyItemIndex] = {
-                productId: newProduct.id,
-                productName: newProduct.name,
-                quantity: 1,
-                purchasePrice: newProduct.price,
-                total: newProduct.price,
-            };
-            setItems(newItems);
-         }
-      }
-      sessionStorage.removeItem('newProduct');
-    } else {
-        setProducts(allProducts);
-    }
-  }, [items]);
+    setProducts(productsDAO.load());
+  }, []);
 
   useEffect(() => {
     loadData();
     
     const handleFocus = () => {
-        loadData();
+        // This logic handles the return from the new item page
+        const newProductJson = sessionStorage.getItem('newProduct');
+        if (newProductJson) {
+            sessionStorage.removeItem('newProduct');
+            const newProduct = JSON.parse(newProductJson);
+            
+            // Add to products dropdown list
+            setProducts(prevProducts => {
+                if (!prevProducts.some(p => p.id === newProduct.id)) {
+                    return [...prevProducts, newProduct];
+                }
+                return prevProducts;
+            });
+            
+            // Add to the items list, replacing the first empty row
+            setItems(prevItems => {
+                const newItems = [...prevItems];
+                const emptyItemIndex = newItems.findIndex(item => item.productId === '');
+                const targetIndex = emptyItemIndex !== -1 ? emptyItemIndex : newItems.length -1;
+                
+                if (targetIndex !== -1) {
+                    newItems[targetIndex] = {
+                        productId: newProduct.id,
+                        productName: newProduct.name,
+                        quantity: 1,
+                        purchasePrice: newProduct.price,
+                        total: newProduct.price,
+                    };
+                    return newItems;
+                }
+                // Fallback if there are no items
+                return [{
+                    productId: newProduct.id,
+                    productName: newProduct.name,
+                    quantity: 1,
+                    purchasePrice: newProduct.price,
+                    total: newProduct.price,
+                }];
+            });
+        } else {
+           // Standard data refresh on focus
+           loadData();
+        }
     };
 
     window.addEventListener('focus', handleFocus);
@@ -155,6 +170,10 @@ export default function NewPurchasePage() {
 
   const handleCreateNewItemClick = (e: React.MouseEvent<HTMLButtonElement>, index: number) => {
     e.preventDefault();
+    // Add an empty item row if none exists for the new item to populate
+    if (!items.some(item => item.productId === '')) {
+      handleAddItem();
+    }
     router.push('/inventory/new?fromPurchase=true');
   };
 
