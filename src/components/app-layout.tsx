@@ -38,7 +38,7 @@ const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/invoices', label: 'Invoices', icon: FileText },
   { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/products', label: 'Products', icon: Package },
+  { href: '/products', label: 'Inventory', icon: Package },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {

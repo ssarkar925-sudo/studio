@@ -27,7 +27,7 @@ export default function ProductsPage() {
 
   const handleAction = (action: string, productName: string) => {
     toast({
-      title: `${action} Product`,
+      title: `${action} Inventory Item`,
       description: `You have selected to ${action.toLowerCase()} ${productName}. This feature is not yet implemented.`,
     });
   };
@@ -44,21 +44,21 @@ export default function ProductsPage() {
           <Button asChild>
             <Link href="/products/new">
               <PlusCircle className="mr-2 h-4 w-4" />
-              New Product
+              New Item
             </Link>
           </Button>
         </div>
       </div>
       <Card className="mt-4">
         <CardHeader>
-          <CardTitle>All Products</CardTitle>
-          <CardDescription>Manage your products, services, and their prices.</CardDescription>
+          <CardTitle>All Inventory</CardTitle>
+          <CardDescription>Manage your inventory, services, and their prices.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
+                <TableHead>Item</TableHead>
                 <TableHead className='text-right'>Price</TableHead>
                 <TableHead className='text-right'>Stock</TableHead>
                 <TableHead>
