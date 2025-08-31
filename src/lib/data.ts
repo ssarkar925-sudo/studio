@@ -116,7 +116,13 @@ function createLocalStorageDAO<T extends {id: string}>(key: string, initialData:
         }
     };
 
-    return { load, save, add, update };
+    const remove = (id: string) => {
+        const items = load();
+        const updatedItems = items.filter(i => i.id !== id);
+        save(updatedItems);
+    }
+
+    return { load, save, add, update, remove };
 }
 
 export const customersDAO = createLocalStorageDAO<Customer>('customers', DUMMY_CUSTOMERS);
