@@ -22,11 +22,17 @@ import { invoices, Invoice } from '@/lib/data';
 import { MoreHorizontal, PlusCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 export default function InvoicesPage() {
   const { toast } = useToast();
+  const router = useRouter();
 
-  const handleAction = (action: string, invoiceNumber: string) => {
+  const handleAction = (action: string, invoiceId: string, invoiceNumber: string) => {
+    if (action === 'View') {
+        router.push(`/invoices/${invoiceId}`);
+        return;
+    }
     toast({
       title: `${action} Invoice`,
       description: `You have selected to ${action.toLowerCase()} invoice ${invoiceNumber}. This feature is not yet implemented.`,
@@ -84,9 +90,9 @@ export default function InvoicesPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', invoice.invoiceNumber)}>View</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.invoiceNumber)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Delete', invoice.invoiceNumber)}>Delete</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('View', invoice.id, invoice.invoiceNumber)}>View</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id, invoice.invoiceNumber)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Delete', invoice.id, invoice.invoiceNumber)}>Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
