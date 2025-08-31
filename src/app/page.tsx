@@ -11,14 +11,16 @@ import {
   ChartTooltipContent,
 } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 const chartData = [
-  { month: 'January', total: 1860, paid: 800 },
-  { month: 'February', total: 3050, paid: 2000 },
-  { month: 'March', total: 2370, paid: 1200 },
-  { month: 'April', total: 730, paid: 500 },
-  { month: 'May', total: 2090, paid: 1300 },
-  { month: 'June', total: 2140, paid: 1100 },
+  { month: 'January', total: 0, paid: 0 },
+  { month: 'February', total: 0, paid: 0 },
+  { month: 'March', total: 0, paid: 0 },
+  { month: 'April', total: 0, paid: 0 },
+  { month: 'May', total: 0, paid: 0 },
+  { month: 'June', total: 0, paid: 0 },
 ];
 
 const chartConfig = {
@@ -54,7 +56,7 @@ export default function DashboardPage() {
               ₹{totalRevenue.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
-              +20.1% from last month
+              +0% from last month
             </p>
           </CardContent>
         </Card>
@@ -121,8 +123,11 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">
-          <CardHeader>
+          <CardHeader className="flex items-center justify-between">
             <CardTitle>Recent Invoices</CardTitle>
+            <Button asChild size="sm">
+                <Link href="/invoices/new">New Invoice</Link>
+            </Button>
           </CardHeader>
           <CardContent>
             <RecentInvoices />
@@ -134,6 +139,13 @@ export default function DashboardPage() {
 }
 
 function RecentInvoices() {
+    if (invoices.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        No recent invoices to display.
+      </div>
+    );
+  }
   return (
     <div className="space-y-4">
       {invoices.slice(0, 5).map((invoice) => (
