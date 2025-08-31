@@ -15,12 +15,17 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { productsDAO } from '@/lib/data';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function NewInventoryItemPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const fromPurchase = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('fromPurchase') : null;
+  const [fromPurchase, setFromPurchase] = useState(false);
+
+  useEffect(() => {
+    // This check needs to be in useEffect to ensure it only runs on the client
+    setFromPurchase(new URLSearchParams(window.location.search).has('fromPurchase'));
+  }, []);
 
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -30,7 +35,7 @@ export default function NewInventoryItemPage() {
     const price = parseFloat(formData.get('price') as string);
     const stock = parseInt(formData.get('stock') as string, 10);
 
-     if (!name || isNaN(price) || isNaN(stock)) {
+     if (!name || isNaN(price)) {
        toast({
         variant: 'destructive',
         title: 'Missing Required Fields',
@@ -39,10 +44,19 @@ export default function NewInventoryItemPage() {
       return;
     }
 
+    if (!fromPurchase && isNaN(stock)) {
+       toast({
+        variant: 'destructive',
+        title: 'Missing Required Fields',
+        description: 'Please provide a stock quantity.',
+      });
+      return;
+    }
+
     const newProduct = productsDAO.add({
       name,
       price,
-      stock: fromPurchase ? 0 : stock, // If from purchase, initial stock is 0
+      stock: fromPurchase ? 0 : stock, // Stock is managed by the purchase order
     });
     
     if (fromPurchase) {
@@ -80,12 +94,12 @@ export default function NewInventoryItemPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-3">
-                        <Label htmlFor="price">Price</Label>
-                        <Input id="price" name="price" type="number" placeholder="0.00" required />
+                        <Label htmlFor="price">Price (per item)</Label>
+                        <Input id="price" name="price" type="number" placeholder="0.00" required step="0.01" />
                     </div>
                     <div className="grid gap-3">
-                        <Label htmlFor="stock">Stock</Label>
-                        <Input id="stock" name="stock" type="number" placeholder="0" required disabled={!!fromPurchase} defaultValue={fromPurchase ? 0 : undefined} />
+                        <Label htmlFor="stock">Initial Stock</Label>
+                        <Input id="stock" name="stock" type="number" placeholder="0" required={!fromPurchase} disabled={fromPurchase} defaultValue={fromPurchase ? 0 : undefined} />
                     </div>
                 </div>
               </div>
