@@ -1,3 +1,4 @@
+
 export type Invoice = {
   id: string;
   invoiceNumber: string;
@@ -39,10 +40,31 @@ export type Vendor = {
   gstn?: string;
 };
 
+export type Purchase = {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  orderDate: string;
+  receivedDate?: string;
+  items: {
+    productId: string;
+    productName: string;
+    quantity: number;
+    purchasePrice: number;
+    total: number;
+  }[];
+  totalAmount: number;
+  paymentDone: number;
+  dueAmount: number;
+  status: 'Pending' | 'Received';
+  gst?: number;
+};
+
 const DUMMY_CUSTOMERS: Customer[] = [];
 const DUMMY_INVOICES: Invoice[] = [];
 const DUMMY_PRODUCTS: Product[] = [];
 const DUMMY_VENDORS: Vendor[] = [];
+const DUMMY_PURCHASES: Purchase[] = [];
 
 
 function createLocalStorageDAO<T extends {id: string}>(key: string, initialData: T[]) {
@@ -87,6 +109,7 @@ export const customersDAO = createLocalStorageDAO<Customer>('customers', DUMMY_C
 export const invoicesDAO = createLocalStorageDAO<Invoice>('invoices', DUMMY_INVOICES);
 export const productsDAO = createLocalStorageDAO<Product>('products', DUMMY_PRODUCTS);
 export const vendorsDAO = createLocalStorageDAO<Vendor>('vendors', DUMMY_VENDORS);
+export const purchasesDAO = createLocalStorageDAO<Purchase>('purchases', DUMMY_PURCHASES);
 
 
 export const invoiceTemplates: string[] = [

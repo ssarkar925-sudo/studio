@@ -24,6 +24,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import type { Product } from '@/lib/data';
 import { useRouter } from 'next/navigation';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PurchaseHistory } from '@/components/purchase-history';
 
 export default function InventoryPage() {
   const { toast } = useToast();
@@ -51,9 +53,9 @@ export default function InventoryPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Inventory</h1>
         <div className="flex gap-2">
-          <Button variant="outline">
+           <Button variant="outline">
             <Upload />
-            Import CSV
+            Import
           </Button>
           <Button asChild>
             <Link href="/inventory/new">
@@ -61,52 +63,69 @@ export default function InventoryPage() {
               New Item
             </Link>
           </Button>
+           <Button asChild>
+            <Link href="/inventory/purchases/new">
+              <PlusCircle />
+              Add Purchase
+            </Link>
+          </Button>
         </div>
       </div>
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>All Inventory</CardTitle>
-          <CardDescription>Manage your inventory, services, and their prices.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Item</TableHead>
-                <TableHead className='text-right'>Price</TableHead>
-                <TableHead className='text-right'>Stock</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {products.map((product) => (
-                <TableRow key={product.id}>
-                  <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell className='text-right'>₹{product.price.toFixed(2)}</TableCell>
-                  <TableCell className='text-right'>{product.stock}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', product.id, product.name)}>View</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Edit', product.id, product.name)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Delete', product.id, product.name)}>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="stock">
+        <TabsList>
+          <TabsTrigger value="stock">Stock</TabsTrigger>
+          <TabsTrigger value="purchases">Purchases</TabsTrigger>
+        </TabsList>
+        <TabsContent value="stock">
+            <Card className="mt-4">
+            <CardHeader>
+                <CardTitle>All Inventory</CardTitle>
+                <CardDescription>Manage your inventory, services, and their prices.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                <TableHeader>
+                    <TableRow>
+                    <TableHead>Item</TableHead>
+                    <TableHead className='text-right'>Price</TableHead>
+                    <TableHead className='text-right'>Stock</TableHead>
+                    <TableHead>
+                        <span className="sr-only">Actions</span>
+                    </TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {products.map((product) => (
+                    <TableRow key={product.id}>
+                        <TableCell className="font-medium">{product.name}</TableCell>
+                        <TableCell className='text-right'>₹{product.price.toFixed(2)}</TableCell>
+                        <TableCell className='text-right'>{product.stock}</TableCell>
+                        <TableCell>
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal />
+                                <span className="sr-only">Toggle menu</span>
+                            </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handleAction('View', product.id, product.name)}>View</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Edit', product.id, product.name)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Delete', product.id, product.name)}>Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        </TableCell>
+                    </TableRow>
+                    ))}
+                </TableBody>
+                </Table>
+            </CardContent>
+            </Card>
+        </TabsContent>
+        <TabsContent value="purchases">
+          <PurchaseHistory />
+        </TabsContent>
+      </Tabs>
     </AppLayout>
   );
 }
