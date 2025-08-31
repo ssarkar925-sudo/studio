@@ -39,6 +39,7 @@ export default function EditPurchasePage() {
   const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
   const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
   
+  // Form State
   const [orderDate, setOrderDate] = useState<Date | undefined>();
   const [items, setItems] = useState<PurchaseItem[]>([]);
   const [vendorId, setVendorId] = useState<string>('');
@@ -51,7 +52,7 @@ export default function EditPurchasePage() {
   const isLoading = vendorsLoading || productsLoading || purchasesLoading;
 
   useEffect(() => {
-    if (purchasesLoading) return;
+    if (isLoading) return;
 
     const foundPurchase = purchases.find(p => p.id === purchaseId);
     if (foundPurchase) {
@@ -81,7 +82,7 @@ export default function EditPurchasePage() {
         });
         router.push('/inventory?tab=purchases');
     }
-  }, [purchaseId, purchases, router, toast, purchasesLoading, purchase]);
+  }, [purchaseId, purchases, router, toast, isLoading, purchase]);
 
 
   const handleAddItem = () => {
@@ -123,13 +124,13 @@ export default function EditPurchasePage() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const calculateTotals = () => {
+  const calculateTotals = useCallback(() => {
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
     const totalGst = subtotal * (gst / 100);
     const totalAmount = subtotal + totalGst + deliveryCharges;
     const dueAmount = totalAmount - paymentDone;
     return { subtotal, totalAmount, dueAmount };
-  };
+  }, [items, gst, deliveryCharges, paymentDone]);
 
   const { subtotal, totalAmount, dueAmount } = calculateTotals();
 
@@ -274,7 +275,7 @@ export default function EditPurchasePage() {
                             </div>
                              <div className="grid gap-3 col-span-2">
                                {index === 0 && <Label>Purchase Price</Label>}
-                                <Input type="number" value={item.purchasePrice} onChange={(e) => handleItemChange(index, 'purchasePrice', parseFloat(e.target.value) || 0)} placeholder="0.00" />
+                                <Input type="number" step="0.01" value={item.purchasePrice} onChange={(e) => handleItemChange(index, 'purchasePrice', parseFloat(e.target.value) || 0)} placeholder="0.00" />
                             </div>
                              <div className="grid gap-3 col-span-2">
                                {index === 0 && <Label>Total</Label>}

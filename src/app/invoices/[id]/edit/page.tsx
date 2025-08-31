@@ -22,12 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { customersDAO, invoicesDAO, productsDAO, type Invoice } from '@/lib/data';
+import { customersDAO, invoicesDAO, productsDAO, type Invoice, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { format, parse } from 'date-fns';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 
@@ -52,6 +52,9 @@ export default function EditInvoicePage() {
   const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+
+  // Form state
+  const [invoiceNumber, setInvoiceNumber] = useState('');
   const [issueDate, setIssueDate] = useState<Date | undefined>();
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<Invoice['status']>();
@@ -62,14 +65,17 @@ export default function EditInvoicePage() {
     if (!isLoading && invoices.length > 0) {
         const foundInvoice = invoices.find((i) => i.id === invoiceId);
         if (foundInvoice) {
-            setInvoice(foundInvoice);
-            setIssueDate(parse(foundInvoice.issueDate, 'PPP', new Date()));
-            if(foundInvoice.dueDate && foundInvoice.dueDate !== 'N/A') {
-                setDueDate(parse(foundInvoice.dueDate, 'PPP', new Date()));
+            if (!invoice) { // Only set state on initial load
+                setInvoice(foundInvoice);
+                setInvoiceNumber(foundInvoice.invoiceNumber);
+                setIssueDate(parse(foundInvoice.issueDate, 'PPP', new Date()));
+                if(foundInvoice.dueDate && foundInvoice.dueDate !== 'N/A') {
+                    setDueDate(parse(foundInvoice.dueDate, 'PPP', new Date()));
+                }
+                setStatus(foundInvoice.status);
+                setCustomerId(foundInvoice.customer.id);
+                setItems(foundInvoice.items.map(item => ({...item, id: `item-${Math.random()}`})));
             }
-            setStatus(foundInvoice.status);
-            setCustomerId(foundInvoice.customer.id);
-            setItems(foundInvoice.items.map(item => ({...item, id: `item-${Math.random()}`})));
         } else {
              toast({
                 variant: 'destructive',
@@ -78,7 +84,7 @@ export default function EditInvoicePage() {
             router.push('/invoices');
         }
     }
-  }, [invoiceId, invoices, isLoading, router, toast]);
+  }, [invoiceId, invoices, isLoading, router, toast, invoice]);
 
   const handleAddItem = () => {
     setItems([
@@ -119,9 +125,6 @@ export default function EditInvoicePage() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!invoice) return;
-
-    const formData = new FormData(e.currentTarget);
-    const invoiceNumber = formData.get('invoiceNumber') as string;
     
     if (!invoiceNumber || !customerId || !issueDate || !status) {
       toast({
@@ -204,7 +207,7 @@ export default function EditInvoicePage() {
                     <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-3">
                         <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                        <Input id="invoiceNumber" name="invoiceNumber" type="text" defaultValue={invoice.invoiceNumber} required />
+                        <Input id="invoiceNumber" name="invoiceNumber" type="text" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} required />
                     </div>
                     <div className="grid gap-3">
                         <Label htmlFor="customer">Customer</Label>
@@ -306,7 +309,7 @@ export default function EditInvoicePage() {
                                             <SelectValue placeholder="Select item" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {products.map((p) => {
+                                            {products.map((p: Product) => {
                                                 const originalItem = invoice.items.find(i => i.productId === p.id);
                                                 const originalQuantity = originalItem ? originalItem.quantity : 0;
                                                 const availableStock = p.stock + originalQuantity;
@@ -321,7 +324,7 @@ export default function EditInvoicePage() {
                                 </div>
                                 <div className="grid gap-3 col-span-2">
                                 {index === 0 && <Label>Selling Price</Label>}
-                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" />
+                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01"/>
                                 </div>
                                 <div className="grid gap-3 col-span-2">
                                 {index === 0 && <Label>Total</Label>}

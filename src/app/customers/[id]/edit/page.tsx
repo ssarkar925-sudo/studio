@@ -29,11 +29,24 @@ export default function EditCustomerPage() {
   const { data: customers, isLoading } = useFirestoreData(customersDAO);
   const [customer, setCustomer] = useState<Customer | null>(null);
 
+  // State for form fields
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
+
+
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && customers.length > 0) {
         const foundCustomer = customers.find((c) => c.id === customerId);
         if (foundCustomer) {
-            setCustomer(foundCustomer);
+            if (!customer) { // Only set state on initial load
+                setCustomer(foundCustomer);
+                setName(foundCustomer.name);
+                setEmail(foundCustomer.email);
+                setPhone(foundCustomer.phone || '');
+                setAddress(foundCustomer.address || '');
+            }
         } else {
             toast({
                 variant: 'destructive',
@@ -42,17 +55,11 @@ export default function EditCustomerPage() {
             router.push('/customers');
         }
     }
-  }, [customerId, customers, isLoading, router, toast]);
+  }, [customerId, customers, isLoading, router, toast, customer]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!customer) return;
-
-    const formData = new FormData(e.currentTarget);
-    const name = formData.get('name') as string;
-    const email = formData.get('email') as string;
-    const phone = formData.get('phone') as string;
-    const address = formData.get('address') as string;
 
     if (!name) {
        toast({
@@ -105,19 +112,19 @@ export default function EditCustomerPage() {
               <div className="grid gap-6">
                 <div className="grid gap-3">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" name="name" type="text" className="w-full" defaultValue={customer.name} required />
+                  <Input id="name" name="name" type="text" className="w-full" value={name} onChange={(e) => setName(e.target.value)} required />
                 </div>
                  <div className="grid gap-3">
                   <Label htmlFor="phone">Phone</Label>
-                  <Input id="phone" name="phone" type="tel" className="w-full" defaultValue={customer.phone} />
+                  <Input id="phone" name="phone" type="tel" className="w-full" value={phone} onChange={(e) => setPhone(e.target.value)} />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" className="w-full" defaultValue={customer.email} />
+                  <Input id="email" name="email" type="email" className="w-full" value={email} onChange={(e) => setEmail(e.target.value)} />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="address">Address</Label>
-                  <Textarea id="address" name="address" defaultValue={customer.address} />
+                  <Textarea id="address" name="address" value={address} onChange={(e) => setAddress(e.target.value)} />
                 </div>
               </div>
             </CardContent>
