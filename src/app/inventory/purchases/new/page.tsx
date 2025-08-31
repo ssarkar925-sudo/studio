@@ -13,8 +13,8 @@ import { vendorsDAO, productsDAO, purchasesDAO, type Vendor, type Product } from
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CalendarIcon, PlusCircle, Trash2, Upload } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 
 type PurchaseItem = {
@@ -37,7 +37,7 @@ export default function NewPurchasePage() {
   const [gst, setGst] = useState(0);
   const selectTriggersRef = useRef<(HTMLButtonElement | null)[]>([]);
   
-  useEffect(() => {
+  const loadData = useCallback(() => {
     setVendors(vendorsDAO.load());
     const allProducts = productsDAO.load();
 
@@ -47,10 +47,41 @@ export default function NewPurchasePage() {
       if (!allProducts.some(p => p.id === newProduct.id)) {
         allProducts.push(newProduct);
       }
+      setProducts(allProducts);
+      // Logic to add the new product to the items list
+      if (items.some(item => item.productId === '')) {
+         const newItems = [...items];
+         const emptyItemIndex = newItems.findIndex(item => item.productId === '');
+         if (emptyItemIndex !== -1) {
+            newItems[emptyItemIndex] = {
+                productId: newProduct.id,
+                productName: newProduct.name,
+                quantity: 1,
+                purchasePrice: newProduct.price,
+                total: newProduct.price,
+            };
+            setItems(newItems);
+         }
+      }
       sessionStorage.removeItem('newProduct');
+    } else {
+        setProducts(allProducts);
     }
-    setProducts(allProducts);
-  }, []);
+  }, [items]);
+
+  useEffect(() => {
+    loadData();
+    
+    const handleFocus = () => {
+        loadData();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => {
+        window.removeEventListener('focus', handleFocus);
+    };
+
+  }, [loadData]);
 
   const handleAddItem = () => {
     setItems([
@@ -122,7 +153,7 @@ export default function NewPurchasePage() {
 
   };
 
-  const handleCreateNewItemClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleCreateNewItemClick = (e: React.MouseEvent<HTMLButtonElement>, index: number) => {
     e.preventDefault();
     router.push('/inventory/new?fromPurchase=true');
   };
@@ -206,7 +237,7 @@ export default function NewPurchasePage() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                         <Button variant="ghost" className="w-full mt-2 justify-start p-2 h-auto" onClick={handleCreateNewItemClick}><PlusCircle className="mr-2"/>Create New Item</Button>
+                                         <Button variant="ghost" className="w-full mt-2 justify-start p-2 h-auto" onClick={(e) => handleCreateNewItemClick(e, index)}><PlusCircle className="mr-2"/>Create New Item</Button>
                                     </SelectContent>
                                 </Select>
                             </div>
