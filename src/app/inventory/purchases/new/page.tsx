@@ -8,15 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { vendorsDAO, productsDAO, purchasesDAO, type Vendor, type Product } from '@/lib/data';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
-import { CalendarIcon, PlusCircle, Trash2, Upload } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { format, parse } from 'date-fns';
+import { CalendarIcon, PlusCircle, Trash2, Upload, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
+import { extractPurchaseInfoFromBill } from '@/ai/flows/extract-purchase-info-flow';
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -41,6 +41,9 @@ export default function NewPurchasePage() {
   const [gst, setGst] = useState(0);
   const [deliveryCharges, setDeliveryCharges] = useState(0);
   
+  const [isExtracting, setIsExtracting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const loadData = useCallback(() => {
     setVendors(vendorsDAO.load());
     setProducts(productsDAO.load());
@@ -100,6 +103,72 @@ export default function NewPurchasePage() {
 
   const { subtotal, totalAmount, dueAmount } = calculateTotals();
 
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsExtracting(true);
+    toast({ title: 'Extracting Details...', description: 'Please wait while the AI analyzes the bill.' });
+
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = async () => {
+      const photoDataUri = reader.result as string;
+      try {
+        const result = await extractPurchaseInfoFromBill({ photoDataUri });
+
+        // Auto-fill form
+        if (result.vendorName) {
+            const existingVendor = vendors.find(v => v.vendorName.toLowerCase() === result.vendorName!.toLowerCase());
+            if (existingVendor) {
+                setVendorId(existingVendor.id);
+            } else {
+                // If vendor does not exist, you could potentially add it or prompt the user.
+                // For now, we leave it blank but show a toast.
+                toast({ title: 'New Vendor Detected', description: `"${result.vendorName}" is not in your vendor list.`});
+            }
+        }
+        if (result.orderDate) {
+            setOrderDate(parse(result.orderDate, 'MMMM d, yyyy', new Date()));
+        }
+        if (result.items) {
+            const newItems: PurchaseItem[] = result.items.map(item => {
+                 const existingProduct = products.find(p => p.name.toLowerCase() === item.productName.toLowerCase());
+                 return {
+                    id: `item-${Date.now()}-${Math.random()}`,
+                    productId: existingProduct ? existingProduct.id : `new_${Date.now()}-${Math.random()}`,
+                    productName: item.productName,
+                    quantity: item.quantity,
+                    purchasePrice: item.purchasePrice,
+                    total: item.total,
+                    isNew: !existingProduct,
+                 }
+            });
+            setItems(newItems);
+        }
+
+        setGst(result.gst || 0);
+        setDeliveryCharges(result.deliveryCharges || 0);
+        setPaymentDone(result.paymentDone || 0);
+        
+        toast({ title: 'Success!', description: 'Purchase details have been auto-filled.'});
+
+      } catch (error) {
+        console.error("AI extraction failed", error);
+        toast({ variant: 'destructive', title: 'Extraction Failed', description: 'Could not extract details from the image.' });
+      } finally {
+        setIsExtracting(false);
+         // Reset file input
+        if(fileInputRef.current) fileInputRef.current.value = "";
+      }
+    };
+    reader.onerror = (error) => {
+        console.error("File reading failed", error);
+        toast({ variant: 'destructive', title: 'File Error', description: 'Could not read the selected file.' });
+        setIsExtracting(false);
+    };
+  }
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -152,7 +221,7 @@ export default function NewPurchasePage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
-                            <Select name="vendor" onValueChange={setVendorId} required>
+                            <Select name="vendor" onValueChange={setVendorId} required value={vendorId}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a vendor" />
                                 </SelectTrigger>
@@ -191,8 +260,12 @@ export default function NewPurchasePage() {
                     </div>
                 </CardContent>
                  <CardFooter>
-                    <div className='flex gap-2'>
-                        <Button type="button" variant="outline"><Upload className="mr-2 h-4 w-4" /> Import with AI</Button>
+                    <div className='flex gap-2 items-center'>
+                         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isExtracting}>
+                            {isExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                            Import with AI
+                        </Button>
                         <p className='text-sm text-muted-foreground self-center'>Upload a bill to auto-fill details.</p>
                     </div>
                 </CardFooter>
