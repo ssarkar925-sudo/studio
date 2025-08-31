@@ -16,6 +16,7 @@ import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
+import { useLocalStorageData } from '@/hooks/use-local-storage-data';
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -34,55 +35,49 @@ export default function EditPurchasePage() {
   const { toast } = useToast();
   
   const [purchase, setPurchase] = useState<Purchase | null>(null);
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const { data: vendors } = useLocalStorageData(vendorsDAO);
+  const { data: products } = useLocalStorageData(productsDAO);
+  const { data: purchases } = useLocalStorageData(purchasesDAO);
+  
   const [orderDate, setOrderDate] = useState<Date | undefined>();
   const [items, setItems] = useState<PurchaseItem[]>([]);
   const [vendorId, setVendorId] = useState<string>('');
   const [paymentDone, setPaymentDone] = useState(0);
   const [gst, setGst] = useState(0);
   const [deliveryCharges, setDeliveryCharges] = useState(0);
-  const [isDataReady, setIsDataReady] = useState(false);
   
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
 
-  const loadData = useCallback(() => {
-    setVendors(vendorsDAO.load());
-    setProducts(productsDAO.load());
-    const foundPurchase = purchasesDAO.load().find(p => p.id === purchaseId);
-    if (foundPurchase) {
-      if (foundPurchase.status !== 'Pending') {
-        toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'This purchase order has already been received and cannot be edited.',
-        });
-        router.push('/inventory?tab=purchases');
-        return;
-      }
-      setPurchase(foundPurchase);
-      setVendorId(foundPurchase.vendorId);
-      setOrderDate(parse(foundPurchase.orderDate, 'PPP', new Date()));
-      setItems(foundPurchase.items.map(item => ({...item, id: `item-${Math.random()}`})));
-      setPaymentDone(foundPurchase.paymentDone || 0);
-      setGst(foundPurchase.gst || 0);
-      setDeliveryCharges(foundPurchase.deliveryCharges || 0);
-    } else {
-       toast({
-            variant: 'destructive',
-            title: 'Not Found',
-            description: 'Purchase order not found.',
-        });
-        router.push('/inventory?tab=purchases');
-    }
-  }, [purchaseId, router, toast]);
-
   useEffect(() => {
-    if (purchaseId && !isDataReady) {
-        loadData();
-        setIsDataReady(true);
+    if (purchases.length > 0 && purchaseId) {
+      const foundPurchase = purchases.find(p => p.id === purchaseId);
+      if (foundPurchase) {
+        if (foundPurchase.status !== 'Pending') {
+          toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: 'This purchase order has already been received and cannot be edited.',
+          });
+          router.push('/inventory?tab=purchases');
+          return;
+        }
+        setPurchase(foundPurchase);
+        setVendorId(foundPurchase.vendorId);
+        setOrderDate(parse(foundPurchase.orderDate, 'PPP', new Date()));
+        setItems(foundPurchase.items.map(item => ({...item, id: `item-${Math.random()}`})));
+        setPaymentDone(foundPurchase.paymentDone || 0);
+        setGst(foundPurchase.gst || 0);
+        setDeliveryCharges(foundPurchase.deliveryCharges || 0);
+      } else {
+         toast({
+              variant: 'destructive',
+              title: 'Not Found',
+              description: 'Purchase order not found.',
+          });
+          router.push('/inventory?tab=purchases');
+      }
     }
-  }, [purchaseId, loadData, isDataReady]);
+  }, [purchaseId, purchases, router, toast]);
 
 
   const handleAddItem = () => {
