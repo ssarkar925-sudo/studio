@@ -77,7 +77,7 @@ export default function EditPurchasePage() {
           router.push('/inventory?tab=purchases');
       }
     }
-  }, [purchaseId, purchases, router, toast, purchase]);
+  }, [purchaseId, purchases, router, toast]);
 
 
   const handleAddItem = () => {
@@ -330,5 +330,3 @@ export default function EditPurchasePage() {
     </AppLayout>
   );
 }
-
-    
