@@ -29,10 +29,6 @@ export default function InvoicesPage() {
   const router = useRouter();
 
   const handleAction = (action: string, invoiceId: string, invoiceNumber: string) => {
-    if (action === 'View') {
-        router.push(`/invoices/${invoiceId}`);
-        return;
-    }
     toast({
       title: `${action} Invoice`,
       description: `You have selected to ${action.toLowerCase()} invoice ${invoiceNumber}. This feature is not yet implemented.`,
