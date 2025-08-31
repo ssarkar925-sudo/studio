@@ -137,6 +137,8 @@ export function PurchaseHistory() {
         handleMarkAsReceived(purchase);
     } else if (action === 'Edit') {
         router.push(`/inventory/purchases/${purchase.id}/edit`);
+    } else if (action === 'View') {
+        router.push(`/inventory/purchases/${purchase.id}`);
     } else {
          toast({
             title: `${action} Purchase`,
