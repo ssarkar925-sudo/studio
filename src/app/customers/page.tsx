@@ -25,12 +25,12 @@ export default function CustomersPage() {
     <AppLayout>
       <div className="flex items-center justify-between">
         <div></div>
-        <Link href="/customers/new" passHref>
-          <Button>
+        <Button asChild>
+          <Link href="/customers/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Customer
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
       <Card className="mt-4">
         <CardHeader>

@@ -70,20 +70,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.label}>
-                <Link href={item.href} legacyBehavior passHref>
-                  <SidebarMenuButton
-                    isActive={
-                      pathname.startsWith(item.href) &&
-                      (item.href === '/' ? pathname === '/' : true)
-                    }
-                    tooltip={item.label}
-                  >
+                <SidebarMenuButton
+                  asChild
+                  isActive={
+                    pathname.startsWith(item.href) &&
+                    (item.href === '/' ? pathname === '/' : true)
+                  }
+                  tooltip={item.label}
+                >
+                  <Link href={item.href}>
                     <item.icon />
                     <span className="group-data-[collapsible=icon]:hidden">
                       {item.label}
                     </span>
-                  </SidebarMenuButton>
-                </Link>
+                  </Link>
+                </SidebarMenuButton>
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -91,17 +92,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         <SidebarContent className="!flex-1 justify-end">
           <SidebarMenu>
             <SidebarMenuItem>
-              <Link href="/settings" legacyBehavior passHref>
-                <SidebarMenuButton
-                  isActive={pathname.startsWith('/settings')}
-                  tooltip={'Settings'}
-                >
+              <SidebarMenuButton
+                asChild
+                isActive={pathname.startsWith('/settings')}
+                tooltip={'Settings'}
+              >
+                <Link href="/settings">
                   <Settings />
                   <span className="group-data-[collapsible=icon]:hidden">
                     Settings
                   </span>
-                </SidebarMenuButton>
-              </Link>
+                </Link>
+              </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
         </SidebarContent>

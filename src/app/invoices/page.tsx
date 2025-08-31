@@ -25,12 +25,12 @@ export default function InvoicesPage() {
     <AppLayout>
       <div className="flex items-center justify-between">
         <div></div>
-        <Link href="/invoices/new" passHref>
-          <Button>
+        <Button asChild>
+          <Link href="/invoices/new">
             <PlusCircle className="mr-2 h-4 w-4" />
             New Invoice
-          </Button>
-        </Link>
+          </Link>
+        </Button>
       </div>
       <Card className="mt-4">
         <CardHeader>

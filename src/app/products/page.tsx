@@ -29,12 +29,12 @@ export default function ProductsPage() {
             <Upload className="mr-2 h-4 w-4" />
             Import CSV
           </Button>
-          <Link href="/products/new" passHref>
-            <Button>
+          <Button asChild>
+            <Link href="/products/new">
               <PlusCircle className="mr-2 h-4 w-4" />
               New Product
-            </Button>
-          </Link>
+            </Link>
+          </Button>
         </div>
       </div>
       <Card className="mt-4">
