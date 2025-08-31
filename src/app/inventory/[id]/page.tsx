@@ -10,21 +10,19 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { productsDAO, type Product } from '@/lib/data';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
-export default function ProductDetailsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function ProductDetailsPage() {
   const router = useRouter();
+  const params = useParams();
   const [product, setProduct] = useState<Product | null>(null);
 
   useEffect(() => {
+    const productId = Array.isArray(params.id) ? params.id[0] : params.id;
     const products = productsDAO.load();
-    const foundProduct = products.find((p) => p.id === params.id);
+    const foundProduct = products.find((p) => p.id === productId);
     if (foundProduct) {
       setProduct(foundProduct);
     }

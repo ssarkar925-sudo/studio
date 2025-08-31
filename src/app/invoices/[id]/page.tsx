@@ -10,7 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { invoicesDAO, type Invoice } from '@/lib/data';
-import { useRouter } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -25,17 +25,15 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
   return <Badge variant={variant} className="capitalize">{status.toLowerCase()}</Badge>;
 }
 
-export default function InvoiceDetailsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function InvoiceDetailsPage() {
   const router = useRouter();
+  const params = useParams();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
+    const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
     const invoices = invoicesDAO.load();
-    const foundInvoice = invoices.find((i) => i.id === params.id);
+    const foundInvoice = invoices.find((i) => i.id === invoiceId);
     if (foundInvoice) {
       setInvoice(foundInvoice);
     }

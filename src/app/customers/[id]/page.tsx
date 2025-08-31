@@ -10,21 +10,19 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { customersDAO, type Customer } from '@/lib/data';
-import { notFound, useRouter } from 'next/navigation';
+import { notFound, useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 
-export default function CustomerDetailsPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default function CustomerDetailsPage() {
   const router = useRouter();
+  const params = useParams();
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   useEffect(() => {
+    const customerId = Array.isArray(params.id) ? params.id[0] : params.id;
     const customers = customersDAO.load();
-    const foundCustomer = customers.find((c) => c.id === params.id);
+    const foundCustomer = customers.find((c) => c.id === customerId);
     if (foundCustomer) {
       setCustomer(foundCustomer);
     } else {
