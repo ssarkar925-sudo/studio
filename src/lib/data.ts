@@ -75,7 +75,7 @@ const DUMMY_VENDORS: Vendor[] = [];
 const DUMMY_PURCHASES: Purchase[] = [];
 
 
-function createLocalStorageDAO<T extends {id: string}>(key: string, initialData: T[]) {
+function createLocalStorageDAO<T extends {id: string}>(key: string) {
     const isClient = typeof window !== 'undefined';
 
     const load = (): T[] => {
@@ -134,12 +134,12 @@ function createLocalStorageDAO<T extends {id: string}>(key: string, initialData:
     return { load, save, add, update, remove };
 }
 
-export const customersDAO = createLocalStorageDAO<Customer>('customers', DUMMY_CUSTOMERS);
-export const invoicesDAO = createLocalStorageDAO<Invoice>('invoices', DUMMY_INVOICES);
+export const customersDAO = createLocalStorageDAO<Customer>('customers');
+export const invoicesDAO = createLocalStorageDAO<Invoice>('invoices');
 
 // Custom DAO for Products to handle special logic
 const createProductsDAO = () => {
-    const baseDAO = createLocalStorageDAO<Product>('products', DUMMY_PRODUCTS);
+    const baseDAO = createLocalStorageDAO<Product>('products');
     
     return {
         ...baseDAO,
@@ -158,8 +158,8 @@ const createProductsDAO = () => {
 export const productsDAO = createProductsDAO();
 
 
-export const vendorsDAO = createLocalStorageDAO<Vendor>('vendors', DUMMY_VENDORS);
-export const purchasesDAO = createLocalStorageDAO<Purchase>('purchases', DUMMY_PURCHASES);
+export const vendorsDAO = createLocalStorageDAO<Vendor>('vendors');
+export const purchasesDAO = createLocalStorageDAO<Purchase>('purchases');
 
 
 export const invoiceTemplates: string[] = [
