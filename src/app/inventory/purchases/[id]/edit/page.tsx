@@ -51,36 +51,35 @@ export default function EditPurchasePage() {
   const isLoading = vendorsLoading || productsLoading || purchasesLoading;
 
   useEffect(() => {
-    // We wait until the `purchases` data has been loaded from local storage.
-    if (!purchasesLoading && purchases.length > 0) {
-      const foundPurchase = purchases.find(p => p.id === purchaseId);
-      if (foundPurchase) {
-        if (purchase) return; // Already loaded
-        if (foundPurchase.status !== 'Pending') {
-          toast({
-              variant: 'destructive',
-              title: 'Error',
-              description: 'This purchase order has already been received and cannot be edited.',
-          });
-          router.push('/inventory?tab=purchases');
-          return;
-        }
-        setPurchase(foundPurchase);
-        setVendorId(foundPurchase.vendorId);
-        setOrderDate(parse(foundPurchase.orderDate, 'PPP', new Date()));
-        // Add a temporary unique `id` to each item for the key prop in React
-        setItems(foundPurchase.items.map(item => ({...item, id: `item-${Math.random()}`})));
-        setPaymentDone(foundPurchase.paymentDone || 0);
-        setGst(foundPurchase.gst || 0);
-        setDeliveryCharges(foundPurchase.deliveryCharges || 0);
-      } else {
-         toast({
-              variant: 'destructive',
-              title: 'Not Found',
-              description: 'Purchase order not found.',
-          });
-          router.push('/inventory?tab=purchases');
+    if (purchasesLoading) return;
+
+    const foundPurchase = purchases.find(p => p.id === purchaseId);
+    if (foundPurchase) {
+      if (purchase) return; // Already loaded
+      if (foundPurchase.status !== 'Pending') {
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'This purchase order has already been received and cannot be edited.',
+        });
+        router.push('/inventory?tab=purchases');
+        return;
       }
+      setPurchase(foundPurchase);
+      setVendorId(foundPurchase.vendorId);
+      setOrderDate(parse(foundPurchase.orderDate, 'PPP', new Date()));
+      // Add a temporary unique `id` to each item for the key prop in React
+      setItems(foundPurchase.items.map(item => ({...item, id: `item-${Math.random()}`})));
+      setPaymentDone(foundPurchase.paymentDone || 0);
+      setGst(foundPurchase.gst || 0);
+      setDeliveryCharges(foundPurchase.deliveryCharges || 0);
+    } else {
+       toast({
+            variant: 'destructive',
+            title: 'Not Found',
+            description: 'Purchase order not found.',
+        });
+        router.push('/inventory?tab=purchases');
     }
   }, [purchaseId, purchases, router, toast, purchasesLoading, purchase]);
 
