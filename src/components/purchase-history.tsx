@@ -72,39 +72,41 @@ export function PurchaseHistory() {
 
   const handleMarkAsReceived = (purchase: Purchase) => {
     const allProducts = productsDAO.load();
+    const productsToAdd: Product[] = [];
     
     purchase.items.forEach(item => {
-        const totalItemsInPurchase = purchase.items.reduce((sum, i) => sum + i.quantity, 0);
+        const totalItemsInPurchase = purchase.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
         const perItemDeliveryCharge = (purchase.deliveryCharges || 0) / totalItemsInPurchase;
         const purchasePriceWithCharges = item.purchasePrice * (1 + (purchase.gst || 0) / 100) + perItemDeliveryCharge;
 
-        const existingProductIndex = allProducts.findIndex(p => p.name.toLowerCase() === item.productName.toLowerCase());
+        const existingProduct = allProducts.find(p => p.name.toLowerCase() === item.productName.toLowerCase());
 
-        if (existingProductIndex !== -1) {
-            // This is a new batch of an existing product, create a new entry.
-             const newProduct: Omit<Product, 'id'> = {
-                name: allProducts[existingProductIndex].name,
+        let newProduct: Omit<Product, 'id'>;
+
+        if (existingProduct) {
+             // This is a new batch of an existing product, create a new entry.
+             newProduct = {
+                name: existingProduct.name,
                 purchasePrice: purchasePriceWithCharges,
                 sellingPrice: purchasePriceWithCharges * 1.5,
                 stock: item.quantity,
-                sku: allProducts[existingProductIndex].sku,
-                batchCode: `BCH-${Date.now()}`.toUpperCase(),
+                sku: existingProduct.sku,
+                batchCode: `BCH-${Date.now()}-${Math.random().toString(36).substring(2, 4)}`.toUpperCase(),
             };
-            allProducts.push({ ...newProduct, id: `prod-${Date.now()}-${Math.random()}`});
         } else { // Truly new item
-            const newProduct: Omit<Product, 'id'> = {
+             newProduct = {
                 name: item.productName,
                 purchasePrice: purchasePriceWithCharges,
                 sellingPrice: purchasePriceWithCharges * 1.5, // 50% markup
                 stock: item.quantity,
                 sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
-                batchCode: `BCH-${Date.now()}`.toUpperCase(),
+                batchCode: `BCH-${Date.now()}-${Math.random().toString(36).substring(2, 4)}`.toUpperCase(),
             };
-            allProducts.push({ ...newProduct, id: `prod-${Date.now()}-${Math.random()}`});
         }
+        productsToAdd.push({ ...newProduct, id: `prod-${Date.now()}-${Math.random()}`});
     });
 
-    productsDAO.save(allProducts);
+    productsDAO.save([...allProducts, ...productsToAdd]);
 
     const updatedPurchase: Partial<Purchase> = {
         status: 'Received',

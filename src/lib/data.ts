@@ -140,15 +140,6 @@ export const invoicesDAO = createLocalStorageDAO<Invoice>('invoices', DUMMY_INVO
 // Custom DAO for Products to handle special logic
 const createProductsDAO = () => {
     const baseDAO = createLocalStorageDAO<Product>('products', DUMMY_PRODUCTS);
-
-    const addProduct = (item: Omit<Product, 'id'>) => {
-        const products = baseDAO.load();
-        const newProduct = { ...item, id: new Date().toISOString() + Math.random() } as Product;
-        
-        // Don't save here, let the calling function decide when to save.
-        // This is important for the purchase received logic.
-        return newProduct;
-    };
     
     return {
         ...baseDAO,
