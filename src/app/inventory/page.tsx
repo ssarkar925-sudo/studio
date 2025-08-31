@@ -120,7 +120,7 @@ export default function InventoryPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div className='flex items-center gap-4'>
                 <div>
-                  <CardTitle>All Inventory</CardTitle>
+                  <CardTitle>Stock History</CardTitle>
                   <CardDescription>Manage your inventory, services, and their prices.</CardDescription>
                 </div>
                  {selectedProducts.length > 0 && (
