@@ -52,6 +52,7 @@ export type Purchase = {
     quantity: number;
     purchasePrice: number;
     total: number;
+    isNew?: boolean;
   }[];
   totalAmount: number;
   paymentDone: number;
@@ -133,33 +134,17 @@ export const invoicesDAO = createLocalStorageDAO<Invoice>('invoices', DUMMY_INVO
 const createProductsDAO = () => {
     const baseDAO = createLocalStorageDAO<Product>('products', DUMMY_PRODUCTS);
 
-    const addProduct = (item: Omit<Product, 'id'>, fromPurchase = false) => {
+    const addProduct = (item: Omit<Product, 'id'>) => {
         const products = baseDAO.load();
         const newProduct = { ...item, id: new Date().toISOString() + Math.random() } as Product;
-        
-        // Only add to main products list if NOT from a purchase flow.
-        // If from purchase, it will be "uncommitted" until received.
-        if (!fromPurchase) {
-          const updatedProducts = [...products, newProduct];
-          baseDAO.save(updatedProducts);
-        }
-        
+        const updatedProducts = [...products, newProduct];
+        baseDAO.save(updatedProducts);
         return newProduct;
     };
     
-    const commitProduct = (product: Product) => {
-        const products = baseDAO.load();
-        const existing = products.find(p => p.id === product.id);
-        if (!existing) {
-             const updatedProducts = [...products, product];
-             baseDAO.save(updatedProducts);
-        }
-    }
-
     return {
         ...baseDAO,
         add: addProduct,
-        commit: commitProduct
     };
 }
 export const productsDAO = createProductsDAO();

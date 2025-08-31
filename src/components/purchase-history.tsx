@@ -75,27 +75,24 @@ export function PurchaseHistory() {
   };
 
   const handleMarkAsReceived = (purchase: Purchase) => {
-    const allProducts = productsDAO.load();
-
     purchase.items.forEach(item => {
-        let product = allProducts.find(p => p.id === item.productId);
-        
-        if (item.productId.startsWith('new_')) {
-            // It's a new item, create it
+        if (item.isNew) {
+            // It's a new item, create it in inventory
              const newProduct: Omit<Product, 'id'> = {
                 name: item.productName,
                 price: item.purchasePrice * 1.5, // Default 50% markup
                 stock: item.quantity,
             };
-            const createdProduct = productsDAO.add(newProduct, false); // Add and commit directly
-            allProducts.push(createdProduct);
-        } else if (product) {
+            productsDAO.add(newProduct);
+        } else {
             // It's an existing item, update stock
-            product.stock += item.quantity;
+            const product = productsDAO.load().find(p => p.id === item.productId);
+            if(product) {
+              const newStock = product.stock + item.quantity;
+              productsDAO.update(item.productId, { stock: newStock });
+            }
         }
     });
-
-    productsDAO.save(allProducts);
 
     const updatedPurchase: Partial<Purchase> = {
         status: 'Received',
