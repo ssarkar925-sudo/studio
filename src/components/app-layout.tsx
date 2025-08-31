@@ -1,17 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-  SidebarInset,
-  SidebarTrigger,
-} from '@/components/ui/sidebar';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -21,6 +10,7 @@ import {
   Package,
   Settings,
   UserCircle,
+  Menu,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -33,12 +23,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/invoices', label: 'Invoices', icon: FileText },
   { href: '/customers', label: 'Customers', icon: Users },
   { href: '/products', label: 'Inventory', icon: Package },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -56,73 +52,74 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarHeader>
-          <Link href="/" className="flex items-center gap-2">
-            <Icons.logo className="size-7 text-primary" />
-            <span className="text-lg font-semibold group-data-[collapsible=icon]:hidden">
-              Sarkar Co
-            </span>
+    <div className="flex min-h-screen w-full flex-col">
+      <header className="sticky top-0 flex h-16 items-center gap-4 border-b bg-background px-4 md:px-6 z-50">
+        <nav className="hidden flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-lg font-semibold md:text-base"
+          >
+            <Icons.logo className="h-6 w-6 text-primary" />
+            <span className="sr-only">Sarkar Co</span>
           </Link>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarMenu>
-            {menuItems.map((item) => (
-              <SidebarMenuItem key={item.label}>
-                <SidebarMenuButton
-                  asChild
-                  isActive={
-                    pathname.startsWith(item.href) &&
-                    (item.href === '/' ? pathname === '/' : true)
-                  }
-                  tooltip={item.label}
-                >
-                  <Link href={item.href}>
-                    <item.icon />
-                    <span className="group-data-[collapsible=icon]:hidden">
-                      {item.label}
-                    </span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarContent>
-        <SidebarContent className="!flex-1 justify-end">
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith('/settings')}
-                tooltip={'Settings'}
+          {menuItems.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className={`transition-colors hover:text-foreground ${
+                pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
+                  ? 'text-foreground'
+                  : 'text-muted-foreground'
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+        <Sheet>
+          <SheetTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              className="shrink-0 md:hidden"
+            >
+              <Menu className="h-5 w-5" />
+              <span className="sr-only">Toggle navigation menu</span>
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left">
+            <nav className="grid gap-6 text-lg font-medium">
+              <Link
+                href="#"
+                className="flex items-center gap-2 text-lg font-semibold"
               >
-                <Link href="/settings">
-                  <Settings />
-                  <span className="group-data-[collapsible=icon]:hidden">
-                    Settings
-                  </span>
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarContent>
-      </Sidebar>
-      <SidebarInset>
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6">
-          <div className="flex-1">
-            <SidebarTrigger className="-ml-2 md:hidden" />
-            <div className="hidden md:block">
-              <h1 className="text-xl font-semibold">{getPageTitle()}</h1>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <UserMenu />
-          </div>
-        </header>
-        <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
-      </SidebarInset>
-    </SidebarProvider>
+                <Icons.logo className="h-6 w-6 text-primary" />
+                <span >Sarkar Co</span>
+              </Link>
+              {menuItems.map((item) => (
+                 <Link
+                    key={item.label}
+                    href={item.href}
+                    className={`transition-colors hover:text-foreground ${
+                      pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
+                        ? 'text-foreground'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+              ))}
+            </nav>
+          </SheetContent>
+        </Sheet>
+        <div className="flex w-full items-center justify-end gap-4 md:ml-auto md:gap-2 lg:gap-4">
+           <UserMenu />
+        </div>
+      </header>
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-8">
+        {children}
+      </main>
+    </div>
   );
 }
 
