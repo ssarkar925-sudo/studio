@@ -23,9 +23,11 @@ import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import type { Product } from '@/lib/data';
+import { useRouter } from 'next/navigation';
 
 export default function InventoryPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
 
   useEffect(() => {
@@ -33,11 +35,15 @@ export default function InventoryPage() {
   }, []);
 
 
-  const handleAction = (action: string, productName: string) => {
-    toast({
-      title: `${action} Inventory Item`,
-      description: `You have selected to ${action.toLowerCase()} ${productName}. This feature is not yet implemented.`,
-    });
+  const handleAction = (action: string, productId: string, productName: string) => {
+    if (action === 'View') {
+        router.push(`/inventory/${productId}`);
+    } else {
+        toast({
+          title: `${action} Inventory Item`,
+          description: `You have selected to ${action.toLowerCase()} ${productName}. This feature is not yet implemented.`,
+        });
+    }
   };
 
   return (
@@ -89,9 +95,9 @@ export default function InventoryPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', product.name)}>View</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Edit', product.name)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Delete', product.name)}>Delete</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('View', product.id, product.name)}>View</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Edit', product.id, product.name)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Delete', product.id, product.name)}>Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

@@ -24,20 +24,26 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
 import type { Customer } from '@/lib/data';
+import { useRouter } from 'next/navigation';
 
 export default function CustomersPage() {
   const { toast } = useToast();
+  const router = useRouter();
   const [customers, setCustomers] = useState<Customer[]>([]);
 
   useEffect(() => {
     setCustomers(customersDAO.load());
   }, []);
 
-  const handleAction = (action: string, customerName: string) => {
-    toast({
-      title: `${action} Customer`,
-      description: `You have selected to ${action.toLowerCase()} ${customerName}. This feature is not yet implemented.`,
-    });
+  const handleAction = (action: string, customerId: string, customerName: string) => {
+    if (action === 'View') {
+      router.push(`/customers/${customerId}`);
+    } else {
+      toast({
+        title: `${action} Customer`,
+        description: `You have selected to ${action.toLowerCase()} ${customerName}. This feature is not yet implemented.`,
+      });
+    }
   };
 
   return (
@@ -106,9 +112,9 @@ export default function CustomersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', customer.name)}>View</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Edit', customer.name)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Delete', customer.name)}>Delete</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('View', customer.id, customer.name)}>View</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Edit', customer.id, customer.name)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Delete', customer.id, customer.name)}>Delete</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

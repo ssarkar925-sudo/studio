@@ -35,10 +35,14 @@ export default function InvoicesPage() {
   }, []);
 
   const handleAction = (action: string, invoiceId: string, invoiceNumber: string) => {
-    toast({
-      title: `${action} Invoice`,
-      description: `You have selected to ${action.toLowerCase()} invoice ${invoiceNumber}. This feature is not yet implemented.`,
-    });
+    if (action === 'View') {
+        router.push(`/invoices/${invoiceId}`);
+    } else {
+        toast({
+          title: `${action} Invoice`,
+          description: `You have selected to ${action.toLowerCase()} invoice ${invoiceNumber}. This feature is not yet implemented.`,
+        });
+    }
   };
 
   return (
