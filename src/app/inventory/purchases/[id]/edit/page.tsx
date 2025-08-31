@@ -42,6 +42,7 @@ export default function EditPurchasePage() {
   const [paymentDone, setPaymentDone] = useState(0);
   const [gst, setGst] = useState(0);
   const [deliveryCharges, setDeliveryCharges] = useState(0);
+  const [isDataReady, setIsDataReady] = useState(false);
   
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -77,8 +78,11 @@ export default function EditPurchasePage() {
   }, [purchaseId, router, toast]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (purchaseId && !isDataReady) {
+        loadData();
+        setIsDataReady(true);
+    }
+  }, [purchaseId, loadData, isDataReady]);
 
 
   const handleAddItem = () => {
