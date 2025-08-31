@@ -76,6 +76,8 @@ export default function VendorsPage() {
   const handleAction = async (action: string, vendorId: string, vendorName: string) => {
     if (action === 'View') {
       router.push(`/vendors/${vendorId}`);
+    } else if (action === 'Edit') {
+        router.push(`/vendors/${vendorId}/edit`);
     } else if (action === 'Delete') {
         await vendorsDAO.remove(vendorId);
         toast({

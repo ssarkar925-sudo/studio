@@ -77,6 +77,8 @@ export default function CustomersPage() {
   const handleAction = (action: string, customerId: string, customerName: string) => {
     if (action === 'View') {
       router.push(`/customers/${customerId}`);
+    } else if (action === 'Edit') {
+        router.push(`/customers/${customerId}/edit`);
     } else {
       toast({
         title: `${action} Customer`,

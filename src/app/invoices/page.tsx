@@ -76,6 +76,8 @@ export default function InvoicesPage() {
   const handleAction = async (action: string, invoiceId: string, invoiceNumber: string) => {
     if (action === 'View') {
         router.push(`/invoices/${invoiceId}`);
+    } else if (action === 'Edit') {
+        router.push(`/invoices/${invoiceId}/edit`);
     } else if (action === 'Delete') {
         await invoicesDAO.remove(invoiceId);
         toast({
