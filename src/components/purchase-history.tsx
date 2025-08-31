@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -24,15 +24,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useLocalStorageData } from '@/hooks/use-local-storage-data';
 
 export function PurchaseHistory() {
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const { data: purchases, setData: setPurchases } = useLocalStorageData(purchasesDAO);
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const { toast } = useToast();
-
-  useEffect(() => {
-    setPurchases(purchasesDAO.load());
-  }, []);
   
   const allPurchasesSelected = useMemo(() => selectedPurchases.length > 0 && selectedPurchases.length === purchases.length, [selectedPurchases, purchases]);
 
@@ -65,8 +62,7 @@ export function PurchaseHistory() {
         });
       }
     });
-    const remainingPurchases = purchasesDAO.load();
-    setPurchases(remainingPurchases);
+    // Data will refresh via hook
     toast({
         title: 'Purchases Deleted',
         description: `Selected pending purchase(s) have been deleted.`,
@@ -82,7 +78,20 @@ export function PurchaseHistory() {
         const perItemDeliveryCharge = (purchase.deliveryCharges || 0) / totalItemsInPurchase;
         const purchasePriceWithCharges = item.purchasePrice * (1 + (purchase.gst || 0) / 100) + perItemDeliveryCharge;
 
-        if (item.isNew) {
+        const existingProductIndex = allProducts.findIndex(p => p.name.toLowerCase() === item.productName.toLowerCase());
+
+        if (existingProductIndex !== -1) {
+            // This is a new batch of an existing product, create a new entry.
+             const newProduct: Omit<Product, 'id'> = {
+                name: allProducts[existingProductIndex].name,
+                purchasePrice: purchasePriceWithCharges,
+                sellingPrice: purchasePriceWithCharges * 1.5,
+                stock: item.quantity,
+                sku: allProducts[existingProductIndex].sku,
+                batchCode: `BCH-${Date.now()}`.toUpperCase(),
+            };
+            allProducts.push({ ...newProduct, id: `prod-${Date.now()}-${Math.random()}`});
+        } else { // Truly new item
             const newProduct: Omit<Product, 'id'> = {
                 name: item.productName,
                 purchasePrice: purchasePriceWithCharges,
@@ -91,24 +100,7 @@ export function PurchaseHistory() {
                 sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
                 batchCode: `BCH-${Date.now()}`.toUpperCase(),
             };
-            allProducts.push({ ...newProduct, id: `new-${Date.now()}-${Math.random()}`});
-        } else {
-            const product = allProducts.find(p => p.id === item.productId);
-            if(product) {
-              const newStock = product.stock + item.quantity;
-              productsDAO.update(item.productId, { stock: newStock });
-            } else {
-               // This case handles if an existing product was deleted before receiving
-               const newProduct: Omit<Product, 'id'> = {
-                name: item.productName,
-                purchasePrice: purchasePriceWithCharges,
-                sellingPrice: purchasePriceWithCharges * 1.5,
-                stock: item.quantity,
-                sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
-                batchCode: `BCH-${Date.now()}`.toUpperCase(),
-              };
-              allProducts.push({ ...newProduct, id: item.productId });
-            }
+            allProducts.push({ ...newProduct, id: `prod-${Date.now()}-${Math.random()}`});
         }
     });
 
@@ -119,9 +111,6 @@ export function PurchaseHistory() {
         receivedDate: format(new Date(), 'PPP'),
     };
     purchasesDAO.update(purchase.id, updatedPurchase);
-
-    // Refresh purchase list
-    setPurchases(purchasesDAO.load());
 
     toast({
         title: 'Purchase Received',

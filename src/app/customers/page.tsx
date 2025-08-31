@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -22,8 +23,7 @@ import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState, useMemo } from 'react';
-import type { Customer } from '@/lib/data';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -35,19 +35,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useLocalStorageData } from '@/hooks/use-local-storage-data';
 
 
 export default function CustomersPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [customers, setCustomers] = useState<Customer[]>([]);
+  const { data: customers, setData: setCustomers } = useLocalStorageData(customersDAO);
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
-
-  useEffect(() => {
-    setCustomers(customersDAO.load());
-  }, []);
   
   const allCustomersSelected = useMemo(() => selectedCustomers.length > 0 && selectedCustomers.length === customers.length, [selectedCustomers, customers]);
 
@@ -69,8 +65,7 @@ export default function CustomersPage() {
 
   const handleDeleteSelected = () => {
     selectedCustomers.forEach(id => customersDAO.remove(id));
-    const remainingCustomers = customersDAO.load();
-    setCustomers(remainingCustomers);
+    // The useLocalStorageData hook will handle the re-render
     toast({
         title: 'Customers Deleted',
         description: `${selectedCustomers.length} customer(s) have been deleted.`,

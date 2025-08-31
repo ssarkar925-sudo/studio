@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -21,8 +22,7 @@ import { vendorsDAO } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState, useMemo } from 'react';
-import type { Vendor } from '@/lib/data';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -36,16 +36,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useLocalStorageData } from '@/hooks/use-local-storage-data';
 
 export default function VendorsPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const { data: vendors } = useLocalStorageData(vendorsDAO);
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
-
-  useEffect(() => {
-    setVendors(vendorsDAO.load());
-  }, []);
   
   const allVendorsSelected = useMemo(() => selectedVendors.length > 0 && selectedVendors.length === vendors.length, [selectedVendors, vendors]);
 
@@ -67,8 +64,6 @@ export default function VendorsPage() {
 
   const handleDeleteSelected = () => {
     selectedVendors.forEach(id => vendorsDAO.remove(id));
-    const remainingVendors = vendorsDAO.load();
-    setVendors(remainingVendors);
     toast({
         title: 'Vendors Deleted',
         description: `${selectedVendors.length} vendor(s) have been deleted.`,
@@ -82,7 +77,6 @@ export default function VendorsPage() {
       router.push(`/vendors/${vendorId}`);
     } else if (action === 'Delete') {
         vendorsDAO.remove(vendorId);
-        setVendors(vendorsDAO.load());
         toast({
           title: `Vendor Deleted`,
           description: `Vendor ${vendorName} has been deleted.`,

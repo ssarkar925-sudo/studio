@@ -22,8 +22,7 @@ import { productsDAO } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Upload, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { useEffect, useState, useMemo } from 'react';
-import type { Product } from '@/lib/data';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PurchaseHistory } from '@/components/purchase-history';
@@ -40,18 +39,15 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { useLocalStorageData } from '@/hooks/use-local-storage-data';
 
 
 export default function InventoryPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [products, setProducts] = useState<Product[]>([]);
+  const { data: products } = useLocalStorageData(productsDAO);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   
-  useEffect(() => {
-    setProducts(productsDAO.load());
-  }, []);
-
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
 
   const handleSelectAll = (checked: boolean) => {
@@ -72,7 +68,6 @@ export default function InventoryPage() {
 
   const handleDelete = (productId: string) => {
     productsDAO.remove(productId);
-    setProducts(productsDAO.load());
     toast({
       title: 'Item Deleted',
       description: 'The inventory item has been successfully deleted.',
@@ -81,8 +76,6 @@ export default function InventoryPage() {
 
   const handleDeleteSelected = () => {
     selectedProducts.forEach(id => productsDAO.remove(id));
-    const remainingProducts = productsDAO.load();
-    setProducts(remainingProducts);
     toast({
         title: 'Items Deleted',
         description: `${selectedProducts.length} item(s) have been deleted.`,

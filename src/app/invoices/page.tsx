@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -23,7 +24,7 @@ import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
@@ -36,16 +37,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useLocalStorageData } from '@/hooks/use-local-storage-data';
 
 export default function InvoicesPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const { data: invoices } = useLocalStorageData(invoicesDAO);
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
-
-  useEffect(() => {
-    setInvoices(invoicesDAO.load());
-  }, []);
   
   const allInvoicesSelected = useMemo(() => selectedInvoices.length > 0 && selectedInvoices.length === invoices.length, [selectedInvoices, invoices]);
 
@@ -67,8 +65,6 @@ export default function InvoicesPage() {
 
   const handleDeleteSelected = () => {
     selectedInvoices.forEach(id => invoicesDAO.remove(id));
-    const remainingInvoices = invoicesDAO.load();
-    setInvoices(remainingInvoices);
      toast({
         title: 'Invoices Deleted',
         description: `${selectedInvoices.length} invoice(s) have been deleted.`,
@@ -81,7 +77,6 @@ export default function InvoicesPage() {
         router.push(`/invoices/${invoiceId}`);
     } else if (action === 'Delete') {
         invoicesDAO.remove(invoiceId);
-        setInvoices(invoicesDAO.load());
         toast({
           title: `Invoice Deleted`,
           description: `Invoice ${invoiceNumber} has been deleted.`,

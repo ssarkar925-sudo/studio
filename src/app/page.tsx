@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -13,7 +14,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useLocalStorageData } from '@/hooks/use-local-storage-data';
 
 const chartData = [
   { month: 'January', total: 0, paid: 0 },
@@ -36,11 +37,7 @@ const chartConfig = {
 } satisfies import('@/components/ui/chart').ChartConfig;
 
 export default function DashboardPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-
-  useEffect(() => {
-    setInvoices(invoicesDAO.load());
-  }, []);
+  const { data: invoices } = useLocalStorageData(invoicesDAO);
 
   const totalRevenue = invoices
     .filter((i) => i.status === 'Paid')

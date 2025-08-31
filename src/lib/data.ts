@@ -1,5 +1,7 @@
 
 
+import { notifyDataChange } from '@/hooks/use-local-storage-data';
+
 export type Invoice = {
   id: string;
   invoiceNumber: string;
@@ -99,6 +101,7 @@ function createLocalStorageDAO<T extends {id: string}>(key: string, initialData:
             try {
                 const serializedData = JSON.stringify(data, null, 2);
                 window.localStorage.setItem(key, serializedData);
+                notifyDataChange();
             } catch (error) {
                 console.error(`Error writing to localStorage key “${key}”:`, error);
             }
