@@ -29,11 +29,11 @@ export default function NewCustomerPage() {
     const phone = formData.get('phone') as string;
     const address = formData.get('address') as string;
 
-    if (!name || !email) {
+    if (!name) {
        toast({
         variant: 'destructive',
         title: 'Missing Required Fields',
-        description: 'Please enter a name and email for the customer.',
+        description: 'Please enter a name for the customer.',
       });
       return;
     }
@@ -81,7 +81,7 @@ export default function NewCustomerPage() {
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" className="w-full" placeholder="john.doe@example.com" required />
+                  <Input id="email" name="email" type="email" className="w-full" placeholder="john.doe@example.com" />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="address">Address</Label>
