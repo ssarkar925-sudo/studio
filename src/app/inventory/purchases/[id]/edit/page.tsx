@@ -49,7 +49,7 @@ export default function EditPurchasePage() {
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   useEffect(() => {
-    if (purchases.length > 0 && purchaseId) {
+    if (purchases.length > 0 && purchaseId && !purchase) {
       const foundPurchase = purchases.find(p => p.id === purchaseId);
       if (foundPurchase) {
         if (foundPurchase.status !== 'Pending') {
@@ -77,7 +77,7 @@ export default function EditPurchasePage() {
           router.push('/inventory?tab=purchases');
       }
     }
-  }, [purchaseId, purchases, router, toast]);
+  }, [purchaseId, purchases, router, toast, purchase]);
 
 
   const handleAddItem = () => {
