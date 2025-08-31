@@ -15,10 +15,13 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { productsDAO } from '@/lib/data';
+import { useEffect } from 'react';
 
 export default function NewInventoryItemPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const fromPurchase = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('fromPurchase') : null;
+
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,11 +42,9 @@ export default function NewInventoryItemPage() {
     const newProduct = productsDAO.add({
       name,
       price,
-      stock,
+      stock: fromPurchase ? 0 : stock, // If from purchase, initial stock is 0
     });
     
-    // Check if we came from the purchases page
-    const fromPurchase = new URLSearchParams(window.location.search).get('fromPurchase');
     if (fromPurchase) {
       // Store new product info in session storage and go back
       sessionStorage.setItem('newProduct', JSON.stringify(newProduct));
@@ -84,7 +85,7 @@ export default function NewInventoryItemPage() {
                     </div>
                     <div className="grid gap-3">
                         <Label htmlFor="stock">Stock</Label>
-                        <Input id="stock" name="stock" type="number" placeholder="0" required />
+                        <Input id="stock" name="stock" type="number" placeholder="0" required disabled={!!fromPurchase} defaultValue={fromPurchase ? 0 : undefined} />
                     </div>
                 </div>
               </div>

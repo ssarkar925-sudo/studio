@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { CalendarIcon, PlusCircle, Trash2, Upload } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 
 type PurchaseItem = {
@@ -35,17 +35,21 @@ export default function NewPurchasePage() {
   const [vendorId, setVendorId] = useState<string>('');
   const [paymentDone, setPaymentDone] = useState(0);
   const [gst, setGst] = useState(0);
+  const selectTriggersRef = useRef<(HTMLButtonElement | null)[]>([]);
   
   useEffect(() => {
     setVendors(vendorsDAO.load());
-    setProducts(productsDAO.load());
+    const allProducts = productsDAO.load();
 
     const newProductJson = sessionStorage.getItem('newProduct');
     if (newProductJson) {
       const newProduct = JSON.parse(newProductJson);
-      setProducts(prevProducts => [...prevProducts, newProduct]);
+      if (!allProducts.some(p => p.id === newProduct.id)) {
+        allProducts.push(newProduct);
+      }
       sessionStorage.removeItem('newProduct');
     }
+    setProducts(allProducts);
   }, []);
 
   const handleAddItem = () => {
@@ -118,6 +122,10 @@ export default function NewPurchasePage() {
 
   };
 
+  const handleCreateNewItemClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    router.push('/inventory/new?fromPurchase=true');
+  };
 
   return (
     <AppLayout>
@@ -193,12 +201,12 @@ export default function NewPurchasePage() {
                             <div className="grid gap-3 col-span-4">
                                 {index === 0 && <Label>Item</Label>}
                                 <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
-                                     <SelectTrigger>
+                                     <SelectTrigger ref={(el) => (selectTriggersRef.current[index] = el)}>
                                         <SelectValue placeholder="Select item" />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                         <Button variant="ghost" className="w-full mt-2" onSelect={(e) => { e.preventDefault(); router.push('/inventory/new?fromPurchase=true'); }}><PlusCircle className="mr-2"/>Create New Item</Button>
+                                         <Button variant="ghost" className="w-full mt-2 justify-start p-2 h-auto" onClick={handleCreateNewItemClick}><PlusCircle className="mr-2"/>Create New Item</Button>
                                     </SelectContent>
                                 </Select>
                             </div>
