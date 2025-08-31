@@ -33,6 +33,8 @@ export default function NewPurchasePage() {
   const [orderDate, setOrderDate] = useState<Date | undefined>(new Date());
   const [items, setItems] = useState<PurchaseItem[]>([]);
   const [vendorId, setVendorId] = useState<string>('');
+  const [paymentDone, setPaymentDone] = useState(0);
+  const [gst, setGst] = useState(0);
   
   useEffect(() => {
     setVendors(vendorsDAO.load());
@@ -67,17 +69,16 @@ export default function NewPurchasePage() {
   };
 
   const calculateTotals = () => {
-    const totalAmount = items.reduce((sum, item) => sum + item.total, 0);
-    return { totalAmount };
+    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+    const totalAmount = subtotal + (subtotal * (gst / 100));
+    const dueAmount = totalAmount - paymentDone;
+    return { subtotal, totalAmount, dueAmount };
   };
 
-  const { totalAmount } = calculateTotals();
+  const { subtotal, totalAmount, dueAmount } = calculateTotals();
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    const paymentDone = parseFloat(formData.get('paymentDone') as string) || 0;
-    const gst = parseFloat(formData.get('gst') as string) || 0;
     
     const vendor = vendors.find(v => v.id === vendorId);
 
@@ -90,16 +91,14 @@ export default function NewPurchasePage() {
         return;
     }
 
-    const finalTotalAmount = totalAmount + (totalAmount * (gst/100));
-
     purchasesDAO.add({
         vendorId: vendor.id,
         vendorName: vendor.vendorName,
         orderDate: format(orderDate, 'PPP'),
         items: items.map(i => ({...i})),
-        totalAmount: finalTotalAmount,
+        totalAmount,
         paymentDone,
-        dueAmount: finalTotalAmount - paymentDone,
+        dueAmount,
         status: 'Pending',
         gst,
     });
@@ -231,19 +230,19 @@ export default function NewPurchasePage() {
                     <div className="grid grid-cols-4 gap-4">
                         <div className='grid gap-3 col-span-1'>
                             <Label>Subtotal</Label>
-                            <Input value={`₹${totalAmount.toFixed(2)}`} readOnly className='bg-muted' />
+                            <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted' />
                         </div>
                          <div className='grid gap-3 col-span-1'>
                             <Label>GST (%)</Label>
-                            <Input name="gst" type="number" placeholder="e.g. 18" />
+                            <Input name="gst" type="number" placeholder="e.g. 18" value={gst} onChange={(e) => setGst(parseFloat(e.target.value) || 0)} />
                         </div>
                          <div className='grid gap-3 col-span-1'>
                             <Label>Payment Done</Label>
-                            <Input name="paymentDone" type="number" placeholder="0.00" />
+                            <Input name="paymentDone" type="number" placeholder="0.00" value={paymentDone} onChange={(e) => setPaymentDone(parseFloat(e.target.value) || 0)} />
                         </div>
                          <div className='grid gap-3 col-span-1'>
                             <Label>Due</Label>
-                            <Input value={`₹${(totalAmount - (parseFloat(new FormData(document.querySelector('form')!).get('paymentDone') as string) || 0)).toFixed(2)}`} readOnly className='bg-muted'/>
+                            <Input value={`₹${dueAmount.toFixed(2)}`} readOnly className='bg-muted'/>
                         </div>
                     </div>
                 </CardContent>
