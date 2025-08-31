@@ -36,10 +36,10 @@ export default function CustomersPage() {
   return (
     <AppLayout>
       <div className="flex items-center justify-between">
-        <div></div>
+        <h1 className="text-2xl font-semibold">Customers</h1>
         <Button asChild>
           <Link href="/customers/new">
-            <PlusCircle className="mr-2 h-4 w-4" />
+            <PlusCircle />
             New Customer
           </Link>
         </Button>
@@ -94,7 +94,7 @@ export default function CustomersPage() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreHorizontal />
                           <span className="sr-only">Toggle menu</span>
                         </Button>
                       </DropdownMenuTrigger>

@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -33,7 +32,7 @@ const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/invoices', label: 'Invoices', icon: FileText },
   { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/products', label: 'Inventory', icon: Package },
+  { href: '/inventory', label: 'Inventory', icon: Package },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -96,7 +95,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               href={item.href}
               className={`transition-colors hover:text-foreground ${
                 pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
-                  ? 'text-foreground'
+                  ? 'text-foreground font-semibold'
                   : 'text-muted-foreground'
               }`}
             >
@@ -131,12 +130,12 @@ function UserMenu() {
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
-          <UserCircle className="mr-2 h-4 w-4" />
+          <UserCircle />
           <span>Profile</span>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
             <Link href="/settings">
-                <Settings className="mr-2 h-4 w-4" />
+                <Settings />
                 <span>Settings</span>
             </Link>
         </DropdownMenuItem>
