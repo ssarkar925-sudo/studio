@@ -27,9 +27,8 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
-import type { Customer } from '@/lib/data';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 type InvoiceItem = {
@@ -113,33 +112,34 @@ export default function NewInvoicePage() {
       return;
     }
 
-    await invoicesDAO.add({
-      invoiceNumber,
-      customer: {
-        id: customer.id,
-        name: customer.name,
-        email: customer.email,
-      },
-      issueDate: format(issueDate, 'PPP'),
-      dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
-      status: 'Pending', // Default status
-      amount: totalAmount,
-      items: items.map(({id, ...rest}) => rest)
-    });
-    
-    // Decrement stock
-    for (const item of items) {
-        const product = products.find(p => p.id === item.productId);
-        if (product) {
-            await productsDAO.update(product.id, { stock: product.stock - item.quantity });
-        }
+    try {
+      await invoicesDAO.add({
+        invoiceNumber,
+        customer: {
+          id: customer.id,
+          name: customer.name,
+          email: customer.email,
+        },
+        issueDate: format(issueDate, 'PPP'),
+        dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
+        status: 'Pending', // Default status
+        amount: totalAmount,
+        items: items.map(({id, ...rest}) => rest)
+      });
+      
+      toast({
+        title: 'Invoice Created',
+        description: `Successfully created invoice ${invoiceNumber}.`,
+      });
+      router.push('/invoices');
+    } catch (error) {
+        console.error("Failed to create invoice:", error);
+        toast({
+            variant: "destructive",
+            title: "Creation Failed",
+            description: "An error occurred while creating the invoice."
+        })
     }
-
-    toast({
-      title: 'Invoice Created',
-      description: `Successfully created invoice ${invoiceNumber}.`,
-    });
-    router.push('/invoices');
   };
 
   return (
@@ -249,7 +249,7 @@ export default function NewInvoicePage() {
                                             <SelectValue placeholder="Select item" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} (Stock: {p.stock})</SelectItem>)}
+                                            {products.map((p) => <SelectItem key={p.id} value={p.id} disabled={p.stock <=0 }>{p.name} (Stock: {p.stock})</SelectItem>)}
                                         </SelectContent>
                                     </Select>
                                 </div>

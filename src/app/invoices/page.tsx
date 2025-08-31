@@ -64,26 +64,44 @@ export default function InvoicesPage() {
   };
 
   const handleDeleteSelected = async () => {
-    const promises = selectedInvoices.map(id => invoicesDAO.remove(id));
-    await Promise.all(promises);
-     toast({
-        title: 'Invoices Deleted',
-        description: `${selectedInvoices.length} invoice(s) have been deleted.`,
-    });
-    setSelectedInvoices([]);
+    try {
+      const promises = selectedInvoices.map(id => invoicesDAO.remove(id));
+      await Promise.all(promises);
+       toast({
+          title: 'Invoices Deleted',
+          description: `${selectedInvoices.length} invoice(s) have been deleted.`,
+      });
+      setSelectedInvoices([]);
+    } catch (error) {
+       toast({
+          variant: 'destructive',
+          title: 'Deletion Failed',
+          description: `An error occurred while deleting invoices.`,
+      });
+    }
   };
+
+  const handleDelete = async (invoiceId: string, invoiceNumber: string) => {
+    try {
+        await invoicesDAO.remove(invoiceId);
+        toast({
+          title: `Invoice Deleted`,
+          description: `Invoice ${invoiceNumber} has been deleted.`,
+        });
+    } catch (error) {
+        toast({
+          variant: 'destructive',
+          title: `Deletion Failed`,
+          description: `Could not delete invoice ${invoiceNumber}.`,
+        });
+    }
+  }
 
   const handleAction = async (action: string, invoiceId: string, invoiceNumber: string) => {
     if (action === 'View') {
         router.push(`/invoices/${invoiceId}`);
     } else if (action === 'Edit') {
         router.push(`/invoices/${invoiceId}/edit`);
-    } else if (action === 'Delete') {
-        await invoicesDAO.remove(invoiceId);
-        toast({
-          title: `Invoice Deleted`,
-          description: `Invoice ${invoiceNumber} has been deleted.`,
-        });
     } else {
         toast({
           title: `${action} Invoice`,
@@ -106,7 +124,7 @@ export default function InvoicesPage() {
                     <AlertDialogHeader>
                     <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                     <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete {selectedInvoices.length} invoice(s).
+                        This action cannot be undone. This will permanently delete {selectedInvoices.length} invoice(s) and update customer balances.
                     </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -195,7 +213,7 @@ export default function InvoicesPage() {
                           </AlertDialogHeader>
                           <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleAction('Delete', invoice.id, invoice.invoiceNumber)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                            <AlertDialogAction onClick={() => handleDelete(invoice.id, invoice.invoiceNumber)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>

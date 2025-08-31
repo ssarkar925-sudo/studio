@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { customersDAO, invoiceTemplates, invoicesDAO, productsDAO, type Invoice } from '@/lib/data';
+import { customersDAO, invoicesDAO, productsDAO, type Invoice } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
@@ -50,18 +50,16 @@ export default function EditInvoicePage() {
   const { data: customers } = useFirestoreData(customersDAO);
   const { data: products } = useFirestoreData(productsDAO);
   const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
 
+  const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [issueDate, setIssueDate] = useState<Date | undefined>();
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const [status, setStatus] = useState<Invoice['status']>();
   const [customerId, setCustomerId] = useState<string>('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
   
-  const originalItems = useMemo(() => invoice?.items || [], [invoice]);
-
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && invoices.length > 0) {
         const foundInvoice = invoices.find((i) => i.id === invoiceId);
         if (foundInvoice) {
             setInvoice(foundInvoice);
@@ -143,8 +141,8 @@ export default function EditInvoicePage() {
       });
       return;
     }
-
-    await invoicesDAO.update(invoice.id, {
+    
+    const updatedInvoiceData: Partial<Omit<Invoice, 'id'>> = {
       invoiceNumber,
       customer: {
         id: customer.id,
@@ -156,36 +154,24 @@ export default function EditInvoicePage() {
       status,
       amount: totalAmount,
       items: items.map(({id, ...rest}) => rest),
-    });
+    };
 
-    // Adjust stock levels
-    for (const newItem of items) {
-        const originalItem = originalItems.find(oi => oi.productId === newItem.productId);
-        const stockChange = (originalItem?.quantity || 0) - newItem.quantity;
-        
-        if (stockChange !== 0) {
-            const product = products.find(p => p.id === newItem.productId);
-            if(product) {
-                await productsDAO.update(product.id, { stock: product.stock + stockChange });
-            }
-        }
+    try {
+        await invoicesDAO.update(invoice.id, updatedInvoiceData, invoice);
+
+        toast({
+          title: 'Invoice Updated',
+          description: `Successfully updated invoice ${invoiceNumber}.`,
+        });
+        router.push('/invoices');
+    } catch(error) {
+        console.error("Failed to update invoice:", error);
+        toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "An error occurred while updating the invoice."
+        })
     }
-    // Handle items removed from the invoice
-    for(const originalItem of originalItems) {
-        if(!items.some(item => item.productId === originalItem.productId)) {
-             const product = products.find(p => p.id === originalItem.productId);
-             if(product) {
-                await productsDAO.update(product.id, { stock: product.stock + originalItem.quantity });
-            }
-        }
-    }
-
-
-    toast({
-      title: 'Invoice Updated',
-      description: `Successfully updated invoice ${invoiceNumber}.`,
-    });
-    router.push('/invoices');
   };
   
   if (isLoading || !invoice) {
@@ -222,7 +208,7 @@ export default function EditInvoicePage() {
                     </div>
                     <div className="grid gap-3">
                         <Label htmlFor="customer">Customer</Label>
-                        <Select name="customer" required onValueChange={setCustomerId} value={customerId}>
+                        <Select name="customer" required onValueChange={setCustomerId} value={customerId} disabled>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a customer" />
                         </SelectTrigger>
@@ -320,7 +306,12 @@ export default function EditInvoicePage() {
                                             <SelectValue placeholder="Select item" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} (Stock: {p.stock})</SelectItem>)}
+                                            {products.map((p) => {
+                                                const originalItem = invoice.items.find(i => i.productId === p.id);
+                                                const originalQuantity = originalItem ? originalItem.quantity : 0;
+                                                const availableStock = p.stock + originalQuantity;
+                                                return <SelectItem key={p.id} value={p.id} disabled={p.stock <=0 && !originalItem}>{p.name} (Stock: {availableStock})</SelectItem>
+                                            })}
                                         </SelectContent>
                                     </Select>
                                 </div>

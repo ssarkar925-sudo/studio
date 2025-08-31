@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc } from 'firebase/firestore';
 import { notifyDataChange } from '@/hooks/use-firestore-data';
 
 export type InvoiceItem = {
@@ -56,20 +56,22 @@ export type Vendor = {
   gstn?: string;
 };
 
-export type Purchase = {
-  id: string;
-  vendorId: string;
-  vendorName: string;
-  orderDate: string;
-  receivedDate?: string;
-  items: {
+export type PurchaseItem = {
     productId: string;
     productName: string;
     quantity: number;
     purchasePrice: number;
     total: number;
     isNew?: boolean;
-  }[];
+}
+
+export type Purchase = {
+  id: string;
+  vendorId: string;
+  vendorName: string;
+  orderDate: string;
+  receivedDate?: string;
+  items: PurchaseItem[];
   totalAmount: number;
   paymentDone: number;
   dueAmount: number;
@@ -102,7 +104,7 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
         }
     }
     
-    const update = async (id: string, updatedItem: Partial<T>) => {
+    const update = async (id: string, updatedItem: Partial<Omit<T, 'id'>>) => {
         try {
             const docRef = doc(db, collectionName, id);
             await updateDoc(docRef, updatedItem);
@@ -129,6 +131,8 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
             callback(data);
+        }, (error) => {
+            console.error(`Error subscribing to Firestore collection “${collectionName}”:`, error);
         });
         return unsubscribe;
     }
@@ -137,24 +141,161 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
 }
 
 export const customersDAO = createFirestoreDAO<Customer>('customers');
-export const invoicesDAO = createFirestoreDAO<Invoice>('invoices');
 
-// Custom DAO for Products to handle special logic
-const createProductsDAO = () => {
-    const baseDAO = createFirestoreDAO<Product>('products');
+const createInvoicesDAO = () => {
+    const baseDAO = createFirestoreDAO<Invoice>('invoices');
+
+    const addInvoice = async (invoiceData: Omit<Invoice, 'id'>) => {
+        return runTransaction(db, async (transaction) => {
+            // 1. Add the new invoice
+            const newInvoiceRef = doc(collection(db, 'invoices'));
+            transaction.set(newInvoiceRef, invoiceData);
+
+            // 2. Update customer aggregates
+            const customerRef = doc(db, 'customers', invoiceData.customer.id);
+            const customerDoc = await transaction.get(customerRef);
+            if (!customerDoc.exists()) {
+                throw new Error("Customer not found!");
+            }
+            const customerData = customerDoc.data();
+            const newTotalInvoiced = (customerData.totalInvoiced || 0) + invoiceData.amount;
+            const newTotalPaid = (customerData.totalPaid || 0) + (invoiceData.status === 'Paid' ? invoiceData.amount : 0);
+            const newInvoicesCount = (customerData.invoices || 0) + 1;
+            
+            transaction.update(customerRef, {
+                totalInvoiced: newTotalInvoiced,
+                totalPaid: newTotalPaid,
+                invoices: newInvoicesCount,
+            });
+
+            // 3. Decrement stock for each item
+            for (const item of invoiceData.items) {
+                const productRef = doc(db, 'products', item.productId);
+                const productDoc = await transaction.get(productRef);
+                if (productDoc.exists()) {
+                    const newStock = productDoc.data().stock - item.quantity;
+                    transaction.update(productRef, { stock: newStock });
+                }
+            }
+
+            return { ...invoiceData, id: newInvoiceRef.id };
+        }).then(invoice => {
+            notifyDataChange();
+            return invoice;
+        });
+    };
+
+    const updateInvoice = async (invoiceId: string, updatedData: Partial<Omit<Invoice, 'id'>>, originalInvoice: Invoice) => {
+        return runTransaction(db, async (transaction) => {
+            const invoiceRef = doc(db, 'invoices', invoiceId);
+            
+            // 1. Get current invoice from transaction to avoid race conditions
+            const currentInvoiceDoc = await transaction.get(invoiceRef);
+            if (!currentInvoiceDoc.exists()) throw new Error("Invoice not found!");
+            const currentInvoice = { id: currentInvoiceDoc.id, ...currentInvoiceDoc.data()} as Invoice;
+            
+            // 2. Update invoice
+            transaction.update(invoiceRef, updatedData);
+
+            const newInvoiceData = { ...currentInvoice, ...updatedData };
+
+            // 3. Adjust customer aggregates
+            const customerId = originalInvoice.customer.id;
+            const customerRef = doc(db, 'customers', customerId);
+            const customerDoc = await transaction.get(customerRef);
+             if (!customerDoc.exists()) throw new Error("Customer not found!");
+            const customerData = customerDoc.data();
+
+            const amountDifference = newInvoiceData.amount - originalInvoice.amount;
+            const paidAmountDifference = 
+                (newInvoiceData.status === 'Paid' ? newInvoiceData.amount : 0) - 
+                (originalInvoice.status === 'Paid' ? originalInvoice.amount : 0);
+            
+            transaction.update(customerRef, {
+                totalInvoiced: customerData.totalInvoiced + amountDifference,
+                totalPaid: customerData.totalPaid + paidAmountDifference,
+            });
+            
+            // 4. Adjust stock levels
+            const originalItems = originalInvoice.items;
+            const newItems = newInvoiceData.items;
+
+            // Create maps for easier lookup
+            const originalItemsMap = new Map(originalItems.map(item => [item.productId, item.quantity]));
+            const newItemsMap = new Map(newItems.map(item => [item.productId, item.quantity]));
+
+            const allProductIds = new Set([...originalItemsMap.keys(), ...newItemsMap.keys()]);
+            
+            for(const productId of allProductIds) {
+                const originalQty = originalItemsMap.get(productId) || 0;
+                const newQty = newItemsMap.get(productId) || 0;
+                const stockChange = originalQty - newQty;
+
+                if(stockChange !== 0) {
+                    const productRef = doc(db, 'products', productId);
+                    const productDoc = await transaction.get(productRef);
+                    if(productDoc.exists()) {
+                        transaction.update(productRef, { stock: productDoc.data().stock + stockChange });
+                    }
+                }
+            }
+
+        }).then(() => {
+            notifyDataChange();
+        });
+    };
     
+     const removeInvoice = async (invoiceId: string) => {
+        return runTransaction(db, async (transaction) => {
+            const invoiceRef = doc(db, 'invoices', invoiceId);
+            const invoiceDoc = await transaction.get(invoiceRef);
+            if (!invoiceDoc.exists()) {
+                throw new Error("Invoice not found!");
+            }
+            const invoiceData = invoiceDoc.data() as Invoice;
+
+            // 1. Delete the invoice
+            transaction.delete(invoiceRef);
+
+            // 2. Update customer aggregates
+            const customerRef = doc(db, 'customers', invoiceData.customer.id);
+            const customerDoc = await transaction.get(customerRef);
+            if (customerDoc.exists()) {
+                const customerData = customerDoc.data();
+                const newTotalInvoiced = customerData.totalInvoiced - invoiceData.amount;
+                const newTotalPaid = customerData.totalPaid - (invoiceData.status === 'Paid' ? invoiceData.amount : 0);
+                const newInvoicesCount = customerData.invoices - 1;
+                transaction.update(customerRef, {
+                    totalInvoiced: newTotalInvoiced,
+                    totalPaid: newTotalPaid,
+                    invoices: newInvoicesCount,
+                });
+            }
+
+            // 3. Restore stock for each item
+            for (const item of invoiceData.items) {
+                const productRef = doc(db, 'products', item.productId);
+                 const productDoc = await transaction.get(productRef);
+                if (productDoc.exists()) {
+                    const newStock = productDoc.data().stock + item.quantity;
+                    transaction.update(productRef, { stock: newStock });
+                }
+            }
+        }).then(() => {
+            notifyDataChange();
+        });
+    };
+
+
     return {
         ...baseDAO,
-        // The add method is overridden for custom logic, but we still need a way
-        // to add without special handling in some cases.
-        // The purchase received logic will handle adding and saving.
-        add: async (item: Omit<Product, 'id'>): Promise<Product> => {
-            return baseDAO.add(item);
-        },
-    };
+        add: addInvoice,
+        update: updateInvoice,
+        remove: removeInvoice,
+    }
 }
-export const productsDAO = createProductsDAO();
 
-
+export const invoicesDAO = createInvoicesDAO();
+export const productsDAO = createFirestoreDAO<Product>('products');
 export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
 export const purchasesDAO = createFirestoreDAO<Purchase>('purchases');
