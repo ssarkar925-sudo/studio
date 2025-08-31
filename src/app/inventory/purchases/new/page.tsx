@@ -37,6 +37,7 @@ export default function NewPurchasePage() {
   const [vendorId, setVendorId] = useState<string>('');
   const [paymentDone, setPaymentDone] = useState(0);
   const [gst, setGst] = useState(0);
+  const [deliveryCharges, setDeliveryCharges] = useState(0);
   
   const loadData = useCallback(() => {
     setVendors(vendorsDAO.load());
@@ -88,7 +89,8 @@ export default function NewPurchasePage() {
 
   const calculateTotals = () => {
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
-    const totalAmount = subtotal + (subtotal * (gst / 100));
+    const totalGst = subtotal * (gst / 100);
+    const totalAmount = subtotal + totalGst + deliveryCharges;
     const dueAmount = totalAmount - paymentDone;
     return { subtotal, totalAmount, dueAmount };
   };
@@ -119,6 +121,7 @@ export default function NewPurchasePage() {
         dueAmount,
         status: 'Pending',
         gst,
+        deliveryCharges,
     });
 
     toast({
@@ -257,7 +260,7 @@ export default function NewPurchasePage() {
                     <CardTitle>Payment</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-4 gap-4">
+                    <div className="grid grid-cols-5 gap-4">
                         <div className='grid gap-3 col-span-1'>
                             <Label>Subtotal</Label>
                             <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted' />
@@ -265,6 +268,10 @@ export default function NewPurchasePage() {
                          <div className='grid gap-3 col-span-1'>
                             <Label>GST (%)</Label>
                             <Input name="gst" type="number" placeholder="e.g. 18" value={gst} onChange={(e) => setGst(parseFloat(e.target.value) || 0)} />
+                        </div>
+                        <div className='grid gap-3 col-span-1'>
+                            <Label>Delivery Charges</Label>
+                            <Input name="deliveryCharges" type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} />
                         </div>
                          <div className='grid gap-3 col-span-1'>
                             <Label>Payment Done</Label>
@@ -287,5 +294,3 @@ export default function NewPurchasePage() {
     </AppLayout>
   );
 }
-
-    

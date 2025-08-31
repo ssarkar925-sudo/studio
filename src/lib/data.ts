@@ -58,6 +58,7 @@ export type Purchase = {
   dueAmount: number;
   status: 'Pending' | 'Received';
   gst?: number;
+  deliveryCharges?: number;
 };
 
 const DUMMY_CUSTOMERS: Customer[] = [];
