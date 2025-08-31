@@ -51,7 +51,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${totalRevenue.toLocaleString()}
+              ₹{totalRevenue.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
               +20.1% from last month
@@ -65,7 +65,7 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              ${outstanding.toLocaleString()}
+              ₹{outstanding.toLocaleString()}
             </div>
             <p className="text-xs text-muted-foreground">
               Across all pending invoices
@@ -104,7 +104,7 @@ export default function DashboardPage() {
                 <YAxis
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(value) => `$${value / 1000}K`}
+                  tickFormatter={(value) => `₹${value / 1000}K`}
                 />
                 <ChartTooltip
                   cursor={false}
@@ -147,7 +147,7 @@ function RecentInvoices() {
             </p>
           </div>
           <div className="ml-auto text-right font-medium">
-            <p>${invoice.amount.toFixed(2)}</p>
+            <p>₹{invoice.amount.toFixed(2)}</p>
             <InvoiceStatusBadge status={invoice.status} />
           </div>
         </div>

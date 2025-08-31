@@ -61,7 +61,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   className="flex items-center gap-2 text-lg font-semibold"
                 >
                   <Icons.logo className="h-6 w-6 text-primary" />
-                  <span >Sarkar Co</span>
+                  <span >Vyapar Co</span>
                 </Link>
                 {menuItems.map((item) => (
                    <Link
@@ -84,7 +84,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             className="flex items-center gap-2 text-lg font-semibold md:text-base"
           >
             <Icons.logo className="h-6 w-6 text-primary" />
-            <span className="sr-only">Sarkar Co</span>
+            <span className="sr-only">Vyapar Co</span>
           </Link>
         </div>
 

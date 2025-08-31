@@ -87,8 +87,8 @@ export default function CustomersPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className='text-right'>${customer.totalInvoiced.toFixed(2)}</TableCell>
-                  <TableCell className='text-right'>${customer.totalPaid.toFixed(2)}</TableCell>
+                  <TableCell className='text-right'>₹{customer.totalInvoiced.toFixed(2)}</TableCell>
+                  <TableCell className='text-right'>₹{customer.totalPaid.toFixed(2)}</TableCell>
                   <TableCell className='text-right'>{customer.invoices}</TableCell>
                   <TableCell>
                     <DropdownMenu>

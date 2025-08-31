@@ -70,7 +70,7 @@ export default function InventoryPage() {
               {products.map((product) => (
                 <TableRow key={product.id}>
                   <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell className='text-right'>${product.price.toFixed(2)}</TableCell>
+                  <TableCell className='text-right'>₹{product.price.toFixed(2)}</TableCell>
                   <TableCell className='text-right'>{product.stock}</TableCell>
                   <TableCell>
                     <DropdownMenu>

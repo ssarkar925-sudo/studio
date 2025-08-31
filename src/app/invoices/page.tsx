@@ -70,7 +70,7 @@ export default function InvoicesPage() {
                     {invoice.invoiceNumber}
                   </TableCell>
                   <TableCell>{invoice.customer.name}</TableCell>
-                  <TableCell className='text-right'>${invoice.amount.toFixed(2)}</TableCell>
+                  <TableCell className='text-right'>₹{invoice.amount.toFixed(2)}</TableCell>
                   <TableCell>
                     <InvoiceStatusBadge status={invoice.status} />
                   </TableCell>
