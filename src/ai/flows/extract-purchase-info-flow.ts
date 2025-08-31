@@ -49,7 +49,7 @@ const prompt = ai.definePrompt({
 
 - The vendor's name.
 - The date of the order. Format it as Month Day, Year (e.g., 'July 2, 2024').
-- A list of all items, including their name, quantity, and unit price. Calculate the total for each item.
+- A list of all items, including their name, quantity, and unit price (purchasePrice). You must calculate the total for each item by multiplying the quantity and purchasePrice.
 - The GST percentage, if mentioned.
 - Any delivery or shipping charges.
 - The grand total amount.
