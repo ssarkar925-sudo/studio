@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
@@ -77,20 +78,20 @@ export function PurchaseHistory() {
     const allProducts = productsDAO.load();
 
     purchase.items.forEach(item => {
-        const productIndex = allProducts.findIndex(p => p.id === item.productId);
-        if (productIndex > -1) {
-            allProducts[productIndex].stock += item.quantity;
-        } else {
-            // If the product doesn't exist, commit it to the DAO
-            const newProduct: Product = {
-                id: item.productId,
+        let product = allProducts.find(p => p.id === item.productId);
+        
+        if (item.productId.startsWith('new_')) {
+            // It's a new item, create it
+             const newProduct: Omit<Product, 'id'> = {
                 name: item.productName,
                 price: item.purchasePrice * 1.5, // Default 50% markup
                 stock: item.quantity,
             };
-            productsDAO.commit(newProduct);
-            // After commit, allProducts in memory is stale, we could reload or just add it
-            allProducts.push(newProduct);
+            const createdProduct = productsDAO.add(newProduct, false); // Add and commit directly
+            allProducts.push(createdProduct);
+        } else if (product) {
+            // It's an existing item, update stock
+            product.stock += item.quantity;
         }
     });
 
@@ -220,3 +221,5 @@ export function PurchaseHistory() {
     </Card>
   );
 }
+
+    

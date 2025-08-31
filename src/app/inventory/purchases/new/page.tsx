@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -23,6 +24,7 @@ type PurchaseItem = {
     quantity: number;
     purchasePrice: number;
     total: number;
+    isNew?: boolean;
 };
 
 export default function NewPurchasePage() {
@@ -35,7 +37,6 @@ export default function NewPurchasePage() {
   const [vendorId, setVendorId] = useState<string>('');
   const [paymentDone, setPaymentDone] = useState(0);
   const [gst, setGst] = useState(0);
-  const selectTriggersRef = useRef<(HTMLButtonElement | null)[]>([]);
   
   const loadData = useCallback(() => {
     setVendors(vendorsDAO.load());
@@ -44,58 +45,6 @@ export default function NewPurchasePage() {
 
   useEffect(() => {
     loadData();
-    
-    const handleFocus = () => {
-        // This logic handles the return from the new item page
-        const newProductJson = sessionStorage.getItem('newProduct');
-        if (newProductJson) {
-            sessionStorage.removeItem('newProduct');
-            const newProduct = JSON.parse(newProductJson);
-            
-            // Add to products dropdown list
-            setProducts(prevProducts => {
-                if (!prevProducts.some(p => p.id === newProduct.id)) {
-                    return [...prevProducts, newProduct];
-                }
-                return prevProducts;
-            });
-            
-            // Add to the items list, replacing the first empty row
-            setItems(prevItems => {
-                const newItems = [...prevItems];
-                const emptyItemIndex = newItems.findIndex(item => item.productId === '');
-                const targetIndex = emptyItemIndex !== -1 ? emptyItemIndex : newItems.length -1;
-                
-                if (targetIndex !== -1) {
-                    newItems[targetIndex] = {
-                        productId: newProduct.id,
-                        productName: newProduct.name,
-                        quantity: 1,
-                        purchasePrice: newProduct.price,
-                        total: newProduct.price,
-                    };
-                    return newItems;
-                }
-                // Fallback if there are no items
-                return [{
-                    productId: newProduct.id,
-                    productName: newProduct.name,
-                    quantity: 1,
-                    purchasePrice: newProduct.price,
-                    total: newProduct.price,
-                }];
-            });
-        } else {
-           // Standard data refresh on focus
-           loadData();
-        }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => {
-        window.removeEventListener('focus', handleFocus);
-    };
-
   }, [loadData]);
 
   const handleAddItem = () => {
@@ -111,12 +60,24 @@ export default function NewPurchasePage() {
     (item[field] as any) = value;
 
     if (field === 'productId') {
-        const product = products.find(p => p.id === value);
-        item.productName = product?.name || '';
-        item.purchasePrice = product?.price || 0; // Or fetch last purchase price
+        if (value === 'add_new') {
+            item.isNew = true;
+            item.productId = `new_${Date.now()}`;
+            item.productName = '';
+        } else {
+            item.isNew = false;
+            const product = products.find(p => p.id === value);
+            item.productName = product?.name || '';
+            item.purchasePrice = product?.price || 0;
+        }
     }
     
-    item.total = item.quantity * item.purchasePrice;
+    if (field === 'productName' && item.isNew) {
+        // Just update name, no other changes needed
+    } else {
+        item.total = item.quantity * item.purchasePrice;
+    }
+    
     newItems[index] = item;
     setItems(newItems);
   };
@@ -139,7 +100,7 @@ export default function NewPurchasePage() {
     
     const vendor = vendors.find(v => v.id === vendorId);
 
-    if (!vendor || !orderDate || items.length === 0 || items.some(i => !i.productId)) {
+    if (!vendor || !orderDate || items.length === 0 || items.some(i => i.isNew ? !i.productName : !i.productId)) {
         toast({
             variant: 'destructive',
             title: 'Missing Fields',
@@ -166,15 +127,6 @@ export default function NewPurchasePage() {
     });
     router.push('/inventory');
 
-  };
-
-  const handleCreateNewItemClick = (e: React.MouseEvent<HTMLButtonElement>, index: number) => {
-    e.preventDefault();
-    // Add an empty item row if none exists for the new item to populate
-    if (!items.some(item => item.productId === '')) {
-      handleAddItem();
-    }
-    router.push('/inventory/new?fromPurchase=true');
   };
 
   return (
@@ -250,15 +202,28 @@ export default function NewPurchasePage() {
                         <div key={index} className="grid grid-cols-12 gap-4 items-end">
                             <div className="grid gap-3 col-span-4">
                                 {index === 0 && <Label>Item</Label>}
-                                <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
-                                     <SelectTrigger ref={(el) => (selectTriggersRef.current[index] = el)}>
-                                        <SelectValue placeholder="Select item" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-                                         <Button variant="ghost" className="w-full mt-2 justify-start p-2 h-auto" onClick={(e) => handleCreateNewItemClick(e, index)}><PlusCircle className="mr-2"/>Create New Item</Button>
-                                    </SelectContent>
-                                </Select>
+                                {item.isNew ? (
+                                    <Input 
+                                        type="text" 
+                                        placeholder="Enter new item name" 
+                                        value={item.productName} 
+                                        onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
+                                    />
+                                ) : (
+                                    <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select item" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                            <SelectItem value="add_new">
+                                                <div className="flex items-center">
+                                                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+                                                </div>
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
                             <div className="grid gap-3 col-span-2">
                                {index === 0 && <Label>Quantity</Label>}
@@ -270,7 +235,7 @@ export default function NewPurchasePage() {
                             </div>
                              <div className="grid gap-3 col-span-2">
                                {index === 0 && <Label>Total</Label>}
-                                <Input type="number" value={item.total.toFixed(2)} readOnly placeholder="0.00" className='bg-muted' />
+                                <Input type="number" value={(item.quantity * item.purchasePrice).toFixed(2)} readOnly placeholder="0.00" className='bg-muted' />
                             </div>
                             <div className="col-span-2 flex items-end">
                                 <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveItem(index)}>
@@ -322,3 +287,5 @@ export default function NewPurchasePage() {
     </AppLayout>
   );
 }
+
+    
