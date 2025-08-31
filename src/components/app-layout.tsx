@@ -26,6 +26,8 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
 
@@ -57,14 +59,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </Button>
             </SheetTrigger>
             <SheetContent side="left">
-              <nav className="grid gap-6 text-lg font-medium">
-                <Link
-                  href="#"
-                  className="flex items-center gap-2 text-lg font-semibold"
-                >
-                  <Icons.logo className="h-6 w-6 text-primary" />
-                  <span >Vyapar Co</span>
-                </Link>
+                <SheetHeader>
+                    <SheetTitle asChild>
+                        <Link
+                        href="#"
+                        className="flex items-center gap-2 text-lg font-semibold"
+                        >
+                        <Icons.logo className="h-6 w-6 text-primary" />
+                        <span >Vyapar Co</span>
+                        </Link>
+                    </SheetTitle>
+                </SheetHeader>
+              <nav className="grid gap-6 text-lg font-medium mt-6">
                 {menuItems.map((item) => (
                    <Link
                       key={item.label}
