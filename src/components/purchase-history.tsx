@@ -30,6 +30,10 @@ export function PurchaseHistory() {
   const { data: purchases, setData: setPurchases } = useLocalStorageData(purchasesDAO);
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const { toast } = useToast();
+
+  const sortedPurchases = useMemo(() => {
+    return [...purchases].sort((a, b) => b.id.localeCompare(a.id));
+  }, [purchases]);
   
   const allPurchasesSelected = useMemo(() => selectedPurchases.length > 0 && selectedPurchases.length === purchases.length, [selectedPurchases, purchases]);
 
@@ -190,7 +194,7 @@ export function PurchaseHistory() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {purchases.map((purchase) => (
+            {sortedPurchases.map((purchase) => (
               <TableRow key={purchase.id} data-state={selectedPurchases.includes(purchase.id) && "selected"}>
                 <TableCell>
                     <Checkbox
