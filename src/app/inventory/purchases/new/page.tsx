@@ -19,6 +19,8 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 
 type PurchaseItem = {
+    // A temporary ID for react key prop
+    id: string;
     productId: string;
     productName: string;
     quantity: number;
@@ -48,10 +50,11 @@ export default function NewPurchasePage() {
     loadData();
   }, [loadData]);
 
+
   const handleAddItem = () => {
     setItems([
       ...items,
-      { productId: '', productName: '', quantity: 1, purchasePrice: 0, total: 0 },
+      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, purchasePrice: 0, total: 0 },
     ]);
   };
 
@@ -65,19 +68,19 @@ export default function NewPurchasePage() {
             item.isNew = true;
             item.productId = `new_${Date.now()}`;
             item.productName = '';
+            item.purchasePrice = 0;
         } else {
             item.isNew = false;
             const product = products.find(p => p.id === value);
-            item.productName = product?.name || '';
-            item.purchasePrice = product?.price || 0;
+            if (product) {
+              item.productName = product.name;
+              item.purchasePrice = product.purchasePrice; // Default to last purchase price
+            }
         }
     }
     
-    if (field === 'productName' && item.isNew) {
-        // Just update name, no other changes needed
-    } else {
-        item.total = item.quantity * item.purchasePrice;
-    }
+    // Recalculate total
+    item.total = item.quantity * item.purchasePrice;
     
     newItems[index] = item;
     setItems(newItems);
@@ -102,11 +105,11 @@ export default function NewPurchasePage() {
     
     const vendor = vendors.find(v => v.id === vendorId);
 
-    if (!vendor || !orderDate || items.length === 0 || items.some(i => i.isNew ? !i.productName : !i.productId)) {
+    if (!vendor || !orderDate || items.length === 0 || items.some(i => !i.productName || i.purchasePrice <= 0)) {
         toast({
             variant: 'destructive',
             title: 'Missing Fields',
-            description: 'Please select a vendor, order date, and add at least one valid item.',
+            description: 'Please select a vendor, order date, and ensure all items have a name and a valid purchase price.',
         });
         return;
     }
@@ -115,7 +118,7 @@ export default function NewPurchasePage() {
         vendorId: vendor.id,
         vendorName: vendor.vendorName,
         orderDate: format(orderDate, 'PPP'),
-        items: items.map(i => ({...i})),
+        items: items.map(({id, ...rest}) => ({...rest})),
         totalAmount,
         paymentDone,
         dueAmount,
@@ -128,7 +131,7 @@ export default function NewPurchasePage() {
         title: 'Purchase Order Created',
         description: 'The purchase order has been saved with pending status.',
     });
-    router.push('/inventory');
+    router.push('/inventory?tab=purchases');
 
   };
 
@@ -202,7 +205,7 @@ export default function NewPurchasePage() {
                 <CardContent>
                     <div className="grid gap-4">
                         {items.map((item, index) => (
-                        <div key={index} className="grid grid-cols-12 gap-4 items-end">
+                        <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
                             <div className="grid gap-3 col-span-4">
                                 {index === 0 && <Label>Item</Label>}
                                 {item.isNew ? (
@@ -218,7 +221,7 @@ export default function NewPurchasePage() {
                                             <SelectValue placeholder="Select item" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+                                            {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({p.batchCode})</SelectItem>)}
                                             <SelectItem value="add_new">
                                                 <div className="flex items-center">
                                                     <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
@@ -238,7 +241,7 @@ export default function NewPurchasePage() {
                             </div>
                              <div className="grid gap-3 col-span-2">
                                {index === 0 && <Label>Total</Label>}
-                                <Input type="number" value={(item.quantity * item.purchasePrice).toFixed(2)} readOnly placeholder="0.00" className='bg-muted' />
+                                <Input type="number" value={item.total.toFixed(2)} readOnly placeholder="0.00" className='bg-muted' />
                             </div>
                             <div className="col-span-2 flex items-end">
                                 <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveItem(index)}>

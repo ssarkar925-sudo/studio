@@ -23,7 +23,7 @@ import { MoreHorizontal, PlusCircle, Upload, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PurchaseHistory } from '@/components/purchase-history';
 import {
@@ -45,6 +45,7 @@ import { useLocalStorageData } from '@/hooks/use-local-storage-data';
 export default function InventoryPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: products } = useLocalStorageData(productsDAO);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   
@@ -68,6 +69,7 @@ export default function InventoryPage() {
 
   const handleDelete = (productId: string) => {
     productsDAO.remove(productId);
+    // useLocalStorageData hook will handle re-render
     toast({
       title: 'Item Deleted',
       description: 'The inventory item has been successfully deleted.',
@@ -76,6 +78,7 @@ export default function InventoryPage() {
 
   const handleDeleteSelected = () => {
     selectedProducts.forEach(id => productsDAO.remove(id));
+    // useLocalStorageData hook will handle re-render
     toast({
         title: 'Items Deleted',
         description: `${selectedProducts.length} item(s) have been deleted.`,
@@ -105,7 +108,7 @@ export default function InventoryPage() {
           </Button>
         </div>
       </div>
-      <Tabs defaultValue="stock">
+      <Tabs defaultValue={searchParams.get('tab') || "stock"}>
         <TabsList>
           <TabsTrigger value="stock">Stock</TabsTrigger>
           <TabsTrigger value="purchases">Purchases</TabsTrigger>
@@ -141,7 +144,7 @@ export default function InventoryPage() {
                <Button asChild>
                 <Link href="/inventory/new">
                   <PlusCircle />
-                  New Item
+                  New Stock Entry
                 </Link>
               </Button>
             </CardHeader>

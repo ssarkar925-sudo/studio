@@ -15,19 +15,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { productsDAO } from '@/lib/data';
+import { productsDAO, purchasesDAO } from '@/lib/data';
 import { useEffect, useState } from 'react';
+import { format } from 'date-fns';
 
 export default function NewInventoryItemPage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [fromPurchase, setFromPurchase] = useState(false);
-
-  useEffect(() => {
-    // This check needs to be in useEffect to ensure it only runs on the client
-    setFromPurchase(new URLSearchParams(window.location.search).has('fromPurchase'));
-  }, []);
-
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -36,7 +30,7 @@ export default function NewInventoryItemPage() {
     const purchasePrice = parseFloat(formData.get('purchasePrice') as string);
     const stock = parseInt(formData.get('stock') as string, 10);
 
-     if (!name || isNaN(purchasePrice)) {
+     if (!name || isNaN(purchasePrice) || isNaN(stock)) {
        toast({
         variant: 'destructive',
         title: 'Missing Required Fields',
@@ -45,43 +39,38 @@ export default function NewInventoryItemPage() {
       return;
     }
 
-    if (!fromPurchase && isNaN(stock)) {
-       toast({
-        variant: 'destructive',
-        title: 'Missing Required Fields',
-        description: 'Please provide a stock quantity.',
-      });
-      return;
-    }
+    // Create a pending purchase order instead of adding directly to stock
+    purchasesDAO.add({
+        vendorName: 'N/A (Manual Entry)',
+        vendorId: 'manual',
+        orderDate: format(new Date(), 'PPP'),
+        items: [{
+            productId: `new_${Date.now()}`,
+            productName: name,
+            quantity: stock,
+            purchasePrice: purchasePrice,
+            total: stock * purchasePrice,
+            isNew: true,
+        }],
+        totalAmount: stock * purchasePrice,
+        paymentDone: 0,
+        dueAmount: stock * purchasePrice,
+        status: 'Pending',
+        gst: 0,
+        deliveryCharges: 0,
+    });
 
-    const newProductData = {
-      name,
-      purchasePrice,
-      sellingPrice: purchasePrice * 1.5, // 50% markup
-      stock: fromPurchase ? 0 : stock,
-      sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
-      batchCode: `BCH-${Date.now()}`.toUpperCase(),
-    };
-
-    const newProduct = productsDAO.add(newProductData);
-    
-    if (fromPurchase) {
-      // Store new product info in session storage and go back
-      sessionStorage.setItem('newProduct', JSON.stringify(newProduct));
-      router.back();
-    } else {
-       toast({
-        title: 'Item Created',
-        description: `Successfully created item: ${name}.`,
-      });
-      router.push('/inventory');
-    }
+    toast({
+        title: 'Purchase Entry Created',
+        description: `A pending purchase for "${name}" has been created. Receive it in the "Purchases" tab to add it to stock.`,
+    });
+    router.push('/inventory?tab=purchases');
   };
 
   return (
     <AppLayout>
       <div className="mx-auto grid w-full max-w-2xl gap-2">
-        <h1 className="text-2xl font-semibold">New Inventory Item</h1>
+        <h1 className="text-2xl font-semibold">New Stock Entry</h1>
       </div>
       <div className="mx-auto grid w-full max-w-2xl items-start gap-6">
         <form onSubmit={handleSubmit}>
@@ -89,30 +78,30 @@ export default function NewInventoryItemPage() {
             <CardHeader>
               <CardTitle>Item Details</CardTitle>
               <CardDescription>
-                Fill out the form to add a new item to your inventory.
+                Create a pending purchase order to add new stock. The item will be added to inventory after you mark it as &quot;Received&quot; in the purchases tab.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid gap-6">
                 <div className="grid gap-3">
                   <Label htmlFor="name">Item Name</Label>
-                  <Input id="name" name="name" type="text" className="w-full" placeholder="e.g. Web Design Service" required />
+                  <Input id="name" name="name" type="text" className="w-full" placeholder="e.g. T-Shirt (Large)" required />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-3">
-                        <Label htmlFor="purchasePrice">Purchase Price</Label>
+                        <Label htmlFor="purchasePrice">Purchase Price (per unit)</Label>
                         <Input id="purchasePrice" name="purchasePrice" type="number" placeholder="0.00" required step="0.01" />
                     </div>
                     <div className="grid gap-3">
-                        <Label htmlFor="stock">Initial Stock</Label>
-                        <Input id="stock" name="stock" type="number" placeholder="0" required={!fromPurchase} disabled={fromPurchase} defaultValue={fromPurchase ? 0 : undefined} />
+                        <Label htmlFor="stock">Quantity</Label>
+                        <Input id="stock" name="stock" type="number" placeholder="0" required />
                     </div>
                 </div>
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
                 <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
-                <Button type="submit">Save Item</Button>
+                <Button type="submit">Create Purchase Entry</Button>
             </CardFooter>
           </Card>
         </form>
