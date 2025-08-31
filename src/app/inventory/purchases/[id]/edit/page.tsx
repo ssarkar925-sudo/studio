@@ -35,9 +35,9 @@ export default function EditPurchasePage() {
   const { toast } = useToast();
   
   const [purchase, setPurchase] = useState<Purchase | null>(null);
-  const { data: vendors, refreshData: refreshVendors } = useLocalStorageData(vendorsDAO);
-  const { data: products, refreshData: refreshProducts } = useLocalStorageData(productsDAO);
-  const { data: purchases, refreshData: refreshPurchases } = useLocalStorageData(purchasesDAO);
+  const { data: vendors } = useLocalStorageData(vendorsDAO);
+  const { data: products } = useLocalStorageData(productsDAO);
+  const { data: purchases } = useLocalStorageData(purchasesDAO);
   
   const [orderDate, setOrderDate] = useState<Date | undefined>();
   const [items, setItems] = useState<PurchaseItem[]>([]);
@@ -51,12 +51,7 @@ export default function EditPurchasePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    refreshVendors();
-    refreshProducts();
-    refreshPurchases();
-  }, [refreshVendors, refreshProducts, refreshPurchases]);
-
-  useEffect(() => {
+    // We wait until the `purchases` data has been loaded from local storage.
     if (purchases.length > 0) {
       const foundPurchase = purchases.find(p => p.id === purchaseId);
       if (foundPurchase) {
@@ -72,6 +67,7 @@ export default function EditPurchasePage() {
         setPurchase(foundPurchase);
         setVendorId(foundPurchase.vendorId);
         setOrderDate(parse(foundPurchase.orderDate, 'PPP', new Date()));
+        // Add a temporary unique `id` to each item for the key prop in React
         setItems(foundPurchase.items.map(item => ({...item, id: `item-${Math.random()}`})));
         setPaymentDone(foundPurchase.paymentDone || 0);
         setGst(foundPurchase.gst || 0);
@@ -184,7 +180,9 @@ export default function EditPurchasePage() {
   }
   
   if (!purchase) {
-    return null; // The redirect is handled in the effect
+    // This case should ideally not be reached if the effect logic is correct,
+    // but it's a safe fallback. The redirect is handled in the effect.
+    return null; 
   }
 
   return (
@@ -343,3 +341,5 @@ export default function EditPurchasePage() {
     </AppLayout>
   );
 }
+
+    
