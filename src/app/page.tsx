@@ -15,15 +15,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
-
-const chartData = [
-  { month: 'January', total: 0, paid: 0 },
-  { month: 'February', total: 0, paid: 0 },
-  { month: 'March', total: 0, paid: 0 },
-  { month: 'April', total: 0, paid: 0 },
-  { month: 'May', total: 0, paid: 0 },
-  { month: 'June', total: 0, paid: 0 },
-];
+import { subMonths, format, parse, startOfMonth } from 'date-fns';
+import { useMemo } from 'react';
 
 const chartConfig = {
   total: {
@@ -46,6 +39,39 @@ export default function DashboardPage() {
     .filter((i) => i.status === 'Pending' || i.status === 'Overdue')
     .reduce((sum, i) => sum + i.amount, 0);
   const overdue = invoices.filter((i) => i.status === 'Overdue').length;
+
+  const chartData = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const date = subMonths(new Date(), 5 - i);
+      return {
+        month: format(date, 'MMMM'),
+        total: 0,
+        paid: 0,
+        start: startOfMonth(date),
+      };
+    });
+
+    invoices.forEach(invoice => {
+      try {
+        const issueDate = parse(invoice.issueDate, 'PPP', new Date());
+        const monthData = months.find(m => 
+            issueDate.getMonth() === m.start.getMonth() && 
+            issueDate.getFullYear() === m.start.getFullYear()
+        );
+
+        if (monthData) {
+          monthData.total += invoice.amount;
+          if (invoice.status === 'Paid') {
+            monthData.paid += invoice.amount;
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing invoice date", invoice.issueDate);
+      }
+    });
+
+    return months.map(({ month, total, paid }) => ({ month, total, paid }));
+  }, [invoices]);
 
   return (
     <AppLayout>
@@ -150,9 +176,17 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
       </div>
     );
   }
+  const sortedInvoices = [...invoices].sort((a,b) => {
+      try {
+        return parse(b.issueDate, 'PPP', new Date()).getTime() - parse(a.issueDate, 'PPP', new Date()).getTime()
+      } catch {
+        return 0;
+      }
+  });
+
   return (
     <div className="space-y-4">
-      {invoices.slice(0, 5).map((invoice) => (
+      {sortedInvoices.slice(0, 5).map((invoice) => (
         <div key={invoice.id} className="flex items-center">
           <div className="space-y-1">
             <p className="text-sm font-medium leading-none">

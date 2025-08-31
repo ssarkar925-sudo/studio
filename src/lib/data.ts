@@ -3,6 +3,14 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe } from 'firebase/firestore';
 import { notifyDataChange } from '@/hooks/use-firestore-data';
 
+export type InvoiceItem = {
+    productId: string;
+    productName: string;
+    quantity: number;
+    sellingPrice: number;
+    total: number;
+}
+
 export type Invoice = {
   id: string;
   invoiceNumber: string;
@@ -15,6 +23,7 @@ export type Invoice = {
   dueDate: string;
   status: 'Paid' | 'Pending' | 'Overdue';
   amount: number;
+  items: InvoiceItem[];
 };
 
 export type Customer = {
@@ -149,11 +158,3 @@ export const productsDAO = createProductsDAO();
 
 export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
 export const purchasesDAO = createFirestoreDAO<Purchase>('purchases');
-
-
-export const invoiceTemplates: string[] = [
-  'Versatile Service & Product Invoice',
-  'Detailed Itemized Invoice',
-  'Retail/Point-of-Sale Invoice',
-  'Hourly Service & Product Combination Invoice',
-];
