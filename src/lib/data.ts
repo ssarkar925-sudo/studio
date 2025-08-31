@@ -132,3 +132,10 @@ export const products: Product[] = [
   { id: '3', name: 'Monthly Retainer', price: 2000, stock: 5 },
   { id: '4', name: 'Hourly Consulting', price: 150, stock: 100 },
 ];
+
+export const invoiceTemplates: string[] = [
+  'Versatile Service & Product Invoice',
+  'Detailed Itemized Invoice',
+  'Retail/Point-of-Sale Invoice',
+  'Hourly Service & Product Combination Invoice',
+];

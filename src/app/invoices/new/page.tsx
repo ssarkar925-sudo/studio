@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { customers } from '@/lib/data';
+import { customers, invoiceTemplates } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon } from 'lucide-react';
@@ -135,6 +135,19 @@ export default function NewInvoicePage() {
                     </Popover>
                   </div>
                 </div>
+                 <div className="grid gap-3">
+                    <Label htmlFor="template">Template</Label>
+                    <Select name="template">
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a template" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {invoiceTemplates.map((template) => (
+                          <SelectItem key={template} value={template}>{template}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                  <div className="grid gap-3">
                   <Label htmlFor="items">Items</Label>
                   <Textarea id="items" name="items" placeholder="Enter invoice items..." />
