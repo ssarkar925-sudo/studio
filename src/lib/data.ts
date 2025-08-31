@@ -1,4 +1,5 @@
 
+
 export type Invoice = {
   id: string;
   invoiceNumber: string;
@@ -27,8 +28,11 @@ export type Customer = {
 export type Product = {
   id:string;
   name: string;
-  price: number;
+  purchasePrice: number;
+  sellingPrice: number;
   stock: number;
+  sku: string;
+  batchCode: string;
 };
 
 export type Vendor = {
@@ -137,14 +141,24 @@ const createProductsDAO = () => {
     const addProduct = (item: Omit<Product, 'id'>) => {
         const products = baseDAO.load();
         const newProduct = { ...item, id: new Date().toISOString() + Math.random() } as Product;
-        const updatedProducts = [...products, newProduct];
-        baseDAO.save(updatedProducts);
+        
+        // Don't save here, let the calling function decide when to save.
+        // This is important for the purchase received logic.
         return newProduct;
     };
     
     return {
         ...baseDAO,
-        add: addProduct,
+        // The add method is overridden for custom logic, but we still need a way
+        // to add without special handling in some cases.
+        // The purchase received logic will handle adding and saving.
+        add: (item: Omit<Product, 'id'>): Product => {
+            const products = baseDAO.load();
+            const newProduct = { ...item, id: new Date().toISOString() + Math.random() } as Product;
+            const updatedProducts = [...products, newProduct];
+            baseDAO.save(updatedProducts);
+            return newProduct;
+        },
     };
 }
 export const productsDAO = createProductsDAO();

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -13,6 +14,7 @@ import { productsDAO, type Product } from '@/lib/data';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 export default function ProductDetailsPage() {
   const router = useRouter();
@@ -52,20 +54,43 @@ export default function ProductDetailsPage() {
       <div className="mx-auto grid w-full max-w-2xl items-start gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>{product.name}</CardTitle>
-            <CardDescription>
-              Detailed information about the inventory item.
-            </CardDescription>
+             <div className="flex justify-between items-start">
+                <div>
+                    <CardTitle>{product.name}</CardTitle>
+                    <CardDescription>
+                    Detailed information about the inventory item.
+                    </CardDescription>
+                </div>
+                {product.stock <= 10 ? (
+                    <Badge variant="destructive">Low Stock</Badge>
+                ) : (
+                    <Badge variant="default">In Stock</Badge>
+                )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-6">
                 <div className="grid gap-3">
-                    <p className="text-sm font-medium text-muted-foreground">Price</p>
-                    <p>₹{product.price.toFixed(2)}</p>
+                    <p className="text-sm font-medium text-muted-foreground">SKU</p>
+                    <p>{product.sku}</p>
+                </div>
+                <div className="grid gap-3">
+                    <p className="text-sm font-medium text-muted-foreground">Batch Code</p>
+                    <p>{product.batchCode}</p>
                 </div>
                 <div className="grid gap-3">
                     <p className="text-sm font-medium text-muted-foreground">Stock</p>
                     <p>{product.stock}</p>
+                </div>
+                <div className="grid gap-3">
+                </div>
+                <div className="grid gap-3">
+                    <p className="text-sm font-medium text-muted-foreground">Purchase Price</p>
+                    <p>₹{product.purchasePrice.toFixed(2)}</p>
+                </div>
+                <div className="grid gap-3">
+                    <p className="text-sm font-medium text-muted-foreground">Selling Price</p>
+                    <p className='font-semibold'>₹{product.sellingPrice.toFixed(2)}</p>
                 </div>
             </div>
           </CardContent>

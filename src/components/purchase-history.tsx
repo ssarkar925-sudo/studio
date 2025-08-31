@@ -75,24 +75,44 @@ export function PurchaseHistory() {
   };
 
   const handleMarkAsReceived = (purchase: Purchase) => {
+    const allProducts = productsDAO.load();
+    
     purchase.items.forEach(item => {
+        const totalItemsInPurchase = purchase.items.reduce((sum, i) => sum + i.quantity, 0);
+        const perItemDeliveryCharge = (purchase.deliveryCharges || 0) / totalItemsInPurchase;
+        const purchasePriceWithCharges = item.purchasePrice * (1 + (purchase.gst || 0) / 100) + perItemDeliveryCharge;
+
         if (item.isNew) {
-            // It's a new item, create it in inventory
-             const newProduct: Omit<Product, 'id'> = {
+            const newProduct: Omit<Product, 'id'> = {
                 name: item.productName,
-                price: item.purchasePrice * 1.5, // Default 50% markup
+                purchasePrice: purchasePriceWithCharges,
+                sellingPrice: purchasePriceWithCharges * 1.5, // 50% markup
                 stock: item.quantity,
+                sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
+                batchCode: `BCH-${Date.now()}`.toUpperCase(),
             };
-            productsDAO.add(newProduct);
+            allProducts.push({ ...newProduct, id: `new-${Date.now()}-${Math.random()}`});
         } else {
-            // It's an existing item, update stock
-            const product = productsDAO.load().find(p => p.id === item.productId);
+            const product = allProducts.find(p => p.id === item.productId);
             if(product) {
               const newStock = product.stock + item.quantity;
               productsDAO.update(item.productId, { stock: newStock });
+            } else {
+               // This case handles if an existing product was deleted before receiving
+               const newProduct: Omit<Product, 'id'> = {
+                name: item.productName,
+                purchasePrice: purchasePriceWithCharges,
+                sellingPrice: purchasePriceWithCharges * 1.5,
+                stock: item.quantity,
+                sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
+                batchCode: `BCH-${Date.now()}`.toUpperCase(),
+              };
+              allProducts.push({ ...newProduct, id: item.productId });
             }
         }
     });
+
+    productsDAO.save(allProducts);
 
     const updatedPurchase: Partial<Purchase> = {
         status: 'Received',
@@ -218,5 +238,3 @@ export function PurchaseHistory() {
     </Card>
   );
 }
-
-    

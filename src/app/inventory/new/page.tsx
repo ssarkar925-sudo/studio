@@ -1,3 +1,4 @@
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -32,10 +33,10 @@ export default function NewInventoryItemPage() {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
-    const price = parseFloat(formData.get('price') as string);
+    const purchasePrice = parseFloat(formData.get('purchasePrice') as string);
     const stock = parseInt(formData.get('stock') as string, 10);
 
-     if (!name || isNaN(price)) {
+     if (!name || isNaN(purchasePrice)) {
        toast({
         variant: 'destructive',
         title: 'Missing Required Fields',
@@ -53,11 +54,16 @@ export default function NewInventoryItemPage() {
       return;
     }
 
-    const newProduct = productsDAO.add({
+    const newProductData = {
       name,
-      price,
+      purchasePrice,
+      sellingPrice: purchasePrice * 1.5, // 50% markup
       stock: fromPurchase ? 0 : stock,
-    }, fromPurchase);
+      sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
+      batchCode: `BCH-${Date.now()}`.toUpperCase(),
+    };
+
+    const newProduct = productsDAO.add(newProductData);
     
     if (fromPurchase) {
       // Store new product info in session storage and go back
@@ -94,8 +100,8 @@ export default function NewInventoryItemPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-3">
-                        <Label htmlFor="price">Price (per item)</Label>
-                        <Input id="price" name="price" type="number" placeholder="0.00" required step="0.01" />
+                        <Label htmlFor="purchasePrice">Purchase Price</Label>
+                        <Input id="purchasePrice" name="purchasePrice" type="number" placeholder="0.00" required step="0.01" />
                     </div>
                     <div className="grid gap-3">
                         <Label htmlFor="stock">Initial Stock</Label>
