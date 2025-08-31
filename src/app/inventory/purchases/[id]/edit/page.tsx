@@ -35,9 +35,9 @@ export default function EditPurchasePage() {
   const { toast } = useToast();
   
   const [purchase, setPurchase] = useState<Purchase | null>(null);
-  const { data: vendors } = useLocalStorageData(vendorsDAO);
-  const { data: products } = useLocalStorageData(productsDAO);
-  const { data: purchases } = useLocalStorageData(purchasesDAO);
+  const { data: vendors, refreshData: refreshVendors } = useLocalStorageData(vendorsDAO);
+  const { data: products, refreshData: refreshProducts } = useLocalStorageData(productsDAO);
+  const { data: purchases, refreshData: refreshPurchases } = useLocalStorageData(purchasesDAO);
   
   const [orderDate, setOrderDate] = useState<Date | undefined>();
   const [items, setItems] = useState<PurchaseItem[]>([]);
@@ -48,8 +48,16 @@ export default function EditPurchasePage() {
   
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    if (purchases.length > 0 && purchaseId && !purchase) {
+    refreshVendors();
+    refreshProducts();
+    refreshPurchases();
+  }, [refreshVendors, refreshProducts, refreshPurchases]);
+
+  useEffect(() => {
+    if (purchases.length > 0) {
       const foundPurchase = purchases.find(p => p.id === purchaseId);
       if (foundPurchase) {
         if (foundPurchase.status !== 'Pending') {
@@ -76,6 +84,7 @@ export default function EditPurchasePage() {
           });
           router.push('/inventory?tab=purchases');
       }
+      setIsLoading(false);
     }
   }, [purchaseId, purchases, router, toast]);
 
@@ -164,7 +173,7 @@ export default function EditPurchasePage() {
 
   };
 
-  if (!purchase) {
+  if (isLoading) {
     return (
         <AppLayout>
             <div className="mx-auto grid w-full max-w-2xl gap-2">
@@ -172,6 +181,10 @@ export default function EditPurchasePage() {
             </div>
         </AppLayout>
     );
+  }
+  
+  if (!purchase) {
+    return null; // The redirect is handled in the effect
   }
 
   return (
