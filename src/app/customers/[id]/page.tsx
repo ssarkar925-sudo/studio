@@ -52,7 +52,7 @@ export default async function CustomerDetailsPage({ params }: { params: { id: st
                     <span className="sr-only">Back</span>
                 </Link>
             </Button>
-            <h1 className="text-2xl font-semibold">Customer Details</h1>
+            <h1 className="text-xl md:text-2xl font-semibold">Customer Details</h1>
         </div>
       </div>
       <div className="mx-auto grid w-full max-w-2xl items-start gap-6">
@@ -65,7 +65,7 @@ export default async function CustomerDetailsPage({ params }: { params: { id: st
           </CardHeader>
           <CardContent>
             <div className="grid gap-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="grid gap-3">
                     <p className="text-sm font-medium text-muted-foreground">Phone</p>
                     <p>{customer.phone || 'N/A'}</p>
@@ -75,7 +75,7 @@ export default async function CustomerDetailsPage({ params }: { params: { id: st
                     <p>{customer.address || 'N/A'}</p>
                 </div>
               </div>
-               <div className="grid grid-cols-3 gap-4 mt-6">
+               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
                 <div className="grid gap-3">
                     <p className="text-sm font-medium text-muted-foreground">Total Invoiced</p>
                     <p>₹{customer.totalInvoiced.toFixed(2)}</p>

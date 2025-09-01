@@ -220,7 +220,7 @@ export default function NewPurchasePage() {
                     <CardDescription>Fill out the form to create a new purchase order.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
                             <Select name="vendor" required onValueChange={setVendorId} value={vendorId}>
@@ -268,7 +268,7 @@ export default function NewPurchasePage() {
                             {isExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                             Import with AI
                         </Button>
-                        <p className='text-sm text-muted-foreground self-center'>Upload a bill to auto-fill details.</p>
+                        <p className='text-sm text-muted-foreground self-center hidden sm:inline'>Upload a bill to auto-fill details.</p>
                     </div>
                 </CardFooter>
             </Card>
@@ -281,8 +281,8 @@ export default function NewPurchasePage() {
                     <div className="grid gap-4">
                         {items.map((item, index) => (
                         <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
-                            <div className="grid gap-3 col-span-4">
-                                {index === 0 && <Label>Item</Label>}
+                            <div className="grid gap-3 col-span-12 sm:col-span-4">
+                                {index === 0 && <Label className="hidden sm:block">Item</Label>}
                                 {item.isNew ? (
                                     <Input 
                                         type="text" 
@@ -306,26 +306,26 @@ export default function NewPurchasePage() {
                                     </Select>
                                 )}
                             </div>
-                            <div className="grid gap-3 col-span-2">
-                               {index === 0 && <Label>Quantity</Label>}
+                            <div className="grid gap-3 col-span-4 sm:col-span-2">
+                               {index === 0 && <Label className="hidden sm:block">Qty</Label>}
                                 <Input type="number" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)} placeholder="1" />
                             </div>
-                             <div className="grid gap-3 col-span-2">
-                               {index === 0 && <Label>Purchase Price</Label>}
+                             <div className="grid gap-3 col-span-4 sm:col-span-2">
+                               {index === 0 && <Label className="hidden sm:block">Price</Label>}
                                 <Input type="number" step="0.01" value={item.purchasePrice} onChange={(e) => handleItemChange(index, 'purchasePrice', parseFloat(e.target.value) || 0)} placeholder="0.00" />
                             </div>
-                             <div className="grid gap-3 col-span-2">
-                               {index === 0 && <Label>Total</Label>}
+                             <div className="grid gap-3 col-span-4 sm:col-span-2">
+                               {index === 0 && <Label className="hidden sm:block">Total</Label>}
                                 <Input type="number" value={item.total.toFixed(2)} readOnly placeholder="0.00" className='bg-muted' />
                             </div>
-                            <div className="col-span-2 flex items-end">
-                                <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveItem(index)}>
+                            <div className="col-span-12 sm:col-span-2 flex items-end">
+                                <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveItem(index)} className="w-full sm:w-auto">
                                     <Trash2 />
                                 </Button>
                             </div>
                         </div>
                         ))}
-                        <Button type="button" variant="outline" onClick={handleAddItem}>
+                        <Button type="button" variant="outline" onClick={handleAddItem} className="w-full sm:w-auto">
                             <PlusCircle className="mr-2" />
                             Add Item
                         </Button>
@@ -338,24 +338,24 @@ export default function NewPurchasePage() {
                     <CardTitle>Payment</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-5 gap-4">
-                        <div className='grid gap-3 col-span-1'>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className='grid gap-3 md:col-span-1'>
                             <Label>Subtotal</Label>
                             <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted' />
                         </div>
-                         <div className='grid gap-3 col-span-1'>
+                         <div className='grid gap-3 md:col-span-1'>
                             <Label>GST (%)</Label>
                             <Input name="gst" type="number" placeholder="e.g. 18" value={gst} onChange={(e) => setGst(parseFloat(e.target.value) || 0)} />
                         </div>
-                        <div className='grid gap-3 col-span-1'>
+                        <div className='grid gap-3 md:col-span-1'>
                             <Label>Delivery Charges</Label>
                             <Input name="deliveryCharges" type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} />
                         </div>
-                         <div className='grid gap-3 col-span-1'>
+                         <div className='grid gap-3 md:col-span-1'>
                             <Label>Payment Done</Label>
                             <Input name="paymentDone" type="number" placeholder="0.00" value={paymentDone} onChange={(e) => setPaymentDone(parseFloat(e.target.value) || 0)} />
                         </div>
-                         <div className='grid gap-3 col-span-1'>
+                         <div className='grid gap-3 md:col-span-1'>
                             <Label>Due</Label>
                             <Input value={`₹${dueAmount.toFixed(2)}`} readOnly className='bg-muted'/>
                         </div>

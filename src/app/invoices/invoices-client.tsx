@@ -114,7 +114,7 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-semibold">Invoices</h1>
           {selectedInvoices.length > 0 && (
@@ -137,96 +137,161 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
             </AlertDialog>
           )}
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/invoices/new">
             <PlusCircle />
             New Invoice
           </Link>
         </Button>
       </div>
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>All Invoices</CardTitle>
-          <CardDescription>Manage your invoices and track their payment status.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                 <TableHead className="w-12">
+
+      <div className="hidden md:block">
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>All Invoices</CardTitle>
+            <CardDescription>Manage your invoices and track their payment status.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={allInvoicesSelected}
+                      onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                      aria-label="Select all"
+                    />
+                  </TableHead>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className='text-right'>Amount</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Due Date</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {invoices.map((invoice) => (
+                  <TableRow key={invoice.id} data-state={selectedInvoices.includes(invoice.id) && "selected"}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedInvoices.includes(invoice.id)}
+                        onCheckedChange={(checked) => handleSelectInvoice(invoice.id, checked as boolean)}
+                        aria-label="Select row"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {invoice.invoiceNumber}
+                    </TableCell>
+                    <TableCell>{invoice.customer.name}</TableCell>
+                    <TableCell className='text-right'>₹{invoice.amount.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <InvoiceStatusBadge status={invoice.status} />
+                    </TableCell>
+                    <TableCell>{invoice.dueDate}</TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handleAction('View', invoice.id)}>View</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Print', invoice.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                            </AlertDialogTrigger>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete invoice {invoice.invoiceNumber}.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(invoice.id, invoice.invoiceNumber)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+       <div className="md:hidden mt-4 space-y-4">
+        {invoices.map((invoice) => (
+          <Card key={invoice.id}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
                    <Checkbox
-                    checked={allInvoicesSelected}
-                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                    aria-label="Select all"
-                  />
-                 </TableHead>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className='text-right'>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {invoices.map((invoice) => (
-                <TableRow key={invoice.id} data-state={selectedInvoices.includes(invoice.id) && "selected"}>
-                  <TableCell>
-                     <Checkbox
+                      className="mt-1"
                       checked={selectedInvoices.includes(invoice.id)}
                       onCheckedChange={(checked) => handleSelectInvoice(invoice.id, checked as boolean)}
                       aria-label="Select row"
                     />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {invoice.invoiceNumber}
-                  </TableCell>
-                  <TableCell>{invoice.customer.name}</TableCell>
-                  <TableCell className='text-right'>₹{invoice.amount.toFixed(2)}</TableCell>
-                  <TableCell>
-                    <InvoiceStatusBadge status={invoice.status} />
-                  </TableCell>
-                  <TableCell>{invoice.dueDate}</TableCell>
-                  <TableCell>
-                     <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleAction('View', invoice.id)}>View</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Print', invoice.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                           <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                          </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete invoice {invoice.invoiceNumber}.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(invoice.id, invoice.invoiceNumber)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                  <div>
+                    <p className="font-medium">{invoice.customer.name}</p>
+                    <p className="text-sm text-muted-foreground">{invoice.invoiceNumber}</p>
+                  </div>
+                </div>
+                 <AlertDialog>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button aria-haspopup="true" size="icon" variant="ghost">
+                        <MoreHorizontal />
+                        <span className="sr-only">Toggle menu</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onSelect={() => handleAction('View', invoice.id)}>View</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id)}>Edit</DropdownMenuItem>
+                      <DropdownMenuItem onSelect={() => handleAction('Print', invoice.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                      <AlertDialogTrigger asChild>
+                        <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                      </AlertDialogTrigger>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                   <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete invoice {invoice.invoiceNumber}.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(invoice.id, invoice.invoiceNumber)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-lg font-bold">₹{invoice.amount.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">Due: {invoice.dueDate}</p>
+                </div>
+                <InvoiceStatusBadge status={invoice.status} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </>
   );
 }

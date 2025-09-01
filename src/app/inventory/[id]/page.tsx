@@ -51,13 +51,13 @@ export default function ProductDetailsPage() {
                 <ArrowLeft />
                 <span className="sr-only">Back</span>
             </Button>
-            <h1 className="text-2xl font-semibold">Item Details</h1>
+            <h1 className="text-xl md:text-2xl font-semibold">Item Details</h1>
         </div>
       </div>
       <div className="mx-auto grid w-full max-w-2xl items-start gap-6">
         <Card>
           <CardHeader>
-             <div className="flex justify-between items-start">
+             <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
                     <CardTitle>{product.name}</CardTitle>
                     <CardDescription>
@@ -65,14 +65,14 @@ export default function ProductDetailsPage() {
                     </CardDescription>
                 </div>
                 {product.stock <= 10 ? (
-                    <Badge variant="destructive">Low Stock</Badge>
+                    <Badge variant="destructive" className="shrink-0">Low Stock</Badge>
                 ) : (
-                    <Badge variant="default">In Stock</Badge>
+                    <Badge variant="default" className="shrink-0">In Stock</Badge>
                 )}
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div className="grid gap-3">
                     <p className="text-sm font-medium text-muted-foreground">SKU</p>
                     <p>{product.sku}</p>

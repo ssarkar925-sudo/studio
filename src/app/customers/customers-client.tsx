@@ -101,7 +101,7 @@ export function CustomersClient({ customers: initialCustomers }: { customers: Cu
 
   return (
     <>
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-semibold">Customers</h1>
            {selectedCustomers.length > 0 && (
@@ -124,113 +124,198 @@ export function CustomersClient({ customers: initialCustomers }: { customers: Cu
             </AlertDialog>
           )}
         </div>
-        <Button asChild>
+        <Button asChild className="w-full sm:w-auto">
           <Link href="/customers/new">
             <PlusCircle />
             New Customer
           </Link>
         </Button>
       </div>
-      <Card className="mt-4">
-        <CardHeader>
-          <CardTitle>All Customers</CardTitle>
-          <CardDescription>Manage your customers and view their sales history.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                 <TableHead className="w-12">
-                   <Checkbox
-                    checked={allCustomersSelected}
-                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                    aria-label="Select all"
-                  />
-                 </TableHead>
-                <TableHead>Customer</TableHead>
-                <TableHead className='text-right'>Total Invoiced</TableHead>
-                <TableHead className='text-right'>Total Paid</TableHead>
-                <TableHead className='text-right'>Total Due</TableHead>
-                <TableHead className='text-right'>Invoices</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {customers.map((customer) => (
-                <TableRow key={customer.id} data-state={selectedCustomers.includes(customer.id) && "selected"}>
-                  <TableCell>
+
+      <div className="hidden md:block">
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle>All Customers</CardTitle>
+            <CardDescription>Manage your customers and view their sales history.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedCustomers.includes(customer.id)}
-                      onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked as boolean)}
-                      aria-label="Select row"
+                      checked={allCustomersSelected}
+                      onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                      aria-label="Select all"
                     />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className='h-9 w-9'>
-                        <AvatarImage
-                          src={`https://picsum.photos/40/40?random=${customer.id}`}
-                          data-ai-hint="profile picture"
-                        />
-                        <AvatarFallback>
-                          {customer.name
-                            .split(' ')
-                            .map((n) => n[0])
-                            .join('')}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-medium">{customer.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {customer.email}
-                        </p>
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className='text-right'>₹{customer.totalInvoiced.toFixed(2)}</TableCell>
-                  <TableCell className='text-right'>₹{customer.totalPaid.toFixed(2)}</TableCell>
-                  <TableCell className='text-right'>₹{(customer.totalInvoiced - customer.totalPaid).toFixed(2)}</TableCell>
-                  <TableCell className='text-right'>{customer.invoices}</TableCell>
-                  <TableCell>
-                    <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleAction('View', customer.id)}>View</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Edit', customer.id)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Print', customer.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                          </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                      <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete customer "{customer.name}".
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(customer.id, customer.name)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                  </TableCell>
+                  </TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead className='text-right'>Total Invoiced</TableHead>
+                  <TableHead className='text-right'>Total Paid</TableHead>
+                  <TableHead className='text-right'>Total Due</TableHead>
+                  <TableHead className='text-right'>Invoices</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {customers.map((customer) => (
+                  <TableRow key={customer.id} data-state={selectedCustomers.includes(customer.id) && "selected"}>
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedCustomers.includes(customer.id)}
+                        onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked as boolean)}
+                        aria-label="Select row"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className='h-9 w-9'>
+                          <AvatarImage
+                            src={`https://picsum.photos/40/40?random=${customer.id}`}
+                            data-ai-hint="profile picture"
+                          />
+                          <AvatarFallback>
+                            {customer.name
+                              .split(' ')
+                              .map((n) => n[0])
+                              .join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-medium">{customer.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {customer.email}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className='text-right'>₹{customer.totalInvoiced.toFixed(2)}</TableCell>
+                    <TableCell className='text-right'>₹{customer.totalPaid.toFixed(2)}</TableCell>
+                    <TableCell className='text-right'>₹{(customer.totalInvoiced - customer.totalPaid).toFixed(2)}</TableCell>
+                    <TableCell className='text-right'>{customer.invoices}</TableCell>
+                    <TableCell>
+                      <AlertDialog>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                              <MoreHorizontal />
+                              <span className="sr-only">Toggle menu</span>
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handleAction('View', customer.id)}>View</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Edit', customer.id)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Print', customer.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                            <AlertDialogTrigger asChild>
+                              <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                            </AlertDialogTrigger>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will permanently delete customer "{customer.name}".
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction onClick={() => handleDelete(customer.id, customer.name)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                      </AlertDialog>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+      
+      <div className="md:hidden mt-4 space-y-4">
+        {customers.map((customer) => (
+          <Card key={customer.id}>
+            <CardHeader>
+               <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                    <Checkbox
+                        className="mt-1"
+                        checked={selectedCustomers.includes(customer.id)}
+                        onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked as boolean)}
+                        aria-label="Select row"
+                    />
+                    <div className="flex items-center gap-3">
+                         <Avatar className='h-9 w-9'>
+                            <AvatarImage
+                                src={`https://picsum.photos/40/40?random=${customer.id}`}
+                                data-ai-hint="profile picture"
+                            />
+                            <AvatarFallback>
+                                {customer.name.split(' ').map((n) => n[0]).join('')}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-medium">{customer.name}</p>
+                            <p className="text-sm text-muted-foreground">{customer.email}</p>
+                        </div>
+                    </div>
+                </div>
+                 <AlertDialog>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <MoreHorizontal />
+                          <span className="sr-only">Toggle menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => handleAction('View', customer.id)}>View</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Edit', customer.id)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Print', customer.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                        <AlertDialogTrigger asChild>
+                          <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                        </AlertDialogTrigger>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete customer "{customer.name}".
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => handleDelete(customer.id, customer.name)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+               </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid gap-1">
+                    <p className="text-muted-foreground">Invoiced</p>
+                    <p>₹{customer.totalInvoiced.toFixed(2)}</p>
+                </div>
+                 <div className="grid gap-1">
+                    <p className="text-muted-foreground">Paid</p>
+                    <p>₹{customer.totalPaid.toFixed(2)}</p>
+                </div>
+                 <div className="grid gap-1">
+                    <p className="text-muted-foreground">Due</p>
+                    <p>₹{(customer.totalInvoiced - customer.totalPaid).toFixed(2)}</p>
+                </div>
+                 <div className="grid gap-1">
+                    <p className="text-muted-foreground">Invoices</p>
+                    <p>{customer.invoices}</p>
+                </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </>
   );
 }

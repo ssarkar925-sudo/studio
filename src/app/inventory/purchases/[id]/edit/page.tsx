@@ -204,7 +204,7 @@ export default function EditPurchasePage() {
                     <CardDescription>Update the details for this purchase order.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
                             <Select name="vendor" onValueChange={setVendorId} value={vendorId} required>
@@ -255,8 +255,8 @@ export default function EditPurchasePage() {
                     <div className="grid gap-4">
                         {items.map((item, index) => (
                         <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
-                            <div className="grid gap-3 col-span-4">
-                                {index === 0 && <Label>Item</Label>}
+                            <div className="grid gap-3 col-span-12 sm:col-span-4">
+                                {index === 0 && <Label className="hidden sm:block">Item</Label>}
                                 {item.isNew ? (
                                     <Input 
                                         type="text" 
@@ -280,26 +280,26 @@ export default function EditPurchasePage() {
                                     </Select>
                                 )}
                             </div>
-                            <div className="grid gap-3 col-span-2">
-                               {index === 0 && <Label>Quantity</Label>}
+                            <div className="grid gap-3 col-span-4 sm:col-span-2">
+                               {index === 0 && <Label className="hidden sm:block">Qty</Label>}
                                 <Input type="number" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)} placeholder="1" />
                             </div>
-                             <div className="grid gap-3 col-span-2">
-                               {index === 0 && <Label>Purchase Price</Label>}
+                             <div className="grid gap-3 col-span-4 sm:col-span-2">
+                               {index === 0 && <Label className="hidden sm:block">Price</Label>}
                                 <Input type="number" step="0.01" value={item.purchasePrice} onChange={(e) => handleItemChange(index, 'purchasePrice', parseFloat(e.target.value) || 0)} placeholder="0.00" />
                             </div>
-                             <div className="grid gap-3 col-span-2">
-                               {index === 0 && <Label>Total</Label>}
+                             <div className="grid gap-3 col-span-4 sm:col-span-2">
+                               {index === 0 && <Label className="hidden sm:block">Total</Label>}
                                 <Input type="number" value={item.total.toFixed(2)} readOnly placeholder="0.00" className='bg-muted' />
                             </div>
-                            <div className="col-span-2 flex items-end">
-                                <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveItem(index)}>
+                            <div className="col-span-12 sm:col-span-2 flex items-end">
+                                <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveItem(index)} className="w-full sm:w-auto">
                                     <Trash2 />
                                 </Button>
                             </div>
                         </div>
                         ))}
-                        <Button type="button" variant="outline" onClick={handleAddItem}>
+                        <Button type="button" variant="outline" onClick={handleAddItem} className="w-full sm:w-auto">
                             <PlusCircle className="mr-2" />
                             Add Item
                         </Button>
@@ -312,7 +312,7 @@ export default function EditPurchasePage() {
                     <CardTitle>Payment</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-5 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
                         <div className='grid gap-3 col-span-1'>
                             <Label>Subtotal</Label>
                             <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted' />

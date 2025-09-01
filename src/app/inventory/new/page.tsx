@@ -102,7 +102,7 @@ export default function NewInventoryItemPage() {
                   <Label htmlFor="name">Item Name</Label>
                   <Input id="name" name="name" type="text" className="w-full" placeholder="e.g. T-Shirt (Large)" required />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-3">
                         <Label htmlFor="purchasePrice">Purchase Price (per unit)</Label>
                         <Input id="purchasePrice" name="purchasePrice" type="number" placeholder="0.00" required step="0.01" />

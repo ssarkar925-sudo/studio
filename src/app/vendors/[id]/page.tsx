@@ -50,7 +50,7 @@ export default function VendorDetailsPage() {
                 <ArrowLeft />
                 <span className="sr-only">Back</span>
             </Button>
-            <h1 className="text-2xl font-semibold">Vendor Details</h1>
+            <h1 className="text-xl md:text-2xl font-semibold">Vendor Details</h1>
         </div>
       </div>
       <div className="mx-auto grid w-full max-w-2xl items-start gap-6">
@@ -63,7 +63,7 @@ export default function VendorDetailsPage() {
           </CardHeader>
           <CardContent>
             <div className="grid gap-6">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="grid gap-3">
                     <p className="text-sm font-medium text-muted-foreground">Contact Person</p>
                     <p>{vendor.contactPerson || 'N/A'}</p>

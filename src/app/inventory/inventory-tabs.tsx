@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { InventoryClient } from './inventory-client';
 import { type Product, type Purchase } from '@/lib/data';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { Card } from '@/components/ui/card';
 
 interface InventoryTabsProps {
     activeTab: string;
@@ -24,16 +25,20 @@ export function InventoryTabs({ activeTab, products, purchases }: InventoryTabsP
     }
 
     return (
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-4">
             <TabsList>
                 <TabsTrigger value="stock">Stock</TabsTrigger>
                 <TabsTrigger value="purchases">Purchases</TabsTrigger>
             </TabsList>
             <TabsContent value="stock">
-                <InventoryClient activeTab="stock" products={products} />
+                <Card>
+                    <InventoryClient activeTab="stock" products={products} />
+                </Card>
             </TabsContent>
             <TabsContent value="purchases">
-                <InventoryClient activeTab="purchases" purchases={purchases} />
+                <Card>
+                    <InventoryClient activeTab="purchases" purchases={purchases} />
+                </Card>
             </TabsContent>
       </Tabs>
     )

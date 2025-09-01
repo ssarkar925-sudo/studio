@@ -130,7 +130,7 @@ export default function EditProductPage() {
                   <Label htmlFor="name">Item Name</Label>
                   <Input id="name" name="name" type="text" className="w-full" value={name} onChange={e=>setName(e.target.value)} required />
                 </div>
-                 <div className="grid grid-cols-2 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="grid gap-3">
                         <Label htmlFor="purchasePrice">Purchase Price</Label>
                         <Input id="purchasePrice" name="purchasePrice" type="number" step="0.01" value={purchasePrice} onChange={e=>setPurchasePrice(parseFloat(e.target.value))} required />
@@ -140,7 +140,7 @@ export default function EditProductPage() {
                         <Input id="sellingPrice" name="sellingPrice" type="number" step="0.01" value={sellingPrice} onChange={e=>setSellingPrice(parseFloat(e.target.value))} required />
                     </div>
                 </div>
-                 <div className="grid grid-cols-3 gap-4">
+                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="grid gap-3">
                         <Label htmlFor="stock">Stock</Label>
                         <Input id="stock" name="stock" type="number" value={stock} onChange={e=>setStock(parseInt(e.target.value))} required />

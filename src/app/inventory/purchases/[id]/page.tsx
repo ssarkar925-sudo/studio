@@ -54,25 +54,25 @@ export default function PurchaseDetailsPage() {
                 <ArrowLeft />
                 <span className="sr-only">Back</span>
             </Button>
-            <h1 className="text-2xl font-semibold">Purchase Details</h1>
+            <h1 className="text-xl md:text-2xl font-semibold">Purchase Details</h1>
         </div>
       </div>
       <div className="mx-auto grid w-full max-w-4xl items-start gap-6">
         <Card>
           <CardHeader>
-            <div className="flex justify-between items-start">
+            <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div>
                     <CardTitle>Purchase Order #{purchase.id.slice(0, 8)}</CardTitle>
                     <CardDescription>
                       From {purchase.vendorName}
                     </CardDescription>
                 </div>
-                <Badge variant={purchase.status === 'Received' ? 'default' : 'secondary'}>{purchase.status}</Badge>
+                <Badge variant={purchase.status === 'Received' ? 'default' : 'secondary'} className="shrink-0">{purchase.status}</Badge>
             </div>
           </CardHeader>
           <CardContent>
             <div className="grid gap-6">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="grid gap-3">
                         <p className="text-sm font-medium text-muted-foreground">Order Date</p>
                         <p>{purchase.orderDate}</p>
@@ -89,30 +89,32 @@ export default function PurchaseDetailsPage() {
                 
                 <div>
                     <h3 className='text-lg font-medium mb-2'>Items</h3>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Item</TableHead>
-                                <TableHead className="text-right">Quantity</TableHead>
-                                <TableHead className="text-right">Purchase Price</TableHead>
-                                <TableHead className="text-right">Total</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {purchase.items.map((item, index) => (
-                                <TableRow key={index}>
-                                    <TableCell>{item.productName}</TableCell>
-                                    <TableCell className="text-right">{item.quantity}</TableCell>
-                                    <TableCell className="text-right">₹{item.purchasePrice.toFixed(2)}</TableCell>
-                                    <TableCell className="text-right">₹{item.total.toFixed(2)}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                    <div className="overflow-x-auto">
+                      <Table>
+                          <TableHeader>
+                              <TableRow>
+                                  <TableHead>Item</TableHead>
+                                  <TableHead className="text-right">Quantity</TableHead>
+                                  <TableHead className="text-right">Purchase Price</TableHead>
+                                  <TableHead className="text-right">Total</TableHead>
+                              </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                              {purchase.items.map((item, index) => (
+                                  <TableRow key={index}>
+                                      <TableCell className="min-w-[150px]">{item.productName}</TableCell>
+                                      <TableCell className="text-right">{item.quantity}</TableCell>
+                                      <TableCell className="text-right">₹{item.purchasePrice.toFixed(2)}</TableCell>
+                                      <TableCell className="text-right">₹{item.total.toFixed(2)}</TableCell>
+                                  </TableRow>
+                              ))}
+                          </TableBody>
+                      </Table>
+                    </div>
                 </div>
                 
-                 <div className="grid grid-cols-4 gap-4 items-end ml-auto w-full max-w-md">
-                     <div className="grid gap-1">
+                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end ml-auto w-full max-w-md">
+                     <div className="grid gap-1 col-span-1 sm:col-start-1">
                         <p className="text-sm font-medium text-muted-foreground text-right">Subtotal</p>
                         <p className='text-right'>₹{subtotal.toFixed(2)}</p>
                     </div>
@@ -129,8 +131,8 @@ export default function PurchaseDetailsPage() {
                         <p className='font-bold text-right'>₹{purchase.totalAmount.toFixed(2)}</p>
                     </div>
                  </div>
-                  <div className="grid grid-cols-4 gap-4 items-end ml-auto w-full max-w-md">
-                     <div className="grid gap-1 col-start-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 items-end ml-auto w-full max-w-md">
+                     <div className="grid gap-1 col-start-1 sm:col-start-3">
                         <p className="text-sm font-medium text-muted-foreground text-right">Paid</p>
                         <p className='text-right'>₹{(purchase.paymentDone).toFixed(2)}</p>
                     </div>

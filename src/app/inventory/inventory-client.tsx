@@ -106,7 +106,7 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
     printWindow?.focus();
   };
 
-  const handleAction = (action: string, productId: string, productName: string) => {
+  const handleAction = (action: string, productId: string) => {
     const url = `/inventory/${productId}`;
     if (action === 'View') {
       router.push(url);
@@ -119,31 +119,32 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
   };
 
   return (
-      <Card className="mt-4">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div className='flex items-center gap-4'>
-            <div>
-              <CardTitle>Stock History</CardTitle>
-              <CardDescription>Manage your inventory, services, and their prices. Out-of-stock items are hidden automatically.</CardDescription>
-            </div>
-             {selectedProducts.length > 0 && (
-              <div className='flex gap-2'>
-                <Button variant="outline" size="sm" onClick={handlePrintTags}><Barcode /> Print Tags ({selectedProducts.length})</Button>
-              </div>
-            )}
+    <>
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className='flex items-center gap-4'>
+          <div>
+            <CardTitle>Stock History</CardTitle>
+            <CardDescription>Manage your inventory, services, and their prices. Out-of-stock items are hidden automatically.</CardDescription>
           </div>
-           <Button asChild>
-            <Link href="/inventory/new">
-              <PlusCircle />
-              New Stock Entry
-            </Link>
-          </Button>
-        </CardHeader>
+            {selectedProducts.length > 0 && (
+            <div className='flex gap-2'>
+              <Button variant="outline" size="sm" onClick={handlePrintTags}><Barcode /> Print Tags ({selectedProducts.length})</Button>
+            </div>
+          )}
+        </div>
+          <Button asChild className="w-full sm:w-auto">
+          <Link href="/inventory/new">
+            <PlusCircle />
+            New Stock Entry
+          </Link>
+        </Button>
+      </CardHeader>
+      <div className="hidden md:block">
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                 <TableHead className="w-12">
+                  <TableHead className="w-12">
                     <Checkbox
                       checked={allProductsSelected}
                       onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
@@ -197,9 +198,9 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleAction('View', product.id, product.name)}>View</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Edit', product.id, product.name)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Print', product.id, product.name)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('View', product.id)}>View</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Edit', product.id)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Print', product.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </AlertDialog>
@@ -209,7 +210,74 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
             </TableBody>
           </Table>
         </CardContent>
-      </Card>
+      </div>
+
+       <div className="md:hidden p-4 space-y-4">
+        {products.map((product) => (
+          <Card key={product.id}>
+            <CardHeader>
+                <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4">
+                        <Checkbox
+                            className="mt-1"
+                            checked={selectedProducts.includes(product.id)}
+                            onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
+                            aria-label="Select row"
+                        />
+                         <div>
+                            <p className="font-medium">{product.name}</p>
+                            <p className="text-sm text-muted-foreground">{product.sku}</p>
+                        </div>
+                    </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handleAction('View', product.id)}>View</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Edit', product.id)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Print', product.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid gap-1">
+                    <p className="text-muted-foreground">Stock</p>
+                    <p>{product.stock}</p>
+                </div>
+                <div className="grid gap-1">
+                    <p className="text-muted-foreground">Status</p>
+                    <p>
+                        {product.stock <= 0 ? (
+                            <Badge variant="destructive">Out of Stock</Badge>
+                        ) : product.stock <= 10 ? (
+                            <Badge variant="secondary">Low Stock</Badge>
+                        ) : (
+                            <Badge variant="default">In Stock</Badge>
+                        )}
+                    </p>
+                </div>
+                <div className="grid gap-1">
+                    <p className="text-muted-foreground">Purchase Price</p>
+                    <p>₹{product.purchasePrice.toFixed(2)}</p>
+                </div>
+                <div className="grid gap-1">
+                    <p className="text-muted-foreground">Selling Price</p>
+                    <p>₹{product.sellingPrice.toFixed(2)}</p>
+                </div>
+                 <div className="grid gap-1 col-span-2">
+                    <p className="text-muted-foreground">Batch Code</p>
+                    <p>{product.batchCode}</p>
+                </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -365,8 +433,8 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
   }
 
   return (
-    <Card className="mt-4">
-      <CardHeader className="flex flex-row items-center justify-between">
+     <>
+      <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className='flex items-center gap-4'>
             <div>
                 <CardTitle>Purchase History</CardTitle>
@@ -392,76 +460,134 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
                 </AlertDialog>
               )}
         </div>
-        <Button asChild>
+         <Button asChild className="w-full sm:w-auto">
             <Link href="/inventory/purchases/new">
                 <PlusCircle />
                 Add Purchase
             </Link>
         </Button>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                   <Checkbox
-                    checked={allPurchasesSelected}
-                    onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                    aria-label="Select all"
-                  />
-                </TableHead>
-              <TableHead>Order ID</TableHead>
-              <TableHead>Vendor</TableHead>
-              <TableHead>Order Date</TableHead>
-              <TableHead className="text-right">Total</TableHead>
-              <TableHead className="text-right">Paid</TableHead>
-              <TableHead className="text-right">Due</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>
-                <span className="sr-only">Actions</span>
-              </TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedPurchases.map((purchase) => (
-              <TableRow key={purchase.id} data-state={selectedPurchases.includes(purchase.id) && "selected"}>
-                <TableCell>
+
+       <div className="hidden md:block">
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedPurchases.includes(purchase.id)}
-                      onCheckedChange={(checked) => handleSelectPurchase(purchase.id, checked as boolean)}
-                      aria-label="Select row"
+                      checked={allPurchasesSelected}
+                      onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                      aria-label="Select all"
                     />
-                  </TableCell>
-                <TableCell className="font-medium">{purchase.id.slice(0, 8)}...</TableCell>
-                <TableCell>{purchase.vendorName}</TableCell>
-                <TableCell>{purchase.orderDate}</TableCell>
-                <TableCell className="text-right">₹{purchase.totalAmount.toFixed(2)}</TableCell>
-                <TableCell className="text-right">₹{purchase.paymentDone.toFixed(2)}</TableCell>
-                <TableCell className="text-right">₹{purchase.dueAmount.toFixed(2)}</TableCell>
-                <TableCell>
-                  <Badge variant={purchase.status === 'Received' ? 'default' : 'secondary'}>{purchase.status}</Badge>
-                </TableCell>
-                 <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', purchase)}>View</DropdownMenuItem>
-                        {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Edit', purchase)}>Edit</DropdownMenuItem>}
-                        {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Mark as Received', purchase)}>Mark as Received</DropdownMenuItem>}
-                        <DropdownMenuItem onSelect={() => handleAction('Print', purchase)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                  </TableHead>
+                <TableHead>Order ID</TableHead>
+                <TableHead>Vendor</TableHead>
+                <TableHead>Order Date</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+                <TableHead className="text-right">Paid</TableHead>
+                <TableHead className="text-right">Due</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>
+                  <span className="sr-only">Actions</span>
+                </TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
+            </TableHeader>
+            <TableBody>
+              {sortedPurchases.map((purchase) => (
+                <TableRow key={purchase.id} data-state={selectedPurchases.includes(purchase.id) && "selected"}>
+                  <TableCell>
+                      <Checkbox
+                        checked={selectedPurchases.includes(purchase.id)}
+                        onCheckedChange={(checked) => handleSelectPurchase(purchase.id, checked as boolean)}
+                        aria-label="Select row"
+                      />
+                    </TableCell>
+                  <TableCell className="font-medium">{purchase.id.slice(0, 8)}...</TableCell>
+                  <TableCell>{purchase.vendorName}</TableCell>
+                  <TableCell>{purchase.orderDate}</TableCell>
+                  <TableCell className="text-right">₹{purchase.totalAmount.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">₹{purchase.paymentDone.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">₹{purchase.dueAmount.toFixed(2)}</TableCell>
+                  <TableCell>
+                    <Badge variant={purchase.status === 'Received' ? 'default' : 'secondary'}>{purchase.status}</Badge>
+                  </TableCell>
+                  <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleAction('View', purchase)}>View</DropdownMenuItem>
+                          {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Edit', purchase)}>Edit</DropdownMenuItem>}
+                          {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Mark as Received', purchase)}>Mark as Received</DropdownMenuItem>}
+                          <DropdownMenuItem onSelect={() => handleAction('Print', purchase)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+       </div>
+
+        <div className="md:hidden p-4 space-y-4">
+        {sortedPurchases.map((purchase) => (
+          <Card key={purchase.id}>
+            <CardHeader>
+                <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4">
+                        <Checkbox
+                            className="mt-1"
+                            checked={selectedPurchases.includes(purchase.id)}
+                            onCheckedChange={(checked) => handleSelectPurchase(purchase.id, checked as boolean)}
+                            aria-label="Select row"
+                        />
+                        <div>
+                            <p className="font-medium">{purchase.vendorName}</p>
+                            <p className="text-sm text-muted-foreground">ID: {purchase.id.slice(0, 8)}...</p>
+                        </div>
+                    </div>
+                     <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onSelect={() => handleAction('View', purchase)}>View</DropdownMenuItem>
+                            {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Edit', purchase)}>Edit</DropdownMenuItem>}
+                            {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Mark as Received', purchase)}>Mark as Received</DropdownMenuItem>}
+                            <DropdownMenuItem onSelect={() => handleAction('Print', purchase)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid gap-1">
+                    <p className="text-muted-foreground">Total</p>
+                    <p>₹{purchase.totalAmount.toFixed(2)}</p>
+                </div>
+                <div className="grid gap-1">
+                    <p className="text-muted-foreground">Due</p>
+                    <p>₹{purchase.dueAmount.toFixed(2)}</p>
+                </div>
+                <div className="grid gap-1">
+                    <p className="text-muted-foreground">Status</p>
+                    <p><Badge variant={purchase.status === 'Received' ? 'default' : 'secondary'}>{purchase.status}</Badge></p>
+                </div>
+                <div className="grid gap-1">
+                    <p className="text-muted-foreground">Order Date</p>
+                    <p>{purchase.orderDate}</p>
+                </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </>
   );
 }
