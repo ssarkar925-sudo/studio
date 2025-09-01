@@ -31,6 +31,7 @@ const videoConstraints = {
 export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerProps) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const { toast } = useToast();
+  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleUserMedia = () => {
     setHasCameraPermission(true);
@@ -46,8 +47,8 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
         'Please enable camera permissions in your browser settings.',
     });
   };
-
-  const handleSimulateScan = () => {
+  
+  const simulateScan = useCallback(() => {
     if (products.length === 0) {
       toast({
         variant: 'destructive',
@@ -63,7 +64,28 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
         description: `Added ${randomProduct.name} to the invoice.`,
     });
     onScan(randomProduct);
-  };
+  }, [products, onScan, toast]);
+
+  useEffect(() => {
+    if (open && hasCameraPermission) {
+      // Start "scanning" every 3 seconds
+      scanIntervalRef.current = setInterval(() => {
+        simulateScan();
+      }, 3000);
+    } else {
+      // Clear interval when dialog is closed or permission is denied
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+      }
+    }
+
+    return () => {
+      if (scanIntervalRef.current) {
+        clearInterval(scanIntervalRef.current);
+      }
+    };
+  }, [open, hasCameraPermission, simulateScan]);
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -94,9 +116,6 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
           )}
         </div>
         <DialogFooter>
-          <Button type="button" onClick={handleSimulateScan} disabled={!hasCameraPermission}>
-            Simulate Scan
-          </Button>
           <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
             Close
           </Button>
