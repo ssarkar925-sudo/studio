@@ -17,6 +17,7 @@ import { DateRange } from 'react-day-picker';
 import { subDays, startOfDay, parse, format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DollarSign, FileText, Package } from 'lucide-react';
+import Link from 'next/link';
 
 type ProductProfit = {
   productId: string;
@@ -147,46 +148,54 @@ export default function ReportsPage() {
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Total revenue from selected period</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cost of Goods Sold</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{totalCogs.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Total cost of items sold</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gross Profit</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">₹{totalProfit.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground">Estimated profit from sales</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{totalSales}</div>
-             <p className="text-xs text-muted-foreground">Total invoices created</p>
-          </CardContent>
-        </Card>
+        <Link href="/invoices">
+            <Card className='hover:bg-muted/50 transition-colors'>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">₹{totalRevenue.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Total revenue from selected period</p>
+                </CardContent>
+            </Card>
+        </Link>
+         <Link href="/invoices">
+            <Card className='hover:bg-muted/50 transition-colors'>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Cost of Goods Sold</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">₹{totalCogs.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Total cost of items sold</p>
+                </CardContent>
+            </Card>
+        </Link>
+        <Link href="/invoices">
+            <Card className='hover:bg-muted/50 transition-colors'>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Gross Profit</CardTitle>
+                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">₹{totalProfit.toFixed(2)}</div>
+                    <p className="text-xs text-muted-foreground">Estimated profit from sales</p>
+                </CardContent>
+            </Card>
+        </Link>
+        <Link href="/invoices">
+            <Card className='hover:bg-muted/50 transition-colors'>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{totalSales}</div>
+                    <p className="text-xs text-muted-foreground">Total invoices created</p>
+                </CardContent>
+            </Card>
+        </Link>
       </div>
 
        <div className="grid gap-4 mt-4 md:grid-cols-2 lg:grid-cols-7">
@@ -215,17 +224,19 @@ export default function ReportsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {productPerformance.map(product => (
-                <div key={product.id} className="flex items-center">
-                   <div className="p-2 bg-muted rounded-md mr-4">
-                       <Package className="h-5 w-5 text-muted-foreground"/>
-                   </div>
-                   <div>
-                    <p className="text-sm font-medium">{product.name}</p>
-                    <p className="text-xs text-muted-foreground">{product.quantitySold} units sold</p>
-                   </div>
-                </div>
+                <Link href={`/inventory/${product.id}`} key={product.id} className="block p-2 -mx-2 rounded-md hover:bg-muted">
+                    <div className="flex items-center">
+                        <div className="p-2 bg-muted rounded-md mr-4">
+                            <Package className="h-5 w-5 text-muted-foreground"/>
+                        </div>
+                        <div>
+                            <p className="text-sm font-medium">{product.name}</p>
+                            <p className="text-xs text-muted-foreground">{product.quantitySold} units sold</p>
+                        </div>
+                    </div>
+                </Link>
               ))}
             </div>
           </CardContent>

@@ -98,11 +98,8 @@ export function DashboardClient({ invoices }: { invoices: Invoice[] }) {
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">
-          <CardHeader className="flex items-center justify-between">
+          <CardHeader>
             <CardTitle>Recent Invoices</CardTitle>
-            <Button asChild size="sm">
-                <Link href="/invoices/new">New Invoice</Link>
-            </Button>
           </CardHeader>
           <CardContent>
             <RecentInvoices invoices={invoices} />
@@ -130,22 +127,24 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
   });
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {sortedInvoices.slice(0, 5).map((invoice) => (
-        <div key={invoice.id} className="flex items-center">
-          <div className="space-y-1">
-            <p className="text-sm font-medium leading-none">
-              {invoice.customer.name}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {invoice.customer.email}
-            </p>
-          </div>
-          <div className="ml-auto text-right font-medium">
-            <p>₹{invoice.amount.toFixed(2)}</p>
-            <InvoiceStatusBadge status={invoice.status} />
-          </div>
-        </div>
+        <Link href={`/invoices/${invoice.id}`} key={invoice.id} className="block p-2 -mx-2 rounded-md hover:bg-muted">
+            <div className="flex items-center">
+                <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                    {invoice.customer.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                    {invoice.customer.email}
+                    </p>
+                </div>
+                <div className="ml-auto text-right font-medium">
+                    <p>₹{invoice.amount.toFixed(2)}</p>
+                    <InvoiceStatusBadge status={invoice.status} />
+                </div>
+            </div>
+        </Link>
       ))}
     </div>
   );
