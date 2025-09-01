@@ -25,7 +25,7 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -51,6 +51,7 @@ export default function NewInvoicePage() {
   const { data: products } = useFirestoreData(productsDAO);
   const [customerId, setCustomerId] = useState<string>('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleAddItem = () => {
     setItems([
@@ -90,6 +91,8 @@ export default function NewInvoicePage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSaving) return;
+
     const formData = new FormData(e.currentTarget);
     const invoiceNumber = formData.get('invoiceNumber') as string;
 
@@ -112,6 +115,7 @@ export default function NewInvoicePage() {
       return;
     }
 
+    setIsSaving(true);
     try {
       await invoicesDAO.add({
         invoiceNumber,
@@ -139,6 +143,8 @@ export default function NewInvoicePage() {
             title: "Creation Failed",
             description: "An error occurred while creating the invoice."
         })
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -293,8 +299,11 @@ export default function NewInvoicePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="justify-end gap-2">
-                        <Button variant="outline" type="button" onClick={() => router.push('/invoices')}>Cancel</Button>
-                        <Button type="submit">Save Invoice</Button>
+                        <Button variant="outline" type="button" onClick={() => router.push('/invoices')} disabled={isSaving}>Cancel</Button>
+                        <Button type="submit" disabled={isSaving}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Invoice
+                        </Button>
                     </CardFooter>
                 </Card>
             </div>

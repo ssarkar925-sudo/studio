@@ -18,6 +18,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { vendorsDAO, type Vendor } from '@/lib/data';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function EditVendorPage() {
   const { toast } = useToast();
@@ -34,6 +35,7 @@ export default function EditVendorPage() {
   const [contactNumber, setContactNumber] = useState('');
   const [email, setEmail] = useState('');
   const [gstn, setGstn] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export default function EditVendorPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!vendor) return;
+    if (!vendor || isSaving) return;
 
 
     if (!vendorName) {
@@ -70,6 +72,7 @@ export default function EditVendorPage() {
       return;
     }
 
+    setIsSaving(true);
     try {
       await vendorsDAO.update(vendor.id, {
         vendorName,
@@ -91,6 +94,8 @@ export default function EditVendorPage() {
         title: 'Update Failed',
         description: 'Could not update vendor.',
       });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -143,8 +148,11 @@ export default function EditVendorPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.push('/vendors')}>Cancel</Button>
-                <Button type="submit">Save Changes</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/vendors')} disabled={isSaving}>Cancel</Button>
+                <Button type="submit" disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                </Button>
             </CardFooter>
           </Card>
         </form>

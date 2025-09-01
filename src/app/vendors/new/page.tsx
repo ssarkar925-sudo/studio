@@ -16,13 +16,18 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { vendorsDAO } from '@/lib/data';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function NewVendorPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if(isSaving) return;
+
     const formData = new FormData(e.currentTarget);
     const vendorName = formData.get('vendorName') as string;
     const contactPerson = formData.get('contactPerson') as string;
@@ -39,6 +44,7 @@ export default function NewVendorPage() {
       return;
     }
 
+    setIsSaving(true);
     try {
       await vendorsDAO.add({
         vendorName,
@@ -60,6 +66,8 @@ export default function NewVendorPage() {
         title: 'Creation Failed',
         description: 'Could not create vendor.',
       });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -102,8 +110,11 @@ export default function NewVendorPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.push('/vendors')}>Cancel</Button>
-                <Button type="submit">Save Vendor</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/vendors')} disabled={isSaving}>Cancel</Button>
+                <Button type="submit" disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Vendor
+                </Button>
             </CardFooter>
           </Card>
         </form>

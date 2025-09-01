@@ -18,13 +18,17 @@ import { useRouter } from 'next/navigation';
 import { productsDAO, purchasesDAO } from '@/lib/data';
 import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
+import { Loader2 } from 'lucide-react';
 
 export default function NewInventoryItemPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if(isSaving) return;
+
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
     const purchasePrice = parseFloat(formData.get('purchasePrice') as string);
@@ -39,6 +43,7 @@ export default function NewInventoryItemPage() {
       return;
     }
 
+    setIsSaving(true);
     try {
       // Create a pending purchase order instead of adding directly to stock
       await purchasesDAO.add({
@@ -73,6 +78,8 @@ export default function NewInventoryItemPage() {
         title: 'Creation Failed',
         description: 'Could not create purchase entry.',
       });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -109,8 +116,11 @@ export default function NewInventoryItemPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.push('/inventory')}>Cancel</Button>
-                <Button type="submit">Create Purchase Entry</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/inventory')} disabled={isSaving}>Cancel</Button>
+                <Button type="submit" disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Create Purchase Entry
+                </Button>
             </CardFooter>
           </Card>
         </form>

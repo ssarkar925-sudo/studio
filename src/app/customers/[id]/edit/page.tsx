@@ -19,6 +19,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { customersDAO, type Customer } from '@/lib/data';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useEffect, useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function EditCustomerPage() {
   const { toast } = useToast();
@@ -34,6 +35,7 @@ export default function EditCustomerPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
 
   useEffect(() => {
@@ -57,7 +59,7 @@ export default function EditCustomerPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!customer) return;
+    if (!customer || isSaving) return;
 
     if (!name) {
        toast({
@@ -68,6 +70,7 @@ export default function EditCustomerPage() {
       return;
     }
 
+    setIsSaving(true);
     try {
       await customersDAO.update(customer.id, {
         name,
@@ -88,6 +91,8 @@ export default function EditCustomerPage() {
         title: 'Update Failed',
         description: 'Could not update customer.',
       });
+    } finally {
+        setIsSaving(false);
     }
   };
   
@@ -136,8 +141,11 @@ export default function EditCustomerPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.push('/customers')}>Cancel</Button>
-                <Button type="submit">Save Changes</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/customers')} disabled={isSaving}>Cancel</Button>
+                <Button type="submit" disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Changes
+                </Button>
             </CardFooter>
           </Card>
         </form>

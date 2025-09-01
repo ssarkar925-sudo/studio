@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { vendorsDAO, productsDAO, purchasesDAO, type Vendor, type Product, type Purchase } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { format, parse } from 'date-fns';
-import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
@@ -46,6 +46,7 @@ export default function EditPurchasePage() {
   const [paymentDone, setPaymentDone] = useState(0);
   const [gst, setGst] = useState(0);
   const [deliveryCharges, setDeliveryCharges] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
 
@@ -135,6 +136,7 @@ export default function EditPurchasePage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if(isSaving) return;
     
     const vendor = vendors.find(v => v.id === vendorId);
 
@@ -147,6 +149,7 @@ export default function EditPurchasePage() {
         return;
     }
 
+    setIsSaving(true);
     try {
       await purchasesDAO.update(purchaseId, {
           vendorId: vendor.id,
@@ -173,6 +176,8 @@ export default function EditPurchasePage() {
           title: 'Update Failed',
           description: 'Could not update purchase order.',
       });
+    } finally {
+        setIsSaving(false);
     }
   };
 
@@ -332,8 +337,11 @@ export default function EditPurchasePage() {
                     </div>
                 </CardContent>
                  <CardFooter className="justify-end gap-2">
-                    <Button variant="outline" type="button" onClick={() => router.push('/inventory?tab=purchases')}>Cancel</Button>
-                    <Button type="submit">Update Purchase</Button>
+                    <Button variant="outline" type="button" onClick={() => router.push('/inventory?tab=purchases')} disabled={isSaving}>Cancel</Button>
+                    <Button type="submit" disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Update Purchase
+                    </Button>
                 </CardFooter>
             </Card>
           </div>

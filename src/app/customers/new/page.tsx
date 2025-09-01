@@ -17,13 +17,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { customersDAO } from '@/lib/data';
+import { useState } from 'react';
+import { Loader2 } from 'lucide-react';
 
 export default function NewCustomerPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSaving) return;
+
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
     const email = formData.get('email') as string;
@@ -39,6 +44,7 @@ export default function NewCustomerPage() {
       return;
     }
 
+    setIsSaving(true);
     try {
       await customersDAO.add({
         name,
@@ -62,6 +68,8 @@ export default function NewCustomerPage() {
         title: 'Creation Failed',
         description: 'Could not create customer.',
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -100,8 +108,11 @@ export default function NewCustomerPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.push('/customers')}>Cancel</Button>
-                <Button type="submit">Save Customer</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/customers')} disabled={isSaving}>Cancel</Button>
+                <Button type="submit" disabled={isSaving}>
+                    {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    Save Customer
+                </Button>
             </CardFooter>
           </Card>
         </form>

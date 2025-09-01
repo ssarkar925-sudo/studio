@@ -41,6 +41,7 @@ export default function NewPurchasePage() {
   const [paymentDone, setPaymentDone] = useState(0);
   const [gst, setGst] = useState(0);
   const [deliveryCharges, setDeliveryCharges] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
   
   const [isExtracting, setIsExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -162,6 +163,7 @@ export default function NewPurchasePage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isSaving) return;
     
     const vendor = vendors.find(v => v.id === vendorId);
 
@@ -174,6 +176,7 @@ export default function NewPurchasePage() {
         return;
     }
 
+    setIsSaving(true);
     try {
       await purchasesDAO.add({
           vendorId: vendor.id,
@@ -199,6 +202,8 @@ export default function NewPurchasePage() {
           title: 'Creation Failed',
           description: 'Could not create purchase order.',
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -260,7 +265,7 @@ export default function NewPurchasePage() {
                  <CardFooter>
                     <div className='flex gap-2 items-center'>
                          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isExtracting}>
+                        <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} disabled={isExtracting || isSaving}>
                             {isExtracting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
                             Import with AI
                         </Button>
@@ -358,8 +363,11 @@ export default function NewPurchasePage() {
                     </div>
                 </CardContent>
                  <CardFooter className="justify-end gap-2">
-                    <Button variant="outline" type="button" onClick={() => router.push('/inventory?tab=purchases')}>Cancel</Button>
-                    <Button type="submit">Save Purchase</Button>
+                    <Button variant="outline" type="button" onClick={() => router.push('/inventory?tab=purchases')} disabled={isSaving}>Cancel</Button>
+                    <Button type="submit" disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Purchase
+                    </Button>
                 </CardFooter>
             </Card>
           </div>

@@ -25,7 +25,7 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Invoice, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, PlusCircle, Trash2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -60,6 +60,7 @@ export default function EditInvoicePage() {
   const [status, setStatus] = useState<Invoice['status']>();
   const [customerId, setCustomerId] = useState<string>('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
   
   const isLoading = customersLoading || productsLoading || invoicesLoading;
 
@@ -124,7 +125,7 @@ export default function EditInvoicePage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!invoice) return;
+    if (!invoice || isSaving) return;
     
     if (!invoiceNumber || !customerId || !issueDate || !status) {
       toast({
@@ -145,6 +146,7 @@ export default function EditInvoicePage() {
       return;
     }
     
+    setIsSaving(true);
     const updatedInvoiceData: Partial<Omit<Invoice, 'id'>> = {
       invoiceNumber,
       customer: {
@@ -174,6 +176,8 @@ export default function EditInvoicePage() {
             title: "Update Failed",
             description: "An error occurred while updating the invoice."
         })
+    } finally {
+        setIsSaving(false);
     }
   };
   
@@ -358,8 +362,11 @@ export default function EditInvoicePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="justify-end gap-2">
-                        <Button variant="outline" type="button" onClick={() => router.push('/invoices')}>Cancel</Button>
-                        <Button type="submit">Save Changes</Button>
+                        <Button variant="outline" type="button" onClick={() => router.push('/invoices')} disabled={isSaving}>Cancel</Button>
+                        <Button type="submit" disabled={isSaving}>
+                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Save Changes
+                        </Button>
                     </CardFooter>
                 </Card>
 
