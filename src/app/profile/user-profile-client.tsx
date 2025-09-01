@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { userProfileDAO, type UserProfile } from '@/lib/data';
+import { userProfileDAO, businessProfileDAO, invoicesDAO, customersDAO, productsDAO, purchasesDAO, vendorsDAO, type UserProfile } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
@@ -39,6 +39,12 @@ export function UserProfileClient() {
   const { toast } = useToast();
   const router = useRouter();
   const { data: profiles, isLoading } = useFirestoreData(userProfileDAO);
+  const { data: businessProfiles } = useFirestoreData(businessProfileDAO);
+  const { data: invoices } = useFirestoreData(invoicesDAO);
+  const { data: customers } = useFirestoreData(customersDAO);
+  const { data: products } = useFirestoreData(productsDAO);
+  const { data: purchases } = useFirestoreData(purchasesDAO);
+  const { data: vendors } = useFirestoreData(vendorsDAO);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState('');
@@ -124,12 +130,43 @@ export function UserProfileClient() {
     setIsPasswordDialogOpen(false);
   }
 
-  const handleDeleteAccount = () => {
+  const handleDeleteAccount = async () => {
     toast({
-        title: 'Account Deleted',
-        description: 'Your account is being deleted. You will be redirected shortly.',
+        title: 'Account Deletion in Progress...',
+        description: 'Please wait while we remove all your data.',
     });
-    setTimeout(() => router.push('/login'), 2000);
+
+    try {
+        // Array of promises for all deletion operations
+        const deletionPromises: Promise<any>[] = [];
+
+        // Delete all collections' documents
+        if (profile) deletionPromises.push(userProfileDAO.remove(profile.id));
+        businessProfiles.forEach(p => deletionPromises.push(businessProfileDAO.remove(p.id)));
+        invoices.forEach(i => deletionPromises.push(invoicesDAO.remove(i.id)));
+        customers.forEach(c => deletionPromises.push(customersDAO.remove(c.id)));
+        products.forEach(p => deletionPromises.push(productsDAO.remove(p.id)));
+        purchases.forEach(p => deletionPromises.push(purchasesDAO.remove(p.id)));
+        vendors.forEach(v => deletionPromises.push(vendorsDAO.remove(v.id)));
+        
+        await Promise.all(deletionPromises);
+
+        toast({
+            title: 'Account Deleted Successfully',
+            description: 'Your account and all data have been removed. Redirecting you to the login page.',
+        });
+
+        // Add a delay to allow the user to read the toast
+        setTimeout(() => router.push('/login'), 2000);
+
+    } catch (error) {
+        console.error("Failed to delete account:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Deletion Failed',
+            description: 'There was an error deleting your account. Please try again.',
+        });
+    }
   }
 
 
