@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { productsDAO, purchasesDAO, type Product, type Purchase } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Printer, Barcode } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Printer, Barcode, Trash2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -41,42 +41,11 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
   const router = useRouter();
   const [products, setProducts] = useState(initialProducts);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-
-  useEffect(() => {
-    async function deleteOldOutOfStockItems() {
-        const oneMonthAgo = subDays(new Date(), 30);
-        const oldItemsToDelete = initialProducts.filter(p => {
-            if (p.stock > 0 || !p.outOfStockDate) {
-                return false;
-            }
-            try {
-                const outOfStockDate = parse(p.outOfStockDate, 'PPP', new Date());
-                return outOfStockDate < oneMonthAgo;
-            } catch (e) {
-                return false;
-            }
-        });
-
-        if (oldItemsToDelete.length > 0) {
-            const deletionPromises = oldItemsToDelete.map(p => productsDAO.remove(p.id));
-            try {
-                await Promise.all(deletionPromises);
-                toast({
-                    title: 'Auto-cleaned Inventory',
-                    description: `${oldItemsToDelete.length} item(s) out of stock for over a month were automatically deleted.`,
-                });
-            } catch (error) {
-                console.error("Failed to auto-delete old stock", error);
-            }
-        }
-    }
-
-    deleteOldOutOfStockItems();
-    // Only show items that are in stock
-    setProducts(initialProducts.filter(p => p.stock > 0));
-
-  }, [initialProducts, toast]);
   
+  useEffect(() => {
+    setProducts(initialProducts);
+  }, [initialProducts, toast]);
+
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
 
   const handleSelectAll = (checked: boolean) => {
@@ -94,6 +63,40 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
       setSelectedProducts(prev => prev.filter(id => id !== productId));
     }
   };
+  
+  const handleDeleteSelected = async () => {
+    const deletionPromises = selectedProducts.map(id => productsDAO.remove(id));
+    try {
+        await Promise.all(deletionPromises);
+        toast({
+            title: 'Items Deleted',
+            description: `${selectedProducts.length} item(s) have been deleted.`,
+        });
+        setSelectedProducts([]);
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Deletion Failed',
+            description: 'Could not delete selected items.',
+        });
+    }
+  };
+
+  const handleDelete = async (productId: string, productName: string) => {
+      try {
+        await productsDAO.remove(productId);
+        toast({
+            title: 'Item Deleted',
+            description: `Successfully deleted item: ${productName}.`,
+        });
+      } catch (error) {
+           toast({
+            variant: 'destructive',
+            title: 'Deletion Failed',
+            description: 'Could not delete item.',
+        });
+      }
+  };
 
   const handlePrintTags = () => {
     const query = new URLSearchParams({ ids: selectedProducts.join(',') });
@@ -102,7 +105,7 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
     printWindow?.focus();
   };
 
-  const handleAction = (action: string, productId: string) => {
+  const handleAction = (action: string, productId: string, productName: string) => {
     const url = `/inventory/${productId}`;
     if (action === 'View') {
       router.push(url);
@@ -125,6 +128,23 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
              {selectedProducts.length > 0 && (
               <div className='flex gap-2'>
                 <Button variant="outline" size="sm" onClick={handlePrintTags}><Barcode /> Print Tags ({selectedProducts.length})</Button>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedProducts.length})</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete {selectedProducts.length} item(s).
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
               </div>
             )}
           </div>
@@ -171,8 +191,10 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell className="text-right">{product.stock}</TableCell>
                   <TableCell>
-                    {product.stock <= 10 ? (
-                        <Badge variant="destructive">Low Stock</Badge>
+                    {product.stock <= 0 ? (
+                        <Badge variant="destructive">Out of Stock</Badge>
+                    ) : product.stock <= 10 ? (
+                        <Badge variant="secondary">Low Stock</Badge>
                     ) : (
                         <Badge variant="default">In Stock</Badge>
                     )}
@@ -182,19 +204,36 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                   <TableCell>{product.sku}</TableCell>
                   <TableCell>{product.batchCode}</TableCell>
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onSelect={() => handleAction('View', product.id)}>View</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Edit', product.id)}>Edit</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Print', product.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <AlertDialog>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal />
+                            <span className="sr-only">Toggle menu</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onSelect={() => handleAction('View', product.id, product.name)}>View</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Edit', product.id, product.name)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Print', product.id, product.name)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
+                          </AlertDialogTrigger>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                       <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will permanently delete item "{product.name}".
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDelete(product.id, product.name)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                   </TableCell>
                 </TableRow>
               ))}
@@ -213,34 +252,8 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
   const { data: allProducts, isLoading: productsLoading } = useFirestoreData(productsDAO);
 
   useEffect(() => {
-    async function deleteOldPendingPurchases() {
-        const oneMonthAgo = subDays(new Date(), 30);
-        const oldPendingPurchases = initialPurchases.filter(p => {
-            try {
-                const orderDate = new Date(p.orderDate);
-                return p.status === 'Pending' && orderDate < oneMonthAgo;
-            } catch (e) {
-                return false;
-            }
-        });
-        
-        if (oldPendingPurchases.length > 0) {
-            const deletionPromises = oldPendingPurchases.map(p => purchasesDAO.remove(p.id));
-            try {
-                await Promise.all(deletionPromises);
-                toast({
-                    title: 'Auto-cleaned Purchases',
-                    description: `${oldPendingPurchases.length} pending purchase(s) older than 1 month were automatically deleted.`,
-                });
-            } catch (error) {
-                 console.error("Failed to auto-delete old purchases", error);
-            }
-        }
-    }
-    
-    deleteOldPendingPurchases();
     setPurchases(initialPurchases);
-  }, [initialPurchases, toast]);
+  }, [initialPurchases]);
 
   const sortedPurchases = useMemo(() => {
     if (!purchases) return [];

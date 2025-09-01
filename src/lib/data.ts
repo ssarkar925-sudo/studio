@@ -45,7 +45,6 @@ export type Product = {
   stock: number;
   sku: string;
   batchCode: string;
-  outOfStockDate?: string; // Date when stock became 0
 };
 
 export type Vendor = {
@@ -206,9 +205,6 @@ const createInvoicesDAO = () => {
                     const newStock = productDoc.data().stock - item.quantity;
                     
                     const productUpdate: Partial<Product> = { stock: newStock };
-                    if (newStock <= 0) {
-                        productUpdate.outOfStockDate = format(new Date(), 'PPP');
-                    }
                     transaction.update(productRef, productUpdate);
                 }
             }
@@ -271,11 +267,6 @@ const createInvoicesDAO = () => {
                          }
                         const newStock = currentStock + stockChange;
                         const productUpdate: Partial<Product> = { stock: newStock };
-                        if (newStock <= 0) {
-                            productUpdate.outOfStockDate = format(new Date(), 'PPP');
-                        } else {
-                            productUpdate.outOfStockDate = ''; // Or delete the field
-                        }
                         transaction.update(productRef, productUpdate);
                     }
                 }
@@ -326,9 +317,6 @@ const createInvoicesDAO = () => {
                     const productRef = doc(db, 'products', item.productId);
                     const newStock = productDoc.data().stock + item.quantity;
                      const productUpdate: Partial<Product> = { stock: newStock };
-                    if (newStock > 0) {
-                       productUpdate.outOfStockDate = ''; // Or delete field
-                    }
                     transaction.update(productRef, productUpdate);
                 }
             }
