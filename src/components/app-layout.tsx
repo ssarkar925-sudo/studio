@@ -33,6 +33,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
+import { businessProfileDAO } from '@/lib/data';
 
 const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -44,6 +46,8 @@ const menuItems = [
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { data: profiles } = useFirestoreData(businessProfileDAO);
+  const companyName = profiles[0]?.companyName || 'Vyapar Co';
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -68,7 +72,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         className="flex items-center gap-2 text-lg font-semibold"
                         >
                         <Icons.logo className="h-6 w-6 text-primary" />
-                        <span >Vyapar Co</span>
+                        <span >{companyName}</span>
                         </Link>
                     </SheetTitle>
                 </SheetHeader>
@@ -94,7 +98,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             className="flex items-center gap-2 text-lg font-semibold md:text-base"
           >
             <Icons.logo className="h-6 w-6 text-primary" />
-            <span className="sr-only">Vyapar Co</span>
+            <span className="sr-only">{companyName}</span>
           </Link>
         </div>
 

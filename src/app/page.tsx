@@ -3,13 +3,26 @@
 
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { invoicesDAO, Invoice } from '@/lib/data';
+import { invoicesDAO, Invoice, businessProfileDAO } from '@/lib/data';
 import { DollarSign, FileText, Clock } from 'lucide-react';
-import { DashboardClient } from '@/components/dashboard-client';
+import { DashboardClient } from '@/app/dashboard-client';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
+import { useEffect } from 'react';
 
 export default function DashboardPage() {
-  const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
+  const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
+  const { data: profiles, isLoading: profilesLoading } = useFirestoreData(businessProfileDAO);
+
+  const companyName = profiles[0]?.companyName;
+
+  useEffect(() => {
+    if (companyName) {
+      document.title = `${companyName} | Dashboard`;
+    } else {
+      document.title = 'Dashboard | Vyapar Co';
+    }
+  }, [companyName]);
+
 
   const totalRevenue = invoices
     .filter((i) => i.status === 'Paid')
@@ -21,6 +34,8 @@ export default function DashboardPage() {
 
   const overdue = invoices.filter((i) => i.status === 'Overdue').length;
   
+  const isLoading = invoicesLoading || profilesLoading;
+
   if (isLoading) {
       return (
           <AppLayout>

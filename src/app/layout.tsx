@@ -3,7 +3,10 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
-  title: 'Vyapar Co',
+  title: {
+    template: '%s | Vyapar Co',
+    default: 'Vyapar Co',
+  },
   description: 'Invoicing made simple',
 };
 
