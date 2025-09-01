@@ -2,7 +2,7 @@
 'use client';
 
 import { PrintLayout } from '@/app/print-layout';
-import { invoicesDAO, type Invoice } from '@/lib/data';
+import { invoicesDAO, businessProfileDAO, type Invoice, type BusinessProfile } from '@/lib/data';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
     const variant = {
@@ -26,26 +27,49 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
 export default function PrintInvoicePage() {
   const params = useParams();
   const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
+  const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
+  const { data: businessProfiles, isLoading: profileLoading } = useFirestoreData(businessProfileDAO);
+  
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile | null>(null);
   const printTriggered = useRef(false);
+
+  const isLoading = invoicesLoading || profileLoading;
 
   useEffect(() => {
     if (!isLoading && invoices.length > 0) {
       const foundInvoice = invoices.find((i) => i.id === invoiceId);
       setInvoice(foundInvoice || null);
     }
-  }, [invoiceId, invoices, isLoading]);
+     if (!isLoading && businessProfiles.length > 0) {
+      setBusinessProfile(businessProfiles[0]);
+    }
+  }, [invoiceId, invoices, businessProfiles, isLoading]);
 
   useEffect(() => {
-    if (invoice && !isLoading && !printTriggered.current) {
+    if (invoice && businessProfile && !isLoading && !printTriggered.current) {
         printTriggered.current = true;
         window.print();
     }
-  }, [invoice, isLoading]);
+  }, [invoice, businessProfile, isLoading]);
 
   if (isLoading || !invoice) {
-    return <div>Loading...</div>;
+    return (
+        <PrintLayout>
+            <div className='flex justify-between items-start mb-12'>
+                <div>
+                    <Skeleton className="h-10 w-48 mb-2" />
+                    <Skeleton className="h-4 w-64" />
+                </div>
+                <Skeleton className="h-10 w-32" />
+            </div>
+            <div className='grid grid-cols-2 gap-8 mb-8'>
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-24 w-full" />
+            </div>
+            <Skeleton className="h-48 w-full" />
+        </PrintLayout>
+    );
   }
 
   return (
@@ -54,8 +78,8 @@ export default function PrintInvoicePage() {
             <div className='flex items-center gap-4'>
                  <Icons.logo className="h-10 w-10 text-primary" />
                  <div>
-                    <h1 className="text-2xl font-bold">Vyapar Co.</h1>
-                    <p className="text-sm text-muted-foreground">123 Business Rd, Business City</p>
+                    <h1 className="text-2xl font-bold">{businessProfile?.businessName || 'Your Company'}</h1>
+                    <p className="text-sm text-muted-foreground">{businessProfile?.address || '123 Business Rd, Business City'}</p>
                  </div>
             </div>
             <div className='text-right'>

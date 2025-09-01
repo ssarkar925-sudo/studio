@@ -139,9 +139,11 @@ function UserMenu() {
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel>My Account</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <UserCircle />
-          <span>Profile</span>
+        <DropdownMenuItem asChild>
+           <Link href="/profile">
+            <UserCircle />
+            <span>Profile</span>
+          </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
             <Link href="/settings">

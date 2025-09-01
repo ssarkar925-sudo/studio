@@ -90,6 +90,21 @@ export type Purchase = {
   deliveryCharges?: number;
 };
 
+export type BusinessProfile = {
+  id: string;
+  businessName: string;
+  contactPerson?: string;
+  contactNumber?: string;
+  address?: string;
+}
+
+export type UserProfile = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+}
+
 function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
     const collectionRef = collection(db, collectionName);
 
@@ -387,3 +402,5 @@ export const invoicesDAO = createInvoicesDAO();
 export const productsDAO = createFirestoreDAO<Product>('products');
 export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
 export const purchasesDAO = createFirestoreDAO<Purchase>('purchases');
+export const businessProfileDAO = createFirestoreDAO<BusinessProfile>('businessProfile');
+export const userProfileDAO = createFirestoreDAO<UserProfile>('userProfile');
