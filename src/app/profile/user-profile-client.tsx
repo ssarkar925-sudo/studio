@@ -52,6 +52,7 @@ export function UserProfileClient() {
   const [phone, setPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
 
   useEffect(() => {
@@ -267,12 +268,27 @@ export function UserProfileClient() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete your account and remove your data from our servers.
+                                This action cannot be undone. This will permanently delete your account and remove your data from our servers. To confirm, please type "delete total delete this account" in the box below.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
+                        <div className="grid gap-2">
+                            <Label htmlFor="delete-confirm" className="sr-only">Confirmation</Label>
+                            <Input 
+                                id="delete-confirm" 
+                                placeholder='delete total delete this account'
+                                value={deleteConfirmation}
+                                onChange={(e) => setDeleteConfirmation(e.target.value)}
+                            />
+                        </div>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700">Delete Account</AlertDialogAction>
+                            <AlertDialogAction 
+                                onClick={handleDeleteAccount} 
+                                className="bg-red-600 hover:bg-red-700"
+                                disabled={deleteConfirmation !== 'delete total delete this account'}
+                            >
+                                Delete Account
+                            </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
