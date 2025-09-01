@@ -6,7 +6,6 @@ import { customersDAO, type Customer } from '@/lib/data';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   Card,
   CardContent,
@@ -43,17 +42,6 @@ export default function PrintCustomerPage() {
   return (
     <PrintLayout>
       <div className="flex items-center gap-4 mb-8">
-        <Avatar className='h-16 w-16'>
-            <AvatarImage
-                src={`https://picsum.photos/80/80?random=${customer.id}`}
-            />
-            <AvatarFallback>
-                {customer.name
-                .split(' ')
-                .map((n) => n[0])
-                .join('')}
-            </AvatarFallback>
-        </Avatar>
         <div>
             <h1 className="text-2xl font-bold">{customer.name}</h1>
             <p className="text-muted-foreground">{customer.email}</p>

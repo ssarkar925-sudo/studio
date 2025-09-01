@@ -11,7 +11,6 @@ import { businessProfileDAO, type BusinessProfile } from '@/lib/data';
 import { Loader2, Upload } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Icons } from '@/components/icons';
 
 export function BusinessProfileClient() {
@@ -128,12 +127,9 @@ export function BusinessProfileClient() {
                 </div>
                 <div className="grid gap-3 justify-items-center">
                     <Label>Logo</Label>
-                    <Avatar className="h-16 w-16">
-                        <AvatarImage src={logoUrl || undefined} alt="Company Logo" />
-                        <AvatarFallback>
-                            <Icons.logo className="h-8 w-8 text-muted-foreground" />
-                        </AvatarFallback>
-                    </Avatar>
+                     <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center">
+                        {logoUrl ? <img src={logoUrl} alt="Company Logo" className="h-full w-full object-cover rounded-full" /> : <Icons.logo className="h-8 w-8 text-muted-foreground" />}
+                     </div>
                     <input type="file" ref={fileInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />
                     <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
                         <Upload className="mr-2 h-4 w-4" />

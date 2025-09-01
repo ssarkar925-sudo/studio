@@ -14,7 +14,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Markdown from 'react-markdown';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -244,25 +243,25 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
                      {history.map((message, index) => (
                         <div key={index} className={`flex items-start gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
                             {message.role === 'model' && (
-                                <Avatar className="h-8 w-8 border">
-                                    <AvatarFallback><Bot size={16}/></AvatarFallback>
-                                </Avatar>
+                                <div className="h-8 w-8 border rounded-full flex items-center justify-center bg-muted">
+                                    <Bot size={16}/>
+                                </div>
                             )}
                              <div className={`rounded-lg p-3 max-w-sm text-sm ${message.role === 'model' ? 'bg-muted' : 'bg-primary text-primary-foreground'}`}>
                                 <Markdown>{message.content}</Markdown>
                             </div>
                               {message.role === 'user' && (
-                                <Avatar className="h-8 w-8 border">
-                                    <AvatarFallback>U</AvatarFallback>
-                                </Avatar>
+                                <div className="h-8 w-8 border rounded-full flex items-center justify-center bg-muted">
+                                    <span className="font-bold">U</span>
+                                </div>
                             )}
                         </div>
                      ))}
                       {isAnalyzing && history.length > 0 && (
                         <div className="flex items-start gap-3">
-                           <Avatar className="h-8 w-8 border">
-                                <AvatarFallback><Bot size={16}/></AvatarFallback>
-                            </Avatar>
+                           <div className="h-8 w-8 border rounded-full flex items-center justify-center bg-muted">
+                                <Bot size={16}/>
+                            </div>
                             <div className="rounded-lg p-3 bg-muted">
                                 <Skeleton className="h-4 w-4/5" />
                             </div>

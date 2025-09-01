@@ -20,7 +20,6 @@ import {
 import { customersDAO, type Customer } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Trash2, Printer } from 'lucide-react';
 import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -169,25 +168,11 @@ export function CustomersClient({ customers: initialCustomers }: { customers: Cu
                       />
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className='h-9 w-9'>
-                          <AvatarImage
-                            src={`https://picsum.photos/40/40?random=${customer.id}`}
-                            data-ai-hint="profile picture"
-                          />
-                          <AvatarFallback>
-                            {customer.name
-                              .split(' ')
-                              .map((n) => n[0])
-                              .join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{customer.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {customer.email}
-                          </p>
-                        </div>
+                      <div>
+                        <p className="font-medium">{customer.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {customer.email}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell className='text-right'>₹{customer.totalInvoiced.toFixed(2)}</TableCell>
@@ -246,20 +231,9 @@ export function CustomersClient({ customers: initialCustomers }: { customers: Cu
                         onCheckedChange={(checked) => handleSelectCustomer(customer.id, checked as boolean)}
                         aria-label="Select row"
                     />
-                    <div className="flex items-center gap-3">
-                         <Avatar className='h-9 w-9'>
-                            <AvatarImage
-                                src={`https://picsum.photos/40/40?random=${customer.id}`}
-                                data-ai-hint="profile picture"
-                            />
-                            <AvatarFallback>
-                                {customer.name.split(' ').map((n) => n[0]).join('')}
-                            </AvatarFallback>
-                        </Avatar>
-                        <div>
-                            <p className="font-medium">{customer.name}</p>
-                            <p className="text-sm text-muted-foreground">{customer.email}</p>
-                        </div>
+                    <div>
+                      <p className="font-medium">{customer.name}</p>
+                      <p className="text-sm text-muted-foreground">{customer.email}</p>
                     </div>
                 </div>
                  <AlertDialog>

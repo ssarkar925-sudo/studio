@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -71,10 +70,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         href="/"
                         className="flex items-center gap-2 text-lg font-semibold"
                         >
-                        <Avatar className="h-6 w-6">
-                            {logoUrl ? <AvatarImage src={logoUrl} alt={companyName} /> : <Icons.logo className="h-6 w-6 text-primary" />}
-                        </Avatar>
-                        <span >{companyName}</span>
+                          <div className="h-6 w-6">
+                            {logoUrl ? <img src={logoUrl} alt={companyName} className="h-full w-full object-contain" /> : <Icons.logo className="h-6 w-6 text-primary" />}
+                          </div>
+                          <span >{companyName}</span>
                         </Link>
                     </SheetTitle>
                 </SheetHeader>
@@ -117,10 +116,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 href="/"
                 className="flex items-center gap-2 text-lg font-semibold md:text-base"
             >
-                <Avatar className="h-6 w-6">
-                    {logoUrl ? <AvatarImage src={logoUrl} alt={companyName} /> : <Icons.logo className="h-6 w-6 text-primary" />}
-                </Avatar>
-                <span className="">{companyName}</span>
+              <div className="h-6 w-6">
+                {logoUrl ? <img src={logoUrl} alt={companyName} className="h-full w-full object-contain" /> : <Icons.logo className="h-6 w-6 text-primary" />}
+              </div>
+              <span className="">{companyName}</span>
             </Link>
            <UserMenu />
         </div>
@@ -137,10 +136,9 @@ function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="https://picsum.photos/40/40" data-ai-hint="profile picture" alt="@user" />
-            <AvatarFallback>SC</AvatarFallback>
-          </Avatar>
+          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+            <UserCircle />
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
