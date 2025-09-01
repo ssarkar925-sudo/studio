@@ -1,150 +1,34 @@
 
-'use client';
-
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { invoicesDAO, Invoice } from '@/lib/data';
 import { DollarSign, FileText, Clock } from 'lucide-react';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from '@/components/ui/chart';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useFirestoreData } from '@/hooks/use-firestore-data';
-import { subMonths, format, parse, startOfMonth } from 'date-fns';
-import { useMemo } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { DashboardClient } from '@/components/dashboard-client';
 
-
-const chartConfig = {
-  total: {
-    label: 'Total',
-    color: 'hsl(var(--accent))',
-  },
-  paid: {
-    label: 'Paid',
-    color: 'hsl(var(--primary))',
-  },
-} satisfies import('@/components/ui/chart').ChartConfig;
-
-export default function DashboardPage() {
-  const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
+async function getDashboardData() {
+  // This now runs on the server
+  const invoices = await invoicesDAO.load();
 
   const totalRevenue = invoices
     .filter((i) => i.status === 'Paid')
     .reduce((sum, i) => sum + i.amount, 0);
+
   const outstanding = invoices
     .filter((i) => i.status === 'Pending' || i.status === 'Overdue')
     .reduce((sum, i) => sum + i.amount, 0);
+
   const overdue = invoices.filter((i) => i.status === 'Overdue').length;
-
-  const chartData = useMemo(() => {
-    const months = Array.from({ length: 6 }, (_, i) => {
-      const date = subMonths(new Date(), 5 - i);
-      return {
-        month: format(date, 'MMMM'),
-        total: 0,
-        paid: 0,
-        start: startOfMonth(date),
-      };
-    });
-
-    invoices.forEach(invoice => {
-      try {
-        const issueDate = parse(invoice.issueDate, 'PPP', new Date());
-        const monthData = months.find(m => 
-            issueDate.getMonth() === m.start.getMonth() && 
-            issueDate.getFullYear() === m.start.getFullYear()
-        );
-
-        if (monthData) {
-          monthData.total += invoice.amount;
-          if (invoice.status === 'Paid') {
-            monthData.paid += invoice.amount;
-          }
-        }
-      } catch (e) {
-        console.error("Error parsing invoice date", invoice.issueDate);
-      }
-    });
-
-    return months.map(({ month, total, paid }) => ({ month, total, paid }));
-  }, [invoices]);
   
-  if (isLoading) {
-    return (
-        <AppLayout>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-8 w-3/4" />
-                        <Skeleton className="h-4 w-1/2 mt-1" />
-                    </CardContent>
-                </Card>
-                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                       <Skeleton className="h-8 w-3/4" />
-                       <Skeleton className="h-4 w-1/2 mt-1" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Overdue Invoices</CardTitle>
-                        <Clock className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                       <Skeleton className="h-8 w-1/4" />
-                       <Skeleton className="h-4 w-1/2 mt-1" />
-                    </CardContent>
-                </Card>
-            </div>
-            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
-                <Card className="lg:col-span-3 h-[380px]">
-                    <CardHeader>
-                        <CardTitle>Overview</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-[300px] w-full" />
-                    </CardContent>
-                </Card>
-                <Card className="lg:col-span-2">
-                    <CardHeader>
-                        <CardTitle>Recent Invoices</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                       <div className="space-y-4">
-                            {[...Array(5)].map((_, i) => (
-                               <div key={i} className="flex items-center">
-                                   <div className="space-y-2">
-                                       <Skeleton className="h-4 w-32" />
-                                       <Skeleton className="h-4 w-48" />
-                                   </div>
-                                   <div className="ml-auto text-right">
-                                       <Skeleton className="h-5 w-20" />
-                                       <Skeleton className="h-5 w-16 mt-1" />
-                                   </div>
-                               </div>
-                            ))}
-                       </div>
-                    </CardContent>
-                </Card>
-            </div>
-        </AppLayout>
-    )
-  }
+  return { invoices, totalRevenue, outstanding, overdue };
+}
 
+
+export default async function DashboardPage() {
+  const { invoices, totalRevenue, outstanding, overdue } = await getDashboardData();
+  
   return (
     <AppLayout>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -190,104 +74,8 @@ export default function DashboardPage() {
         </Card>
       </div>
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle>Overview</CardTitle>
-          </CardHeader>
-          <CardContent className="pl-2">
-            <ChartContainer config={chartConfig} className="h-[300px] w-full">
-              <BarChart accessibilityLayer data={chartData}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                  tickFormatter={(value) => value.slice(0, 3)}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `₹${value / 1000}K`}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent indicator="dot" />}
-                />
-                <Bar
-                  dataKey="total"
-                  fill="var(--color-total)"
-                  radius={4}
-                />
-                <Bar dataKey="paid" fill="var(--color-paid)" radius={4} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex items-center justify-between">
-            <CardTitle>Recent Invoices</CardTitle>
-            <Button asChild size="sm">
-                <Link href="/invoices/new">New Invoice</Link>
-            </Button>
-          </CardHeader>
-          <CardContent>
-            <RecentInvoices invoices={invoices} />
-          </CardContent>
-        </Card>
+        <DashboardClient invoices={invoices} />
       </div>
     </AppLayout>
-  );
-}
-
-function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
-    if (invoices.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-8">
-        No recent invoices to display.
-      </div>
-    );
-  }
-  const sortedInvoices = [...invoices].sort((a,b) => {
-      try {
-        return parse(b.issueDate, 'PPP', new Date()).getTime() - parse(a.issueDate, 'PPP', new Date()).getTime()
-      } catch {
-        return 0;
-      }
-  });
-
-  return (
-    <div className="space-y-4">
-      {sortedInvoices.slice(0, 5).map((invoice) => (
-        <div key={invoice.id} className="flex items-center">
-          <div className="space-y-1">
-            <p className="text-sm font-medium leading-none">
-              {invoice.customer.name}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {invoice.customer.email}
-            </p>
-          </div>
-          <div className="ml-auto text-right font-medium">
-            <p>₹{invoice.amount.toFixed(2)}</p>
-            <InvoiceStatusBadge status={invoice.status} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
-  const variant = {
-    Paid: 'default',
-    Pending: 'secondary',
-    Overdue: 'destructive',
-  }[status] as 'default' | 'secondary' | 'destructive';
-
-  return (
-    <Badge variant={variant} className="mt-1 capitalize">
-      {status.toLowerCase()}
-    </Badge>
   );
 }

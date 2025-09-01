@@ -89,7 +89,8 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
             return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
         } catch (error) {
             console.error(`Error reading from Firestore collection “${collectionName}”:`, error);
-            return [];
+            // In a server component, it's better to throw the error
+            throw new Error(`Failed to load data from ${collectionName}`);
         }
     };
     
@@ -241,7 +242,7 @@ const createInvoicesDAO = () => {
             for(const productId of allProductIds) {
                 const originalQty = originalItemsMap.get(productId) || 0;
                 const newQty = newItemsMap.get(productId) || 0;
-                const stockChange = originalQty - newQty; // If new > old, stockChange is negative (decrease stock). If old > new, stockChange is positive (increase stock).
+                const stockChange = originalQty - newQty; // If new > old, stockChange is positive (increase stock). If old > new, stockChange is negative (decrease stock).
 
                 if(stockChange !== 0) {
                     const productRef = doc(db, 'products', productId);
