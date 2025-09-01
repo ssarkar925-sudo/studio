@@ -91,8 +91,7 @@ export default function EditCustomerPage() {
         title: 'Update Failed',
         description: 'Could not update customer.',
       });
-    } finally {
-       setIsSaving(false);
+      setIsSaving(false);
     }
   };
   

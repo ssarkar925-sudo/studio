@@ -68,7 +68,6 @@ export default function NewCustomerPage() {
         title: 'Creation Failed',
         description: 'Could not create customer.',
       });
-    } finally {
       setIsSaving(false);
     }
   };

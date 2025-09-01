@@ -66,7 +66,6 @@ export default function NewVendorPage() {
         title: 'Creation Failed',
         description: 'Could not create vendor.',
       });
-    } finally {
        setIsSaving(false);
     }
   };

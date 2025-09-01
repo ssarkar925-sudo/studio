@@ -78,7 +78,6 @@ export default function NewInventoryItemPage() {
         title: 'Creation Failed',
         description: 'Could not create purchase entry.',
       });
-    } finally {
        setIsSaving(false);
     }
   };
