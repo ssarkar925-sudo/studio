@@ -120,6 +120,15 @@ export default function InvoiceDetailsPage() {
                         </TableBody>
                     </Table>
                 </div>
+                 {invoice.orderNote && (
+                    <>
+                        <Separator />
+                        <div className="grid gap-3">
+                            <h3 className="text-lg font-medium">Order Note</h3>
+                            <p className="text-sm text-muted-foreground">{invoice.orderNote}</p>
+                        </div>
+                    </>
+                 )}
                 <div className="flex justify-end">
                     <div className="grid gap-2 w-full max-w-sm">
                         <div className="flex justify-between">

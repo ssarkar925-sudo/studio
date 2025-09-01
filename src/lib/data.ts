@@ -31,6 +31,7 @@ export type Invoice = {
   amount: number; // This will now be the final total amount
   paidAmount?: number;
   dueAmount?: number;
+  orderNote?: string;
 };
 
 export type Customer = {

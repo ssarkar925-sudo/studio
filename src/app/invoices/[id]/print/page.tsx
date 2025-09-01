@@ -97,7 +97,15 @@ export default function PrintInvoicePage() {
             </Table>
         </section>
         
-        <section className='flex justify-end'>
+        <section className='flex justify-between items-start gap-8'>
+            <div>
+                {invoice.orderNote && (
+                    <>
+                        <h3 className="text-lg font-semibold mb-2">Notes</h3>
+                        <p className="text-sm text-muted-foreground max-w-xs">{invoice.orderNote}</p>
+                    </>
+                )}
+            </div>
              <div className="grid gap-2 w-full max-w-sm">
                 <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>

@@ -30,6 +30,7 @@ import { format, parse } from 'date-fns';
 import { useEffect, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
+import { Textarea } from '@/components/ui/textarea';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -67,6 +68,8 @@ export default function EditInvoicePage() {
   const [deliveryCharges, setDeliveryCharges] = useState(0);
   const [discount, setDiscount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
+  const [orderNote, setOrderNote] = useState('');
+
 
   const isLoading = customersLoading || productsLoading || invoicesLoading;
 
@@ -89,6 +92,8 @@ export default function EditInvoicePage() {
             setDeliveryCharges(foundInvoice.deliveryCharges || 0);
             setDiscount(foundInvoice.discount || 0);
             setPaidAmount(foundInvoice.paidAmount || 0);
+            setOrderNote(foundInvoice.orderNote || '');
+
         } else {
              toast({
                 variant: 'destructive',
@@ -182,6 +187,7 @@ export default function EditInvoicePage() {
       amount: total,
       paidAmount,
       dueAmount,
+      orderNote,
     };
 
     try {
@@ -371,51 +377,66 @@ export default function EditInvoicePage() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Summary</CardTitle>
-                    </CardHeader>
-                     <CardContent className="flex justify-end">
-                       <div className="grid gap-4 w-full max-w-sm">
-                            <div className="grid grid-cols-2 items-center">
-                                <Label>Subtotal</Label>
-                                <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted text-right' />
+                <div className="grid md:grid-cols-2 gap-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Order Note</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                             <Textarea 
+                                placeholder="Add any notes for the order..."
+                                value={orderNote}
+                                onChange={(e) => setOrderNote(e.target.value)}
+                                rows={5}
+                            />
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Summary</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                        <div className="grid gap-4">
+                                <div className="grid grid-cols-2 items-center">
+                                    <Label className='text-right pr-4'>Subtotal</Label>
+                                    <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted text-right' />
+                                </div>
+                                <div className="grid grid-cols-2 items-center">
+                                    <Label className='text-right pr-4'>GST (%)</Label>
+                                    <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} className="text-right" />
+                                </div>
+                                <div className="grid grid-cols-2 items-center">
+                                    <Label className='text-right pr-4'>Delivery Charges</Label>
+                                    <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} className="text-right" />
+                                </div>
+                                <div className="grid grid-cols-2 items-center">
+                                    <Label className='text-right pr-4'>Discount</Label>
+                                    <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="text-right" />
+                                </div>
+                                <div className="grid grid-cols-2 items-center">
+                                    <Label className="font-bold text-lg text-right pr-4">Total</Label>
+                                    <Input value={`₹${total.toFixed(2)}`} readOnly className='bg-muted text-right font-bold text-lg h-12' />
+                                </div>
+                                <div className="grid grid-cols-2 items-center">
+                                    <Label className='text-right pr-4'>Paid Amount</Label>
+                                    <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} className="text-right" />
+                                </div>
+                                <div className="grid grid-cols-2 items-center">
+                                    <Label className='text-right pr-4'>Due Amount</Label>
+                                    <Input value={`₹${dueAmount.toFixed(2)}`} readOnly className='bg-muted font-bold text-right' />
+                                </div>
                             </div>
-                            <div className="grid grid-cols-2 items-center">
-                                <Label>GST (%)</Label>
-                                <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} className="text-right" />
-                            </div>
-                             <div className="grid grid-cols-2 items-center">
-                                <Label>Delivery Charges</Label>
-                                <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} className="text-right" />
-                            </div>
-                             <div className="grid grid-cols-2 items-center">
-                                <Label>Discount</Label>
-                                <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="text-right" />
-                            </div>
-                            <div className="grid grid-cols-2 items-center">
-                                <Label className="font-bold text-lg">Total</Label>
-                                <Input value={`₹${total.toFixed(2)}`} readOnly className='bg-muted text-right font-bold text-lg h-12' />
-                            </div>
-                             <div className="grid grid-cols-2 items-center">
-                                <Label>Paid Amount</Label>
-                                <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} className="text-right" />
-                            </div>
-                             <div className="grid grid-cols-2 items-center">
-                                <Label>Due Amount</Label>
-                                <Input value={`₹${dueAmount.toFixed(2)}`} readOnly className='bg-muted font-bold text-right' />
-                            </div>
-                        </div>
-                    </CardContent>
-                    <CardFooter className="justify-end gap-2">
-                        <Button variant="outline" type="button" onClick={() => router.push('/invoices')} disabled={isSaving}>Cancel</Button>
-                        <Button type="submit" disabled={isSaving}>
-                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Save Changes
-                        </Button>
-                    </CardFooter>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </div>
 
+                <CardFooter className="justify-end gap-2">
+                    <Button variant="outline" type="button" onClick={() => router.push('/invoices')} disabled={isSaving}>Cancel</Button>
+                    <Button type="submit" disabled={isSaving}>
+                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Save Changes
+                    </Button>
+                </CardFooter>
           </div>
         </form>
       </div>
