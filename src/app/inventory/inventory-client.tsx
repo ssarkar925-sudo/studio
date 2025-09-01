@@ -141,12 +141,12 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                     />
                   </TableHead>
                 <TableHead>Item</TableHead>
-                <TableHead>SKU</TableHead>
-                <TableHead>Batch Code</TableHead>
-                <TableHead className="text-right">Purchase Price</TableHead>
-                <TableHead className="text-right">Selling Price</TableHead>
                 <TableHead className="text-right">Stock</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead className="text-right">Purchase Price</TableHead>
+                <TableHead className="text-right">Selling Price</TableHead>
+                <TableHead>SKU</TableHead>
+                <TableHead>Batch Code</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -163,10 +163,6 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                     />
                   </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
-                  <TableCell>{product.sku}</TableCell>
-                  <TableCell>{product.batchCode}</TableCell>
-                  <TableCell className="text-right">₹{product.purchasePrice.toFixed(2)}</TableCell>
-                  <TableCell className="text-right">₹{product.sellingPrice.toFixed(2)}</TableCell>
                   <TableCell className="text-right">{product.stock}</TableCell>
                   <TableCell>
                     {product.stock <= 10 ? (
@@ -175,6 +171,10 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                         <Badge variant="default">In Stock</Badge>
                     )}
                   </TableCell>
+                  <TableCell className="text-right">₹{product.purchasePrice.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">₹{product.sellingPrice.toFixed(2)}</TableCell>
+                  <TableCell>{product.sku}</TableCell>
+                  <TableCell>{product.batchCode}</TableCell>
                   <TableCell>
                     <AlertDialog>
                       <DropdownMenu>
