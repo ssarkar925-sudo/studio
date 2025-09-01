@@ -3,8 +3,8 @@
 
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { invoicesDAO, Invoice, businessProfileDAO } from '@/lib/data';
-import { DollarSign, FileText, Clock, Bot, Lightbulb, CheckCircle, Send } from 'lucide-react';
+import { invoicesDAO, Invoice, businessProfileDAO, customersDAO, vendorsDAO, purchasesDAO } from '@/lib/data';
+import { DollarSign, FileText, Clock, Bot, Send, Users, Store, Truck } from 'lucide-react';
 import { DashboardClient } from '@/app/dashboard-client';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useEffect, useState, useMemo, useRef } from 'react';
@@ -16,6 +16,68 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Markdown from 'react-markdown';
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+
+
+function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
+    if (invoices.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        No recent invoices to display.
+      </div>
+    );
+  }
+  const sortedInvoices = [...invoices].sort((a,b) => {
+      try {
+        return parse(b.issueDate, 'PPP', new Date()).getTime() - parse(a.issueDate, 'PPP', new Date()).getTime()
+      } catch {
+        return 0;
+      }
+  });
+
+  return (
+    <div className="space-y-2">
+      {sortedInvoices.slice(0, 5).map((invoice) => (
+        <Link href={`/invoices/${invoice.id}`} key={invoice.id} className="block p-2 -mx-2 rounded-md hover:bg-muted">
+            <div className="flex items-center">
+                <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                    {invoice.customer.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                    {invoice.customer.email}
+                    </p>
+                </div>
+                <div className="ml-auto text-right font-medium">
+                    <p>₹{invoice.amount.toFixed(2)}</p>
+                    <InvoiceStatusBadge status={invoice.status} />
+                </div>
+            </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
+  const variant = {
+    Paid: 'default',
+    Pending: 'secondary',
+    Overdue: 'destructive',
+    Partial: 'outline',
+  }[status] as 'default' | 'secondary' | 'destructive' | 'outline';
+
+  if (status === 'Partial') {
+    return <Badge variant={variant} className="capitalize mt-1 border-accent text-accent">{status.toLowerCase()}</Badge>;
+  }
+
+  return (
+    <Badge variant={variant} className="mt-1 capitalize">
+      {status.toLowerCase()}
+    </Badge>
+  );
+}
 
 
 function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: boolean }) {
@@ -196,6 +258,9 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
 export default function DashboardPage() {
   const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
   const { data: profiles, isLoading: profilesLoading } = useFirestoreData(businessProfileDAO);
+  const { data: customers, isLoading: customersLoading } = useFirestoreData(customersDAO);
+  const { data: vendors, isLoading: vendorsLoading } = useFirestoreData(vendorsDAO);
+  const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
 
   const companyName = profiles[0]?.companyName;
 
@@ -218,7 +283,11 @@ export default function DashboardPage() {
 
   const overdue = invoices.filter((i) => i.status === 'Overdue').length;
   
-  const isLoading = invoicesLoading || profilesLoading;
+  const totalCustomers = customers.length;
+  const totalVendors = vendors.length;
+  const upcomingDeliveries = purchases.filter(p => p.status === 'Pending').length;
+
+  const isLoading = invoicesLoading || profilesLoading || customersLoading || vendorsLoading || purchasesLoading;
 
   if (isLoading) {
       return (
@@ -231,20 +300,20 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <h1 className="text-2xl font-semibold mb-4">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ₹{totalRevenue.toLocaleString()}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Based on all paid invoices
-            </p>
-          </CardContent>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">
+                ₹{totalRevenue.toLocaleString()}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                Based on all paid invoices
+                </p>
+            </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -272,12 +341,61 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
+        <Link href="/contacts?tab=customers">
+            <Card className='hover:bg-muted/50 transition-colors'>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{totalCustomers}</div>
+                    <p className="text-xs text-muted-foreground">
+                    Manage all your customers
+                    </p>
+                </CardContent>
+            </Card>
+        </Link>
+        <Link href="/contacts?tab=vendors">
+            <Card className='hover:bg-muted/50 transition-colors'>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
+                    <Store className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{totalVendors}</div>
+                    <p className="text-xs text-muted-foreground">
+                    Manage all your vendors
+                    </p>
+                </CardContent>
+            </Card>
+        </Link>
+        <Link href="/inventory?tab=purchases">
+            <Card className='hover:bg-muted/50 transition-colors'>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Upcoming Deliveries</CardTitle>
+                    <Truck className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{upcomingDeliveries}</div>
+                    <p className="text-xs text-muted-foreground">
+                    Pending purchase orders
+                    </p>
+                </CardContent>
+            </Card>
+        </Link>
       </div>
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
         <DashboardClient invoices={invoices} />
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Recent Invoices</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RecentInvoices invoices={invoices} />
+          </CardContent>
+        </Card>
         <AiAnalyzer invoices={invoices} isLoading={isLoading} />
       </div>
     </AppLayout>
   );
 }
-

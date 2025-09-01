@@ -96,14 +96,6 @@ export function DashboardClient({ invoices }: { invoices: Invoice[] }) {
             </ChartContainer>
           </CardContent>
         </Card>
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Recent Invoices</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RecentInvoices invoices={invoices} />
-          </CardContent>
-        </Card>
     </>
   )
 }
