@@ -123,7 +123,7 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
 function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: boolean }) {
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [query, setQuery] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(true);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
 
@@ -165,7 +165,7 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
   const overdue = invoices.filter((i) => i.status === 'Overdue').length;
 
   const initialAnalysis = async () => {
-     if (!isLoading && invoices.length > 0) {
+     if (invoices.length > 0) {
       setIsAnalyzing(true);
       setHistory([]);
       try {
@@ -187,10 +187,6 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
     }
   }
 
-  useEffect(() => {
-    initialAnalysis();
-     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoices, isLoading]);
 
   useEffect(() => {
     if(scrollAreaRef.current) {
@@ -240,10 +236,17 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
         <CardContent className='flex-grow overflow-hidden'>
             <ScrollArea className="h-full" ref={scrollAreaRef}>
                  <div className="space-y-4 pr-4">
+                     {history.length === 0 && !isAnalyzing && (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                            <Bot size={48} className="mb-4" />
+                            <p className="mb-4">Get AI-powered insights on your business performance.</p>
+                            <Button onClick={initialAnalysis}>Analyze My Dashboard</Button>
+                        </div>
+                     )}
                      {history.map((message, index) => (
                         <div key={index} className={`flex items-start gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
                             {message.role === 'model' && (
-                                <div className="h-8 w-8 border rounded-full flex items-center justify-center bg-muted">
+                                <div className="h-8 w-8 border rounded-full flex items-center justify-center bg-muted shrink-0">
                                     <Bot size={16}/>
                                 </div>
                             )}
@@ -251,33 +254,29 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
                                 <Markdown>{message.content}</Markdown>
                             </div>
                               {message.role === 'user' && (
-                                <div className="h-8 w-8 border rounded-full flex items-center justify-center bg-muted">
+                                <div className="h-8 w-8 border rounded-full flex items-center justify-center bg-muted shrink-0">
                                     <span className="font-bold">U</span>
                                 </div>
                             )}
                         </div>
                      ))}
-                      {isAnalyzing && history.length > 0 && (
+                      {isAnalyzing && (
                         <div className="flex items-start gap-3">
-                           <div className="h-8 w-8 border rounded-full flex items-center justify-center bg-muted">
+                           <div className="h-8 w-8 border rounded-full flex items-center justify-center bg-muted shrink-0">
                                 <Bot size={16}/>
                             </div>
-                            <div className="rounded-lg p-3 bg-muted">
-                                <Skeleton className="h-4 w-4/5" />
+                            <div className="rounded-lg p-3 bg-muted w-full">
+                                <Skeleton className="h-4 w-4/5 mb-2" />
+                                <Skeleton className="h-4 w-full mb-2" />
+                                <Skeleton className="h-4 w-3/5" />
                             </div>
-                        </div>
-                     )}
-                     {history.length === 0 && isAnalyzing && (
-                        <div className="space-y-2">
-                           <Skeleton className="h-16 w-full" />
-                           <Skeleton className="h-24 w-4/5 ml-auto" />
-                           <Skeleton className="h-16 w-full" />
                         </div>
                      )}
                  </div>
             </ScrollArea>
         </CardContent>
-        <CardFooter>
+       {history.length > 0 && (
+         <CardFooter>
             <form onSubmit={handleQuerySubmit} className="flex w-full items-center space-x-2">
                 <Input 
                     placeholder="e.g. Which month had the highest profit?" 
@@ -290,6 +289,7 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
                 </Button>
             </form>
         </CardFooter>
+       )}
     </Card>
   );
 }
@@ -467,3 +467,5 @@ export default function DashboardPage() {
         </AppLayout>
     );
 }
+
+    
