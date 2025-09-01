@@ -312,37 +312,35 @@ export default function NewInvoicePage() {
                     <CardHeader>
                         <CardTitle>Summary</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                            <div className='grid gap-1'>
+                    <CardContent className="flex justify-end">
+                       <div className="grid gap-4 w-full max-w-sm">
+                            <div className="grid grid-cols-2 items-center">
                                 <Label>Subtotal</Label>
-                                <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted' />
+                                <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted text-right' />
                             </div>
-                            <div className='grid gap-1'>
+                            <div className="grid grid-cols-2 items-center">
                                 <Label>GST (%)</Label>
-                                <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} />
+                                <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} className="text-right" />
                             </div>
-                             <div className='grid gap-1'>
+                             <div className="grid grid-cols-2 items-center">
                                 <Label>Delivery Charges</Label>
-                                <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} />
+                                <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} className="text-right" />
                             </div>
-                             <div className='grid gap-1'>
+                             <div className="grid grid-cols-2 items-center">
                                 <Label>Discount</Label>
-                                <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} />
+                                <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="text-right" />
                             </div>
-                             <div className='grid gap-1'>
+                            <div className="grid grid-cols-2 items-center">
+                                <Label className="font-bold text-lg">Total</Label>
+                                <Input value={`₹${total.toFixed(2)}`} readOnly className='bg-muted text-right font-bold text-lg h-12' />
+                            </div>
+                             <div className="grid grid-cols-2 items-center">
                                 <Label>Paid Amount</Label>
-                                <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} />
+                                <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} className="text-right" />
                             </div>
-                             <div className='grid gap-1'>
+                             <div className="grid grid-cols-2 items-center">
                                 <Label>Due Amount</Label>
-                                <Input value={`₹${dueAmount.toFixed(2)}`} readOnly className='bg-muted font-bold' />
-                            </div>
-                        </div>
-                         <div className="flex justify-end mt-4">
-                            <div className="grid gap-1 w-full max-w-xs">
-                                <Label className="text-right text-2xl font-bold">Total</Label>
-                                <Input value={`₹${total.toFixed(2)}`} readOnly className='bg-muted text-2xl font-bold text-right h-12' />
+                                <Input value={`₹${dueAmount.toFixed(2)}`} readOnly className='bg-muted font-bold text-right' />
                             </div>
                         </div>
                     </CardContent>
