@@ -3,13 +3,12 @@ import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  "apiKey": "AIzaSyB1DcmZSlM0J6UksXg8KPvj0idapl25qgk",
-  "authDomain": "sarkar-comm.firebaseapp.com",
-  "projectId": "sarkar-comm",
-  "storageBucket": "sarkar-comm.appspot.com",
-  "messagingSenderId": "21057194965",
-  "appId": "1:21057194965:web:a09b91a589391fa8884b5c",
-  "measurementId": "G-5BLS7YRS23"
+  "apiKey": "AIzaSyCg12itK1XBGtAwVd2ZxM35LcxGJpy_p4c",
+  "authDomain": "sarkar-co.firebaseapp.com",
+  "projectId": "sarkar-co",
+  "storageBucket": "sarkar-co.appspot.com",
+  "messagingSenderId": "476613728632",
+  "appId": "1:476613728632:web:e8acb2aea46b409db6108d"
 };
 
 // Initialize Firebase
