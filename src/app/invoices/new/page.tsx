@@ -25,7 +25,6 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState, useEffect } from 'react';
@@ -43,59 +42,6 @@ type InvoiceItem = {
     isManual?: boolean;
 };
 
-function ManualItemDialog({ onAddItem }: { onAddItem: (item: Omit<InvoiceItem, 'id' | 'productId' | 'total'>) => void }) {
-    const [name, setName] = useState('');
-    const [price, setPrice] = useState(0);
-    const [isOpen, setIsOpen] = useState(false);
-
-    const handleSave = () => {
-        if (name && price > 0) {
-            onAddItem({
-                productName: name,
-                sellingPrice: price,
-                quantity: 1,
-                isManual: true,
-            });
-            setName('');
-            setPrice(0);
-            setIsOpen(false);
-        }
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-                <Button type="button" variant="outline">
-                    <PlusCircle className="mr-2" />
-                    Add Manually
-                </Button>
-            </DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Add Manual Item</DialogTitle>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="manual-item-name">Item Name</Label>
-                        <Input id="manual-item-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Service Fee" />
-                    </div>
-                     <div className="grid gap-2">
-                        <Label htmlFor="manual-item-price">Price</Label>
-                        <Input id="manual-item-price" type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} placeholder="0.00" />
-                    </div>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button type="button" variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button type="button" onClick={handleSave}>Add Item</Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
-
 export default function NewInvoicePage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -109,34 +55,24 @@ export default function NewInvoicePage() {
   // Add one default item row when the component mounts
   useEffect(() => {
     if (items.length === 0) {
-      handleAddItem();
+      setItems([{ id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual: false }]);
     }
      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAddItem = () => {
+  const handleAddItem = (isManual = false) => {
     setItems([
       ...items,
-      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual: false },
+      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual },
     ]);
   };
-
-  const handleAddManualItem = (manualItem: Omit<InvoiceItem, 'id' | 'productId' | 'total'>) => {
-    const newItem: InvoiceItem = {
-        ...manualItem,
-        id: `item-${Date.now()}`,
-        productId: `manual_${Date.now()}`,
-        total: manualItem.quantity * manualItem.sellingPrice,
-    };
-    setItems([...items, newItem]);
-  }
 
   const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
     const newItems = [...items];
     const item = newItems[index];
     (item[field] as any) = value;
 
-    if (field === 'productId') {
+    if (field === 'productId' && !item.isManual) {
         const product = products.find(p => p.id === value);
         if (product) {
           item.productName = product.name;
@@ -308,8 +244,6 @@ export default function NewInvoicePage() {
                                             placeholder="e.g., Service Fee" 
                                             value={item.productName} 
                                             onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
-                                            readOnly // Manual items are added via dialog
-                                            className="bg-muted"
                                         />
                                     ) : (
                                         <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
@@ -328,7 +262,7 @@ export default function NewInvoicePage() {
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Price</Label>}
-                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" readOnly={item.isManual} className={item.isManual ? 'bg-muted': ''} />
+                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01" readOnly={!item.isManual} className={!item.isManual ? 'bg-muted' : ''} />
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Total</Label>}
@@ -342,11 +276,10 @@ export default function NewInvoicePage() {
                             </div>
                             ))}
                             <div className="flex flex-col sm:flex-row gap-2">
-                                <Button type="button" variant="outline" onClick={handleAddItem}>
+                                <Button type="button" variant="outline" onClick={() => handleAddItem(true)}>
                                     <PlusCircle className="mr-2" />
-                                    Add Item from Inventory
+                                    Add Manually
                                 </Button>
-                                <ManualItemDialog onAddItem={handleAddManualItem} />
                             </div>
                         </div>
                     </CardContent>
@@ -378,3 +311,5 @@ export default function NewInvoicePage() {
     </AppLayout>
   );
 }
+
+    
