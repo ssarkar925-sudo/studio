@@ -3,6 +3,9 @@
 
 import { useState, useEffect } from 'react';
 
+// THIS HOOK IS DEPRECATED AND WILL BE REMOVED.
+// DO NOT USE. Data should be fetched on the server.
+
 type Dao<T> = {
   subscribe: (callback: (data: T[]) => void, onError: (error: Error) => void) => () => void;
 };

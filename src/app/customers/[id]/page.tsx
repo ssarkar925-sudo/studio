@@ -1,6 +1,4 @@
 
-'use client';
-
 import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,36 +8,35 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { customersDAO, type Customer } from '@/lib/data';
-import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { customersDAO } from '@/lib/data';
 import { ArrowLeft } from 'lucide-react';
-import { useFirestoreData } from '@/hooks/use-firestore-data';
+import Link from 'next/link';
 
-export default function CustomerDetailsPage() {
-  const router = useRouter();
-  const params = useParams();
-  const { data: customers, isLoading } = useFirestoreData(customersDAO);
-  const [customer, setCustomer] = useState<Customer | null>(null);
-
-  useEffect(() => {
-    if (!isLoading) {
-      const customerId = Array.isArray(params.id) ? params.id[0] : params.id;
-      const foundCustomer = customers.find((c) => c.id === customerId);
-      if (foundCustomer) {
-        setCustomer(foundCustomer);
-      } else {
-          // Handle not found case if necessary
-      }
+async function getCustomer(id: string) {
+    // We will add a `get` method to the DAO for fetching a single document
+    if (customersDAO.get) {
+        return await customersDAO.get(id);
     }
-  }, [params.id, customers, isLoading]);
+    // Fallback for safety
+    const customers = await customersDAO.load();
+    const customer = customers.find(c => c.id === id);
+    if (!customer) {
+        throw new Error("Customer not found");
+    }
+    return customer;
+}
 
-  if (isLoading || !customer) {
-    // You can show a loading spinner here
+export default async function CustomerDetailsPage({ params }: { params: { id: string }}) {
+  const customer = await getCustomer(params.id);
+
+  if (!customer) {
     return (
         <AppLayout>
             <div className="mx-auto grid w-full max-w-2xl gap-2">
-                <h1 className="text-2xl font-semibold">Loading...</h1>
+                <h1 className="text-2xl font-semibold">Customer not found</h1>
+                 <Button variant="outline" asChild>
+                    <Link href="/customers">Back to Customers</Link>
+                </Button>
             </div>
         </AppLayout>
     );
@@ -49,9 +46,11 @@ export default function CustomerDetailsPage() {
     <AppLayout>
       <div className="mx-auto grid w-full max-w-2xl gap-2">
         <div className="flex items-center gap-4">
-             <Button variant="outline" size="icon" onClick={() => router.back()}>
-                <ArrowLeft />
-                <span className="sr-only">Back</span>
+             <Button variant="outline" size="icon" asChild>
+                <Link href="/customers">
+                    <ArrowLeft />
+                    <span className="sr-only">Back</span>
+                </Link>
             </Button>
             <h1 className="text-2xl font-semibold">Customer Details</h1>
         </div>

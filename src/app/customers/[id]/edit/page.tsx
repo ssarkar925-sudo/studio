@@ -17,9 +17,25 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useParams } from 'next/navigation';
 import { customersDAO, type Customer } from '@/lib/data';
-import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+
+// This page now needs to fetch its own data since it's a client component.
+async function getCustomer(id: string): Promise<Customer | null> {
+    try {
+        // We'll add a direct `get` method to the DAO for this
+        if (customersDAO.get) {
+            return await customersDAO.get(id);
+        }
+        // Fallback to loading all and filtering, though less efficient
+        const customers = await customersDAO.load();
+        return customers.find(c => c.id === id) || null;
+    } catch (error) {
+        console.error("Failed to fetch customer", error);
+        return null;
+    }
+}
+
 
 export default function EditCustomerPage() {
   const { toast } = useToast();
@@ -27,8 +43,8 @@ export default function EditCustomerPage() {
   const params = useParams();
   const customerId = Array.isArray(params.id) ? params.id[0] : params.id;
   
-  const { data: customers, isLoading } = useFirestoreData(customersDAO);
   const [customer, setCustomer] = useState<Customer | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // State for form fields
   const [name, setName] = useState('');
@@ -37,25 +53,26 @@ export default function EditCustomerPage() {
   const [address, setAddress] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-
   useEffect(() => {
-    if (!isLoading && customers.length > 0) {
-        const foundCustomer = customers.find((c) => c.id === customerId);
-        if (foundCustomer) {
-            setCustomer(foundCustomer);
-            setName(foundCustomer.name);
-            setEmail(foundCustomer.email);
-            setPhone(foundCustomer.phone || '');
-            setAddress(foundCustomer.address || '');
+    if (customerId) {
+      getCustomer(customerId).then(data => {
+        if (data) {
+          setCustomer(data);
+          setName(data.name);
+          setEmail(data.email);
+          setPhone(data.phone || '');
+          setAddress(data.address || '');
         } else {
-            toast({
-                variant: 'destructive',
-                title: 'Customer not found',
-            });
-            router.push('/customers');
+          toast({
+            variant: 'destructive',
+            title: 'Customer not found',
+          });
+          router.push('/customers');
         }
+        setIsLoading(false);
+      });
     }
-  }, [customerId, customers, isLoading, router, toast]);
+  }, [customerId, router, toast]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -91,7 +108,8 @@ export default function EditCustomerPage() {
         title: 'Update Failed',
         description: 'Could not update customer.',
       });
-      setIsSaving(false);
+    } finally {
+        setIsSaving(false);
     }
   };
   

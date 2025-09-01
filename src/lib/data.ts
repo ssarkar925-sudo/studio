@@ -93,6 +93,21 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
         }
     };
     
+    const get = async (id: string): Promise<T | null> => {
+        try {
+            const docRef = doc(db, collectionName, id);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                return { id: docSnap.id, ...docSnap.data() } as T;
+            } else {
+                return null;
+            }
+        } catch (error) {
+            console.error(`Error getting document from Firestore collection “${collectionName}”:`, error);
+            throw new Error(`Failed to get document ${id} from ${collectionName}`);
+        }
+    };
+
     const add = async (item: Omit<T, 'id'>) => {
         try {
             const docRef = await addDoc(collectionRef, item);
@@ -140,7 +155,7 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
         return unsubscribe;
     }
 
-    return { load, add, update, remove, subscribe };
+    return { load, get, add, update, remove, subscribe };
 }
 
 export const customersDAO = createFirestoreDAO<Customer>('customers');
