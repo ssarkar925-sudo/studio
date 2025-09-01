@@ -78,7 +78,7 @@ export default function PrintInvoicePage() {
             <div className='flex items-center gap-4'>
                  <Icons.logo className="h-10 w-10 text-primary" />
                  <div>
-                    <h1 className="text-2xl font-bold">{businessProfile?.businessName || 'Your Company'}</h1>
+                    <h1 className="text-2xl font-bold">{businessProfile?.companyName || 'Your Company'}</h1>
                     <p className="text-sm text-muted-foreground">{businessProfile?.address || '123 Business Rd, Business City'}</p>
                  </div>
             </div>

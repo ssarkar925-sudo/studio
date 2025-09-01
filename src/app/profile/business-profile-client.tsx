@@ -17,7 +17,7 @@ export function BusinessProfileClient() {
   const { data: profiles, isLoading } = useFirestoreData(businessProfileDAO);
 
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
-  const [businessName, setBusinessName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [address, setAddress] = useState('');
@@ -27,7 +27,7 @@ export function BusinessProfileClient() {
     if (!isLoading && profiles.length > 0) {
       const currentProfile = profiles[0];
       setProfile(currentProfile);
-      setBusinessName(currentProfile.businessName);
+      setCompanyName(currentProfile.companyName);
       setContactPerson(currentProfile.contactPerson || '');
       setContactNumber(currentProfile.contactNumber || '');
       setAddress(currentProfile.address || '');
@@ -38,18 +38,18 @@ export function BusinessProfileClient() {
     e.preventDefault();
     if (isSaving) return;
 
-    if (!businessName) {
+    if (!companyName) {
       toast({
         variant: 'destructive',
         title: 'Missing Field',
-        description: 'Business Name is required.',
+        description: 'Company Name is required.',
       });
       return;
     }
 
     setIsSaving(true);
     const updatedProfileData = {
-      businessName,
+      companyName,
       contactPerson,
       contactNumber,
       address,
@@ -91,11 +91,11 @@ export function BusinessProfileClient() {
         <CardContent>
           <div className="grid gap-6">
             <div className="grid gap-3">
-              <Label htmlFor="businessName">Business Name</Label>
+              <Label htmlFor="companyName">Company Name</Label>
               <Input
-                id="businessName"
-                value={businessName}
-                onChange={(e) => setBusinessName(e.target.value)}
+                id="companyName"
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
                 required
               />
             </div>
