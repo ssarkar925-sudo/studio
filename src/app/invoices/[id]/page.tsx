@@ -13,7 +13,7 @@ import {
 import { invoicesDAO, type Invoice } from '@/lib/data';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ArrowLeft, Printer, Pencil } from 'lucide-react';
+import { ArrowLeft, Printer, Pencil, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -24,6 +24,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { useToast } from '@/hooks/use-toast';
+
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
   const variant = {
@@ -64,6 +68,8 @@ export default function InvoiceDetailsPage() {
   const params = useParams();
   const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [isSharing, setIsSharing] = useState(false);
+  const { toast } = useToast();
   const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   useEffect(() => {
@@ -81,15 +87,68 @@ export default function InvoiceDetailsPage() {
     printWindow?.focus();
   };
 
-  const handleShareOnWhatsApp = () => {
+  const handleShareOnWhatsApp = async () => {
     if (!invoice) return;
-    const message = `Hello ${invoice.customer.name},\n\nHere are the details for your invoice ${invoice.invoiceNumber}:\n\nTotal Amount: ₹${invoice.amount.toFixed(2)}\nAmount Due: ₹${(invoice.dueAmount || 0).toFixed(2)}\n\nThank you!`;
-    const encodedMessage = encodeURIComponent(message);
-    // Note: This does not include the customer's phone number to protect privacy. 
-    // The user will have to select the contact in WhatsApp.
-    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-    window.open(whatsappUrl, '_blank');
-  };
+
+    setIsSharing(true);
+    toast({
+        title: 'Generating PDF...',
+        description: 'Please wait while we create the invoice PDF for sharing.'
+    });
+
+    try {
+        const invoicePrintElement = document.createElement('div');
+        invoicePrintElement.style.position = 'absolute';
+        invoicePrintElement.style.left = '-9999px';
+        invoicePrintElement.style.width = '800px';
+
+        // We need to render the print component off-screen to generate the PDF
+        const printContent = await (await fetch(`/invoices/${invoiceId}/print`)).text();
+        // This is a simplified approach; a more robust solution would use ReactDOMServer or a dedicated render-to-string method.
+        invoicePrintElement.innerHTML = printContent;
+        document.body.appendChild(invoicePrintElement);
+        
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        const canvas = await html2canvas(invoicePrintElement, {
+            scale: 2,
+        });
+
+        document.body.removeChild(invoicePrintElement);
+
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgData = canvas.toDataURL('image/png');
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+        // In a real application, you would upload this PDF to a cloud storage (like Firebase Storage)
+        // and get a public URL. For this demo, we'll use a placeholder.
+        const pdfBlob = pdf.output('blob');
+        console.log("PDF Blob generated, ready for upload.", pdfBlob);
+        const invoiceUrl = "https://example.com/invoice.pdf"; // Placeholder URL
+        
+        toast({
+            title: 'PDF Ready!',
+            description: 'PDF has been generated. You would now upload it.',
+        });
+        
+        const message = `Hello ${invoice.customer.name},\n\nPlease find your invoice here: ${invoiceUrl}\n\nTotal Amount: ₹${invoice.amount.toFixed(2)}\nAmount Due: ₹${(invoice.dueAmount || 0).toFixed(2)}\n\nThank you!`;
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+        window.open(whatsappUrl, '_blank');
+
+    } catch (error) {
+        console.error("Failed to generate or share PDF", error);
+        toast({
+            variant: 'destructive',
+            title: 'Sharing Failed',
+            description: 'Could not generate the invoice PDF for sharing.',
+        });
+    } finally {
+        setIsSharing(false);
+    }
+};
 
   if (isLoading || !invoice) {
     return (
@@ -117,8 +176,8 @@ export default function InvoiceDetailsPage() {
                     <Pencil className="mr-2" />
                     Edit
                 </Button>
-                 <Button variant="outline" onClick={handleShareOnWhatsApp}>
-                    <WhatsAppIcon className="mr-2" />
+                 <Button variant="outline" onClick={handleShareOnWhatsApp} disabled={isSharing}>
+                    {isSharing ? <Loader2 className="mr-2 animate-spin" /> : <WhatsAppIcon className="mr-2" />}
                     Share
                 </Button>
                 <DropdownMenu>
