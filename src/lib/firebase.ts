@@ -3,14 +3,14 @@ import { initializeApp, getApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
+// Hardcoded configuration for 'sarkar-comm' project to ensure correct connection.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "YOUR_API_KEY", // You will need to replace this with your actual API key from the Firebase console
   authDomain: "sarkar-comm.firebaseapp.com",
   projectId: "sarkar-comm",
   storageBucket: "sarkar-comm.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
-  measurementId: "YOUR_MEASUREMENT_ID"
+  messagingSenderId: "476613728632",
+  appId: "1:476613728632:web:bf0231908272559a43a8b7" // This is an example App ID
 };
 
 
