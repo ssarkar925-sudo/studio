@@ -25,13 +25,14 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Product, type Invoice } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon, ScanLine } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { TagScanner } from '@/components/tag-scanner';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -53,6 +54,7 @@ export default function NewInvoicePage() {
   const [customerId, setCustomerId] = useState<string>('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
 
   // Summary state
   const [gstPercentage, setGstPercentage] = useState(0);
@@ -96,6 +98,38 @@ export default function NewInvoicePage() {
   const handleRemoveItem = (index: number) => {
     setItems(items.filter((_, i) => i !== index));
   };
+  
+   const handleScan = (product: Product) => {
+    const existingItemIndex = items.findIndex(item => item.productId === product.id && !item.isManual);
+
+    if (existingItemIndex !== -1) {
+      // If item already exists, increase its quantity
+      const newItems = [...items];
+      newItems[existingItemIndex].quantity += 1;
+      newItems[existingItemIndex].total = newItems[existingItemIndex].quantity * newItems[existingItemIndex].sellingPrice;
+      setItems(newItems);
+    } else {
+      // If item doesn't exist, add it as a new line
+      const newItem: InvoiceItem = {
+        id: `item-${Date.now()}`,
+        productId: product.id,
+        productName: product.name,
+        quantity: 1,
+        sellingPrice: product.sellingPrice,
+        total: product.sellingPrice,
+        isManual: false
+      };
+      
+      // If the first item is empty, replace it. Otherwise, add the new item.
+      if (items.length === 1 && items[0].productName === '') {
+         setItems([newItem]);
+      } else {
+         setItems([...items, newItem]);
+      }
+    }
+    setIsScannerOpen(false);
+  };
+
 
   const calculateSummary = useCallback(() => {
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
@@ -174,6 +208,7 @@ export default function NewInvoicePage() {
   };
 
   return (
+    <>
     <AppLayout>
       <div className="mx-auto grid w-full max-w-4xl gap-2">
         <h1 className="text-2xl font-semibold">New Invoice</h1>
@@ -264,6 +299,10 @@ export default function NewInvoicePage() {
                                 <Button type="button" variant="outline" onClick={() => handleAddItem(true)}>
                                     <PlusCircle className="mr-2" />
                                     Add Manually
+                                </Button>
+                                <Button type="button" variant="outline" onClick={() => setIsScannerOpen(true)}>
+                                    <ScanLine className="mr-2" />
+                                    Scan Item
                                 </Button>
                             </div>
                         </div>
@@ -375,5 +414,12 @@ export default function NewInvoicePage() {
         </form>
       </div>
     </AppLayout>
+    <TagScanner
+        open={isScannerOpen}
+        onOpenChange={setIsScannerOpen}
+        onScan={handleScan}
+        products={products}
+    />
+    </>
   );
 }
