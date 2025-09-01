@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { productsDAO, purchasesDAO, type Product, type Purchase } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Trash2, Printer, Download } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Printer } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -104,7 +104,7 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
       router.push(url);
     } else if (action === 'Edit') {
       router.push(`${url}/edit`);
-    } else if (action === 'Print' || action === 'Download') {
+    } else if (action === 'Print') {
         const printWindow = window.open(`${url}/print`, '_blank');
         printWindow?.focus();
     }
@@ -204,7 +204,6 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                           <DropdownMenuItem onSelect={() => handleAction('View', product.id)}>View</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleAction('Edit', product.id)}>Edit</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleAction('Print', product.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Download', product.id)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                           </AlertDialogTrigger>
@@ -377,7 +376,7 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
         router.push(`${url}/edit`);
     } else if (action === 'View') {
         router.push(url);
-    } else if (action === 'Print' || action === 'Download') {
+    } else if (action === 'Print') {
         const printWindow = window.open(`${url}/print`, '_blank');
         printWindow?.focus();
     }
@@ -473,7 +472,6 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
                         {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Edit', purchase)}>Edit</DropdownMenuItem>}
                         {purchase.status === 'Pending' && <DropdownMenuItem onSelect={() => handleAction('Mark as Received', purchase)}>Mark as Received</DropdownMenuItem>}
                         <DropdownMenuItem onSelect={() => handleAction('Print', purchase)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                        <DropdownMenuItem onSelect={() => handleAction('Download', purchase)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

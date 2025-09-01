@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { invoicesDAO, Invoice } from '@/lib/data';
-import { MoreHorizontal, PlusCircle, Trash2, Printer, Download } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -106,7 +106,7 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
         router.push(url);
     } else if (action === 'Edit') {
         router.push(`${url}/edit`);
-    } else if (action === 'Print' || action === 'Download') {
+    } else if (action === 'Print') {
         const printWindow = window.open(`${url}/print`, '_blank');
         printWindow?.focus();
     }
@@ -202,7 +202,6 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
                           <DropdownMenuItem onSelect={() => handleAction('View', invoice.id)}>View</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id)}>Edit</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleAction('Print', invoice.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Download', invoice.id)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
                            <AlertDialogTrigger asChild>
                             <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                           </AlertDialogTrigger>
