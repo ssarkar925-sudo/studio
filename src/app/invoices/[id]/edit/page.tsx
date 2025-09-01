@@ -41,6 +41,7 @@ type InvoiceItem = {
     quantity: number;
     sellingPrice: number;
     total: number;
+    isManual?: boolean;
 };
 
 export default function EditInvoicePage() {
@@ -86,7 +87,11 @@ export default function EditInvoicePage() {
             }
             setStatus(foundInvoice.status);
             setCustomerId(foundInvoice.customer.id);
-            setItems(foundInvoice.items.map(item => ({...item, id: `item-${Math.random()}`})));
+            setItems(foundInvoice.items.map(item => ({
+              ...item, 
+              id: `item-${Math.random()}`,
+              isManual: !products.some(p => p.id === item.productId)
+            })));
 
             // Set summary fields
             setGstPercentage(foundInvoice.gstPercentage || 0);
@@ -103,12 +108,12 @@ export default function EditInvoicePage() {
             router.push('/invoices');
         }
     }
-  }, [invoiceId, invoices, isLoading, router, toast]);
+  }, [invoiceId, invoices, products, isLoading, router, toast]);
 
-  const handleAddItem = () => {
+  const handleAddItem = (isManual = false) => {
     setItems([
       ...items,
-      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0 },
+      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual },
     ]);
   };
 
@@ -117,7 +122,7 @@ export default function EditInvoicePage() {
     const item = newItems[index];
     (item[field] as any) = value;
 
-    if (field === 'productId') {
+    if (field === 'productId' && !item.isManual) {
         const product = products.find(p => p.id === value);
         if (product) {
           item.productName = product.name;
@@ -190,7 +195,7 @@ export default function EditInvoicePage() {
       issueDate: format(issueDate, 'PPP'),
       dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
       status: status || 'Pending',
-      items: items.map(({id, ...rest}) => rest),
+      items: items.map(({id, isManual, ...rest}) => rest),
       subtotal,
       gstPercentage,
       gstAmount,
@@ -313,55 +318,70 @@ export default function EditInvoicePage() {
             </Card>
 
             <Card>
-                    <CardHeader>
-                        <CardTitle>Items</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid gap-4">
-                            {items.map((item, index) => (
-                            <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
-                                <div className="grid gap-3 col-span-12 sm:col-span-5">
-                                    {index === 0 && <Label className="hidden sm:block">Item</Label>}
-                                     <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
+                <CardHeader>
+                    <CardTitle>Items</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid gap-4">
+                        {items.map((item, index) => (
+                        <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
+                            <div className="grid gap-3 col-span-12 sm:col-span-5">
+                                {index === 0 && <Label className="hidden sm:block">Item</Label>}
+                                {item.isManual ? (
+                                    <Input 
+                                        type="text" 
+                                        placeholder="e.g., Service Fee" 
+                                        value={item.productName} 
+                                        onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
+                                    />
+                                ) : (
+                                    <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select item" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             {products.map((p: Product) => {
-                                                const originalItem = invoice.items.find(i => i.productId === p.id);
+                                                const originalItem = invoice?.items.find(i => i.productId === p.id);
                                                 const originalQuantity = originalItem ? originalItem.quantity : 0;
                                                 const availableStock = p.stock + originalQuantity;
-                                                return <SelectItem key={p.id} value={p.id} disabled={p.stock <=0 && !originalItem}>{p.name} (Stock: {availableStock})</SelectItem>
+                                                return <SelectItem key={p.id} value={p.id} disabled={availableStock <= 0 && !originalItem}>{p.name} (Stock: {availableStock})</SelectItem>
                                             })}
                                         </SelectContent>
                                     </Select>
-                                </div>
-                                <div className="grid gap-3 col-span-4 sm:col-span-2">
-                                {index === 0 && <Label className="hidden sm:block">Qty</Label>}
-                                    <Input type="number" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)} placeholder="1" />
-                                </div>
-                                <div className="grid gap-3 col-span-4 sm:col-span-2">
-                                {index === 0 && <Label className="hidden sm:block">Price</Label>}
-                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01"/>
-                                </div>
-                                <div className="grid gap-3 col-span-4 sm:col-span-2">
-                                {index === 0 && <Label className="hidden sm:block">Total</Label>}
-                                    <Input type="number" value={item.total.toFixed(2)} readOnly placeholder="0.00" className='bg-muted' />
-                                </div>
-                                <div className="col-span-12 sm:col-span-1 flex items-end">
-                                    <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveItem(index)} className="w-full sm:w-auto">
-                                        <Trash2 />
-                                    </Button>
-                                </div>
+                                )}
                             </div>
-                            ))}
-                            <Button type="button" variant="outline" onClick={handleAddItem} className="w-full sm:w-auto">
+                            <div className="grid gap-3 col-span-4 sm:col-span-2">
+                            {index === 0 && <Label className="hidden sm:block">Qty</Label>}
+                                <Input type="number" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)} placeholder="1" />
+                            </div>
+                            <div className="grid gap-3 col-span-4 sm:col-span-2">
+                            {index === 0 && <Label className="hidden sm:block">Price</Label>}
+                                <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01" disabled={!item.isManual}/>
+                            </div>
+                            <div className="grid gap-3 col-span-4 sm:col-span-2">
+                            {index === 0 && <Label className="hidden sm:block">Total</Label>}
+                                <Input type="number" value={item.total.toFixed(2)} readOnly placeholder="0.00" className='bg-muted' />
+                            </div>
+                            <div className="col-span-12 sm:col-span-1 flex items-end">
+                                <Button type="button" variant="destructive" size="icon" onClick={() => handleRemoveItem(index)} className="w-full sm:w-auto">
+                                    <Trash2 />
+                                </Button>
+                            </div>
+                        </div>
+                        ))}
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <Button type="button" variant="outline" onClick={() => handleAddItem(false)}>
                                 <PlusCircle className="mr-2" />
                                 Add Item
                             </Button>
+                            <Button type="button" variant="outline" onClick={() => handleAddItem(true)}>
+                                <PlusCircle className="mr-2" />
+                                Add Manually
+                            </Button>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </CardContent>
+            </Card>
 
                 <div className="grid md:grid-cols-2 gap-6">
                      <div className='space-y-6'>

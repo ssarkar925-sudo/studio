@@ -18,6 +18,12 @@ import { Badge } from '@/components/ui/badge';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
   const variant = {
@@ -50,8 +56,8 @@ export default function InvoiceDetailsPage() {
     }
   }, [params.id, invoices, isLoading, invoiceId]);
 
-  const handlePrint = () => {
-    const printWindow = window.open(`/invoices/${invoiceId}/print`, '_blank');
+  const handlePrint = (format: 'a4' | 'receipt') => {
+    const printWindow = window.open(`/invoices/${invoiceId}/print/${format}`, '_blank');
     printWindow?.focus();
   };
 
@@ -81,10 +87,18 @@ export default function InvoiceDetailsPage() {
                     <Pencil className="mr-2" />
                     Edit
                 </Button>
-                <Button onClick={handlePrint}>
-                    <Printer className="mr-2" />
-                    Print
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button>
+                      <Printer className="mr-2" />
+                      Print
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onSelect={() => handlePrint('a4')}>A4 Invoice</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handlePrint('receipt')}>Thermal Receipt</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
             </div>
         </div>
       </div>

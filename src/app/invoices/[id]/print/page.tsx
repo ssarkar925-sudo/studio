@@ -8,6 +8,19 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Icons } from '@/components/icons';
 import { Separator } from '@/components/ui/separator';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
+function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
+  const variant = {
+    Paid: 'default',
+    Pending: 'secondary',
+    Overdue: 'destructive',
+    Partial: 'outline',
+  }[status] as 'default' | 'secondary' | 'destructive' | 'outline';
+
+  return <Badge variant={variant} className="capitalize text-white">{status}</Badge>;
+}
 
 export default function PrintInvoicePage() {
   const params = useParams();
@@ -39,11 +52,11 @@ export default function PrintInvoicePage() {
     }
   }, [invoice, businessProfile, isLoading]);
 
-  if (isLoading || !invoice) {
+  if (isLoading || !invoice || !businessProfile) {
     return (
         <PrintLayout>
-            <div className='w-[58mm] mx-auto p-1 bg-white text-black text-xs'>
-                <p>Loading receipt...</p>
+            <div className='p-10'>
+                <p>Loading invoice...</p>
             </div>
         </PrintLayout>
     );
@@ -51,93 +64,105 @@ export default function PrintInvoicePage() {
 
   return (
     <PrintLayout>
-        <div className='w-[58mm] mx-auto p-1 bg-white text-black font-mono text-[10px] leading-tight'>
-            <div className='text-center mb-2'>
-                {businessProfile?.companyName && <h1 className="text-sm font-bold uppercase">{businessProfile.companyName}</h1>}
-                {businessProfile?.address && <p>{businessProfile.address}</p>}
-                {businessProfile?.contactNumber && <p>Ph: {businessProfile.contactNumber}</p>}
+      <div className="p-10 bg-background text-foreground font-sans">
+        <header className="flex justify-between items-start mb-10">
+          <div>
+            <Icons.logo className="h-10 w-10 text-primary mb-4" />
+            <h1 className="text-2xl font-bold">{businessProfile.companyName}</h1>
+            <p className="text-muted-foreground">{businessProfile.address}</p>
+          </div>
+          <div className="text-right">
+            <h2 className="text-4xl font-bold uppercase text-primary tracking-widest">Invoice</h2>
+            <p className="text-muted-foreground mt-2">Invoice #: {invoice.invoiceNumber}</p>
+            <p className="text-muted-foreground">Issued: {invoice.issueDate}</p>
+          </div>
+        </header>
+
+        <section className="flex justify-between items-start mb-10">
+          <div>
+            <h3 className="font-semibold mb-2">Billed To</h3>
+            <p className="font-bold">{invoice.customer.name}</p>
+            <p className="text-muted-foreground">{invoice.customer.email}</p>
+          </div>
+          <div className="text-right">
+            <h3 className="font-semibold mb-2">Status</h3>
+            <InvoiceStatusBadge status={invoice.status} />
+            <p className="mt-2 font-semibold">Due Date: {invoice.dueDate}</p>
+          </div>
+        </section>
+
+        <section className="mb-10">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="w-[50%]">Item Description</TableHead>
+                <TableHead className="text-right">Quantity</TableHead>
+                <TableHead className="text-right">Unit Price</TableHead>
+                <TableHead className="text-right">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {invoice.items.map((item, index) => (
+                <TableRow key={index}>
+                  <TableCell className="font-medium">{item.productName}</TableCell>
+                  <TableCell className="text-right">{item.quantity}</TableCell>
+                  <TableCell className="text-right">₹{item.sellingPrice.toFixed(2)}</TableCell>
+                  <TableCell className="text-right font-medium">₹{item.total.toFixed(2)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </section>
+
+        <section className="flex justify-end mb-10">
+          <div className="w-full max-w-sm space-y-2">
+            <div className="flex justify-between">
+              <span className="text-muted-foreground">Subtotal</span>
+              <span>₹{invoice.subtotal.toFixed(2)}</span>
             </div>
-
-            <Separator className='border-dashed border-black my-2' />
-
-            <div className='mb-2'>
-                <p><strong>Invoice #:</strong> {invoice.invoiceNumber}</p>
-                <p><strong>Date:</strong> {invoice.issueDate}</p>
-                <p><strong>Billed to:</strong> {invoice.customer.name}</p>
+            {invoice.gstAmount !== undefined && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">GST ({invoice.gstPercentage || 0}%)</span>
+                <span>₹{invoice.gstAmount.toFixed(2)}</span>
+              </div>
+            )}
+            {invoice.deliveryCharges !== undefined && invoice.deliveryCharges > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Delivery</span>
+                <span>₹{invoice.deliveryCharges.toFixed(2)}</span>
+              </div>
+            )}
+            {invoice.discount !== undefined && invoice.discount > 0 && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Discount</span>
+                <span className="text-destructive">- ₹{invoice.discount.toFixed(2)}</span>
+              </div>
+            )}
+            <Separator />
+            <div className="flex justify-between font-bold text-lg">
+              <span>Total</span>
+              <span>₹{invoice.amount.toFixed(2)}</span>
             </div>
-
-            <Separator className='border-dashed border-black my-2' />
-
-            <div>
-                <div className="flex justify-between font-bold">
-                    <p className='w-[60%]'>Item</p>
-                    <p className='w-[15%] text-right'>Qty</p>
-                    <p className='w-[25%] text-right'>Total</p>
-                </div>
-                 <Separator className='border-black my-1' />
-                {invoice.items.map((item, index) => (
-                    <div key={index} className='flex flex-col mb-1'>
-                        <span>{item.productName}</span>
-                         <div className='flex justify-between'>
-                            <span className='w-[60%]'>{item.quantity} x ₹{item.sellingPrice.toFixed(2)}</span>
-                            <span className='w-[40%] text-right'>₹{item.total.toFixed(2)}</span>
-                        </div>
-                    </div>
-                ))}
+            {invoice.paidAmount !== undefined && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Amount Paid</span>
+                <span>₹{invoice.paidAmount.toFixed(2)}</span>
+              </div>
+            )}
+             <div className="flex justify-between font-bold text-lg p-2 bg-muted/50 rounded-md">
+              <span>Amount Due</span>
+              <span>₹{(invoice.dueAmount || 0).toFixed(2)}</span>
             </div>
-
-            <Separator className='border-dashed border-black my-2' />
-
-            <div className="space-y-1">
-                <div className="flex justify-between">
-                    <p>Subtotal:</p>
-                    <p>₹{invoice.subtotal.toFixed(2)}</p>
-                </div>
-                 {invoice.gstAmount !== undefined && invoice.gstAmount > 0 && (
-                    <div className="flex justify-between">
-                        <p>GST ({invoice.gstPercentage || 0}%):</p>
-                        <p>₹{invoice.gstAmount.toFixed(2)}</p>
-                    </div>
-                )}
-                 {invoice.deliveryCharges !== undefined && invoice.deliveryCharges > 0 && (
-                    <div className="flex justify-between">
-                        <p>Delivery:</p>
-                        <p>₹{invoice.deliveryCharges.toFixed(2)}</p>
-                    </div>
-                )}
-                 {invoice.discount !== undefined && invoice.discount > 0 && (
-                    <div className="flex justify-between">
-                        <p>Discount:</p>
-                        <p>- ₹{invoice.discount.toFixed(2)}</p>
-                    </div>
-                )}
-                <Separator className='border-black my-1' />
-                <div className="flex justify-between font-bold text-xs">
-                    <p>Total:</p>
-                    <p>₹{invoice.amount.toFixed(2)}</p>
-                </div>
-                <div className="flex justify-between">
-                    <p>Paid:</p>
-                    <p>₹{(invoice.paidAmount || 0).toFixed(2)}</p>
-                </div>
-                <div className="flex justify-between font-bold text-xs">
-                    <p>Due:</p>
-                    <p>₹{(invoice.dueAmount || 0).toFixed(2)}</p>
-                </div>
-            </div>
-
-            <Separator className='border-dashed border-black my-2' />
-            
-             {invoice.orderNote && (
-                <>
-                    <p className='text-center text-[9px]'>{invoice.orderNote}</p>
-                    <Separator className='border-dashed border-black my-2' />
-                </>
-             )}
-
-
-            <p className='text-center text-[9px]'>Thank you for your business!</p>
-        </div>
+          </div>
+        </section>
+        
+        {invoice.orderNote && (
+          <footer className="mt-10 pt-5 border-t">
+            <h3 className="font-semibold mb-2">Notes</h3>
+            <p className="text-muted-foreground text-sm">{invoice.orderNote}</p>
+          </footer>
+        )}
+      </div>
     </PrintLayout>
   );
 }
