@@ -12,6 +12,7 @@ import {
   UserCircle,
   Menu,
   Building,
+  Contact,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -35,8 +36,7 @@ import {
 const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/invoices', label: 'Invoices', icon: FileText },
-  { href: '/customers', label: 'Customers', icon: Users },
-  { href: '/vendors', label: 'Vendors', icon: Building },
+  { href: '/contacts', label: 'Contacts', icon: Contact },
   { href: '/inventory', label: 'Inventory', icon: Package },
 ];
 
