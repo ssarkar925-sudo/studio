@@ -202,6 +202,7 @@ export default function NewPurchasePage() {
           title: 'Creation Failed',
           description: 'Could not create purchase order.',
       });
+    } finally {
       setIsSaving(false);
     }
   };

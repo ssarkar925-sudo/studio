@@ -143,6 +143,7 @@ export default function NewInvoicePage() {
             title: "Creation Failed",
             description: "An error occurred while creating the invoice."
         })
+    } finally {
         setIsSaving(false);
     }
   };
