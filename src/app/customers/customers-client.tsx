@@ -150,6 +150,7 @@ export function CustomersClient({ customers: initialCustomers }: { customers: Cu
                 <TableHead>Customer</TableHead>
                 <TableHead className='text-right'>Total Invoiced</TableHead>
                 <TableHead className='text-right'>Total Paid</TableHead>
+                <TableHead className='text-right'>Total Due</TableHead>
                 <TableHead className='text-right'>Invoices</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -190,6 +191,7 @@ export function CustomersClient({ customers: initialCustomers }: { customers: Cu
                   </TableCell>
                   <TableCell className='text-right'>₹{customer.totalInvoiced.toFixed(2)}</TableCell>
                   <TableCell className='text-right'>₹{customer.totalPaid.toFixed(2)}</TableCell>
+                  <TableCell className='text-right'>₹{(customer.totalInvoiced - customer.totalPaid).toFixed(2)}</TableCell>
                   <TableCell className='text-right'>{customer.invoices}</TableCell>
                   <TableCell>
                     <AlertDialog>
