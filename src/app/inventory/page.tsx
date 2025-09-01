@@ -3,8 +3,7 @@ import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { productsDAO, purchasesDAO } from '@/lib/data';
 import { Upload } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { InventoryClient } from './inventory-client';
+import { InventoryTabs } from './inventory-tabs';
 
 
 export default async function InventoryPage({ searchParams }: { searchParams: { tab: string }}) {
@@ -22,18 +21,11 @@ export default async function InventoryPage({ searchParams }: { searchParams: { 
           </Button>
         </div>
       </div>
-      <Tabs defaultValue={searchParams.tab || "stock"}>
-        <TabsList>
-          <TabsTrigger value="stock">Stock</TabsTrigger>
-          <TabsTrigger value="purchases">Purchases</TabsTrigger>
-        </TabsList>
-        <TabsContent value="stock">
-          <InventoryClient products={products} />
-        </TabsContent>
-        <TabsContent value="purchases">
-          <InventoryClient purchases={purchases} />
-        </TabsContent>
-      </Tabs>
+      <InventoryTabs 
+        activeTab={searchParams.tab || "stock"}
+        products={products}
+        purchases={purchases}
+      />
     </AppLayout>
   );
 }
