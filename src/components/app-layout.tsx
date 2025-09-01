@@ -13,7 +13,7 @@ import {
   Building,
   Contact,
   BarChart,
-  LogIn,
+  LogOut,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -158,8 +158,8 @@ function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
           <Link href="/login">
-            <LogIn />
-            <span>Log In</span>
+            <LogOut />
+            <span>Sign Out</span>
           </Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
