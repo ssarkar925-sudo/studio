@@ -126,13 +126,19 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
        }
     }
 
-    const subscribe = (callback: (data: T[]) => void): Unsubscribe => {
+    const subscribe = (
+      callback: (data: T[]) => void,
+      onError?: (error: Error) => void
+    ): Unsubscribe => {
         const q = query(collectionRef);
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
             callback(data);
         }, (error) => {
             console.error(`Error subscribing to Firestore collection “${collectionName}”:`, error);
+            if(onError) {
+              onError(error);
+            }
         });
         return unsubscribe;
     }
@@ -173,8 +179,14 @@ const createInvoicesDAO = () => {
                 const productRef = doc(db, 'products', item.productId);
                 const productDoc = await transaction.get(productRef);
                 if (productDoc.exists()) {
-                    const newStock = productDoc.data().stock - item.quantity;
+                    const currentStock = productDoc.data().stock;
+                    if (currentStock < item.quantity) {
+                        throw new Error(`Not enough stock for ${item.productName}. Available: ${currentStock}, Requested: ${item.quantity}`);
+                    }
+                    const newStock = currentStock - item.quantity;
                     transaction.update(productRef, { stock: newStock });
+                } else {
+                    throw new Error(`Product with ID ${item.productId} not found.`);
                 }
             }
 
@@ -229,13 +241,17 @@ const createInvoicesDAO = () => {
             for(const productId of allProductIds) {
                 const originalQty = originalItemsMap.get(productId) || 0;
                 const newQty = newItemsMap.get(productId) || 0;
-                const stockChange = originalQty - newQty;
+                const stockChange = originalQty - newQty; // If new > old, stockChange is negative (decrease stock). If old > new, stockChange is positive (increase stock).
 
                 if(stockChange !== 0) {
                     const productRef = doc(db, 'products', productId);
                     const productDoc = await transaction.get(productRef);
                     if(productDoc.exists()) {
-                        transaction.update(productRef, { stock: productDoc.data().stock + stockChange });
+                         const currentStock = productDoc.data().stock;
+                         if (currentStock < -stockChange) { // -stockChange is what we need to remove
+                             throw new Error(`Not enough stock for ${productId}. Available: ${currentStock}, Additional required: ${-stockChange}`);
+                         }
+                        transaction.update(productRef, { stock: currentStock + stockChange });
                     }
                 }
             }
@@ -252,7 +268,7 @@ const createInvoicesDAO = () => {
             if (!invoiceDoc.exists()) {
                 throw new Error("Invoice not found!");
             }
-            const invoiceData = invoiceDoc.data() as Invoice;
+            const invoiceData = {id: invoiceDoc.id, ...invoiceDoc.data()} as Invoice;
 
             // 1. Delete the invoice
             transaction.delete(invoiceRef);
