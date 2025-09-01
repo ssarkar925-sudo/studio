@@ -66,6 +66,12 @@ export default function PrintVendorPage() {
                     <p>{vendor.gstn || 'N/A'}</p>
                 </div>
               </div>
+              <div className="grid grid-cols-1 gap-4 mt-6">
+                <div className="grid gap-3">
+                    <p className="text-sm font-medium text-muted-foreground">Address</p>
+                    <p>{vendor.address || 'N/A'}</p>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter, useParams } from 'next/navigation';
 import { vendorsDAO, type Vendor } from '@/lib/data';
@@ -35,6 +36,7 @@ export default function EditVendorPage() {
   const [contactNumber, setContactNumber] = useState('');
   const [email, setEmail] = useState('');
   const [gstn, setGstn] = useState('');
+  const [address, setAddress] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
 
@@ -48,6 +50,7 @@ export default function EditVendorPage() {
             setContactNumber(foundVendor.contactNumber || '');
             setEmail(foundVendor.email || '');
             setGstn(foundVendor.gstn || '');
+            setAddress(foundVendor.address || '');
         } else {
             toast({
                 variant: 'destructive',
@@ -80,6 +83,7 @@ export default function EditVendorPage() {
         contactNumber,
         email,
         gstn,
+        address,
       });
       
       toast({
@@ -143,6 +147,10 @@ export default function EditVendorPage() {
                 <div className="grid gap-3">
                   <Label htmlFor="gstn">GSTN</Label>
                   <Input id="gstn" name="gstn" type="text" className="w-full" value={gstn} onChange={e=>setGstn(e.target.value)} />
+                </div>
+                <div className="grid gap-3">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea id="address" name="address" value={address} onChange={(e) => setAddress(e.target.value)} />
                 </div>
               </div>
             </CardContent>

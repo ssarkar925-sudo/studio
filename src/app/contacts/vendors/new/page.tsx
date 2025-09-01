@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { vendorsDAO } from '@/lib/data';
@@ -34,6 +35,7 @@ export default function NewVendorPage() {
     const contactNumber = formData.get('contactNumber') as string;
     const email = formData.get('email') as string;
     const gstn = formData.get('gstn') as string;
+    const address = formData.get('address') as string;
 
     if (!vendorName) {
        toast({
@@ -52,6 +54,7 @@ export default function NewVendorPage() {
         contactNumber,
         email,
         gstn,
+        address,
       });
       
       toast({
@@ -105,6 +108,10 @@ export default function NewVendorPage() {
                 <div className="grid gap-3">
                   <Label htmlFor="gstn">GSTN</Label>
                   <Input id="gstn" name="gstn" type="text" className="w-full" placeholder="29AABCU9603R1ZM" />
+                </div>
+                <div className="grid gap-3">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea id="address" name="address" placeholder="Enter vendor's address" />
                 </div>
               </div>
             </CardContent>

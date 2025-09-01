@@ -55,6 +55,7 @@ export type Vendor = {
   contactNumber?: string;
   email?: string;
   gstn?: string;
+  address?: string;
 };
 
 export type PurchaseItem = {

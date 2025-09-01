@@ -144,10 +144,8 @@ export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }
                     />
                   </TableHead>
                   <TableHead>Vendor Name</TableHead>
-                  <TableHead>Contact Person</TableHead>
-                  <TableHead>Contact Number</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>GSTN</TableHead>
+                  <TableHead>Address</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -164,10 +162,8 @@ export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }
                       />
                     </TableCell>
                     <TableCell className="font-medium">{vendor.vendorName}</TableCell>
-                    <TableCell>{vendor.contactPerson}</TableCell>
-                    <TableCell>{vendor.contactNumber}</TableCell>
                     <TableCell>{vendor.email}</TableCell>
-                    <TableCell>{vendor.gstn}</TableCell>
+                    <TableCell>{vendor.address}</TableCell>
                     <TableCell>
                       <AlertDialog>
                           <DropdownMenu>
@@ -267,8 +263,8 @@ export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }
                     <p className="truncate">{vendor.email || 'N/A'}</p>
                 </div>
                  <div className="grid gap-1 col-span-2">
-                    <p className="text-muted-foreground">GSTN</p>
-                    <p>{vendor.gstn || 'N/A'}</p>
+                    <p className="text-muted-foreground">Address</p>
+                    <p>{vendor.address || 'N/A'}</p>
                 </div>
             </CardContent>
           </Card>
