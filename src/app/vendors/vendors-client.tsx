@@ -185,7 +185,7 @@ export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 This action cannot be undone. This will permanently delete vendor &quot;{vendor.vendorName}&quot;.
-                              </Description>
+                              </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
