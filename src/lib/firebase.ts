@@ -5,12 +5,13 @@ import { getFirestore } from 'firebase/firestore';
 
 // Hardcoded configuration for 'sarkar-comm' project to ensure correct connection.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY", // You will need to replace this with your actual API key from the Firebase console
+  apiKey: "AIzaSyB1DcmZSlM0J6UksXg8KPvj0idapl25qgk",
   authDomain: "sarkar-comm.firebaseapp.com",
   projectId: "sarkar-comm",
   storageBucket: "sarkar-comm.appspot.com",
-  messagingSenderId: "476613728632",
-  appId: "1:476613728632:web:bf0231908272559a43a8b7"
+  messagingSenderId: "21057194965",
+  appId: "1:21057194965:web:a09b91a589391fa8884b5c",
+  measurementId: "G-5BLS7YRS23"
 };
 
 
