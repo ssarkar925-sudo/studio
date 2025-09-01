@@ -28,11 +28,26 @@ export default function EditVendorPage() {
   const { data: vendors, isLoading } = useFirestoreData(vendorsDAO);
   const [vendor, setVendor] = useState<Vendor | null>(null);
 
+  // Form state
+  const [vendorName, setVendorName] = useState('');
+  const [contactPerson, setContactPerson] = useState('');
+  const [contactNumber, setContactNumber] = useState('');
+  const [email, setEmail] = useState('');
+  const [gstn, setGstn] = useState('');
+
+
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && vendors.length > 0) {
         const foundVendor = vendors.find((v) => v.id === vendorId);
         if (foundVendor) {
-            setVendor(foundVendor);
+            if(!vendor) {
+                setVendor(foundVendor);
+                setVendorName(foundVendor.vendorName);
+                setContactPerson(foundVendor.contactPerson || '');
+                setContactNumber(foundVendor.contactNumber || '');
+                setEmail(foundVendor.email || '');
+                setGstn(foundVendor.gstn || '');
+            }
         } else {
             toast({
                 variant: 'destructive',
@@ -41,18 +56,12 @@ export default function EditVendorPage() {
             router.push('/vendors');
         }
     }
-  }, [vendorId, vendors, isLoading, router, toast]);
+  }, [vendorId, vendors, isLoading, router, toast, vendor]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!vendor) return;
 
-    const formData = new FormData(e.currentTarget);
-    const vendorName = formData.get('vendorName') as string;
-    const contactPerson = formData.get('contactPerson') as string;
-    const contactNumber = formData.get('contactNumber') as string;
-    const email = formData.get('email') as string;
-    const gstn = formData.get('gstn') as string;
 
     if (!vendorName) {
        toast({
@@ -106,23 +115,23 @@ export default function EditVendorPage() {
               <div className="grid gap-6">
                 <div className="grid gap-3">
                   <Label htmlFor="vendorName">Vendor Name</Label>
-                  <Input id="vendorName" name="vendorName" type="text" className="w-full" defaultValue={vendor.vendorName} required />
+                  <Input id="vendorName" name="vendorName" type="text" className="w-full" value={vendorName} onChange={e=>setVendorName(e.target.value)} required />
                 </div>
                  <div className="grid gap-3">
                   <Label htmlFor="contactPerson">Contact Person</Label>
-                  <Input id="contactPerson" name="contactPerson" type="text" className="w-full" defaultValue={vendor.contactPerson} />
+                  <Input id="contactPerson" name="contactPerson" type="text" className="w-full" value={contactPerson} onChange={e=>setContactPerson(e.target.value)} />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="contactNumber">Contact Number</Label>
-                  <Input id="contactNumber" name="contactNumber" type="tel" className="w-full" defaultValue={vendor.contactNumber} />
+                  <Input id="contactNumber" name="contactNumber" type="tel" className="w-full" value={contactNumber} onChange={e=>setContactNumber(e.target.value)} />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" name="email" type="email" className="w-full" defaultValue={vendor.email} />
+                  <Input id="email" name="email" type="email" className="w-full" value={email} onChange={e=>setEmail(e.target.value)} />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="gstn">GSTN</Label>
-                  <Input id="gstn" name="gstn" type="text" className="w-full" defaultValue={vendor.gstn} />
+                  <Input id="gstn" name="gstn" type="text" className="w-full" value={gstn} onChange={e=>setGstn(e.target.value)} />
                 </div>
               </div>
             </CardContent>
