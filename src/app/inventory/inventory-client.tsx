@@ -30,7 +30,7 @@ import { useState, useMemo, useEffect } from 'react';
 // This component will handle both tabs logic now
 export function InventoryClient({ products: initialProducts, purchases: initialPurchases }: { products?: Product[], purchases?: Purchase[] }) {
     const pathname = usePathname();
-    const isPurchaseTab = pathname.includes('purchases');
+    const isPurchaseTab = pathname.includes('purchases') || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab') === 'purchases');
 
     if (isPurchaseTab) {
         return <PurchaseHistory initialPurchases={initialPurchases || []} />;
@@ -229,7 +229,18 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
   }, [initialPurchases]);
 
   const sortedPurchases = useMemo(() => {
-    return [...purchases].sort((a, b) => b.id.localeCompare(a.id));
+    if (!purchases) return [];
+    return [...purchases].sort((a, b) => {
+        try {
+            // Handle cases where orderDate might not be a valid date string
+            const dateA = new Date(a.orderDate).getTime();
+            const dateB = new Date(b.orderDate).getTime();
+            if (isNaN(dateA) || isNaN(dateB)) return 0;
+            return dateB - dateA;
+        } catch (e) {
+            return 0;
+        }
+    });
   }, [purchases]);
   
   const allPurchasesSelected = useMemo(() => selectedPurchases.length > 0 && selectedPurchases.length === purchases.length, [selectedPurchases, purchases]);
@@ -439,3 +450,4 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
     </Card>
   );
 }
+
