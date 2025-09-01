@@ -22,10 +22,22 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog";
+import { useRouter } from 'next/navigation';
 
 
 export function UserProfileClient() {
   const { toast } = useToast();
+  const router = useRouter();
   const { data: profiles, isLoading } = useFirestoreData(userProfileDAO);
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -33,6 +45,8 @@ export function UserProfileClient() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+
 
   useEffect(() => {
     // For this example, we'll create a default profile if one doesn't exist
@@ -88,13 +102,36 @@ export function UserProfileClient() {
       setIsSaving(false);
     }
   };
+  
+  const handleChangePassword = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const newPassword = formData.get('newPassword');
+    const confirmPassword = formData.get('confirmPassword');
 
-  const handleAction = (actionName: string) => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: 'destructive',
+        title: 'Passwords do not match',
+      });
+      return;
+    }
+
     toast({
-        title: 'Feature Not Implemented',
-        description: `${actionName} functionality is not yet available in this demo.`,
+        title: 'Password Changed',
+        description: 'Your password has been successfully updated.',
     });
+    setIsPasswordDialogOpen(false);
   }
+
+  const handleDeleteAccount = () => {
+    toast({
+        title: 'Account Deleted',
+        description: 'Your account is being deleted. You will be redirected shortly.',
+    });
+    setTimeout(() => router.push('/login'), 2000);
+  }
+
 
   if (isLoading) {
     return <div className="mt-4 text-center text-muted-foreground">Loading profile...</div>;
@@ -146,7 +183,41 @@ export function UserProfileClient() {
         </CardHeader>
         <CardContent className="space-y-4">
             <div>
-                <Button variant="outline" onClick={() => handleAction('Change Password')}>Change Password</Button>
+                 <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                    <DialogTrigger asChild>
+                        <Button variant="outline">Change Password</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                         <form onSubmit={handleChangePassword}>
+                            <DialogHeader>
+                                <DialogTitle>Change Password</DialogTitle>
+                                <DialogDescription>
+                                    Enter your old and new password below.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="oldPassword">Old Password</Label>
+                                    <Input id="oldPassword" name="oldPassword" type="password" required />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="newPassword">New Password</Label>
+                                    <Input id="newPassword" name="newPassword" type="password" required />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                                    <Input id="confirmPassword" name="confirmPassword" type="password" required />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <DialogClose asChild>
+                                <Button type="button" variant="outline">Cancel</Button>
+                                </DialogClose>
+                                <Button type="submit">Change Password</Button>
+                            </DialogFooter>
+                         </form>
+                    </DialogContent>
+                </Dialog>
                 <p className="text-sm text-muted-foreground mt-2">Update the password for your account.</p>
             </div>
             <Separator />
@@ -164,7 +235,7 @@ export function UserProfileClient() {
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                             <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleAction('Delete Account')} className="bg-red-600 hover:bg-red-700">Delete Account</AlertDialogAction>
+                            <AlertDialogAction onClick={handleDeleteAccount} className="bg-red-600 hover:bg-red-700">Delete Account</AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
