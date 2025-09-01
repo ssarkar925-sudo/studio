@@ -27,7 +27,7 @@ export function BusinessProfileClient() {
     if (!isLoading && profiles.length > 0) {
       const currentProfile = profiles[0];
       setProfile(currentProfile);
-      setCompanyName(currentProfile.companyName);
+      setCompanyName(currentProfile.companyName || '');
       setContactPerson(currentProfile.contactPerson || '');
       setContactNumber(currentProfile.contactNumber || '');
       setAddress(currentProfile.address || '');
