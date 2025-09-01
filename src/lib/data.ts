@@ -1,7 +1,12 @@
 
-import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc, FieldValue, serverTimestamp, deleteField } from 'firebase/firestore';
+import { db, auth } from '@/lib/firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc, FieldValue, serverTimestamp, deleteField, where, writeBatch } from 'firebase/firestore';
 import { format } from 'date-fns';
+
+type BaseDocument = {
+    id: string;
+    userId: string;
+}
 
 export type InvoiceItem = {
     productId: string;
@@ -11,8 +16,7 @@ export type InvoiceItem = {
     total: number;
 }
 
-export type Invoice = {
-  id: string;
+export type Invoice = BaseDocument & {
   invoiceNumber: string;
   customer: {
     id: string;
@@ -34,8 +38,7 @@ export type Invoice = {
   orderNote?: string;
 };
 
-export type Customer = {
-  id: string;
+export type Customer = BaseDocument & {
   name: string;
   email: string;
   phone?: string;
@@ -45,8 +48,7 @@ export type Customer = {
   invoices: number;
 };
 
-export type Product = {
-  id:string;
+export type Product = BaseDocument & {
   name: string;
   purchasePrice: number;
   sellingPrice: number;
@@ -56,8 +58,7 @@ export type Product = {
   outOfStockDate?: string;
 };
 
-export type Vendor = {
-  id: string;
+export type Vendor = BaseDocument & {
   vendorName: string;
   contactPerson?: string;
   contactNumber?: string;
@@ -75,8 +76,7 @@ export type PurchaseItem = {
     isNew?: boolean;
 }
 
-export type Purchase = {
-  id: string;
+export type Purchase = BaseDocument & {
   vendorId: string;
   vendorName: string;
   orderDate: string;
@@ -90,8 +90,7 @@ export type Purchase = {
   deliveryCharges?: number;
 };
 
-export type BusinessProfile = {
-  id: string;
+export type BusinessProfile = BaseDocument & {
   companyName: string;
   logoUrl?: string;
   contactPerson?: string;
@@ -100,42 +99,16 @@ export type BusinessProfile = {
 }
 
 export type UserProfile = {
-  id: string;
+  id: string; // Here ID is the uid from Firebase Auth
   name: string;
   email: string;
   phone?: string;
 }
 
-function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
+function createFirestoreDAO<T extends {id: string, userId?: string}>(collectionName: string) {
     const collectionRef = collection(db, collectionName);
 
-    const load = async (): Promise<T[]> => {
-        try {
-            const snapshot = await getDocs(collectionRef);
-            return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
-        } catch (error) {
-            console.error(`Error reading from Firestore collection “${collectionName}”:`, error);
-            // In a server component, it's better to throw the error
-            throw new Error(`Failed to load data from ${collectionName}`);
-        }
-    };
-    
-    const get = async (id: string): Promise<T | null> => {
-        try {
-            const docRef = doc(db, collectionName, id);
-            const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                return { id: docSnap.id, ...docSnap.data() } as T;
-            } else {
-                return null;
-            }
-        } catch (error) {
-            console.error(`Error getting document from Firestore collection “${collectionName}”:`, error);
-            throw new Error(`Failed to get document ${id} from ${collectionName}`);
-        }
-    };
-
-    const add = async (item: Omit<T, 'id'>) => {
+    const add = async (item: Omit<T, 'id' | 'userId'> & { userId: string }) => {
         try {
             const docRef = await addDoc(collectionRef, item);
             return { ...item, id: docRef.id } as T;
@@ -145,7 +118,7 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
         }
     }
     
-    const update = async (id: string, updatedItem: Partial<Omit<T, 'id'>>) => {
+    const update = async (id: string, updatedItem: Partial<Omit<T, 'id' | 'userId'>>) => {
         try {
             const docRef = doc(db, collectionName, id);
             await updateDoc(docRef, updatedItem);
@@ -166,10 +139,11 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
     }
 
     const subscribe = (
+      userId: string,
       callback: (data: T[]) => void,
       onError?: (error: Error) => void
     ): Unsubscribe => {
-        const q = query(collectionRef);
+        const q = query(collectionRef, where("userId", "==", userId));
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
             callback(data);
@@ -182,15 +156,32 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
         return unsubscribe;
     }
 
-    return { load, get, add, update, remove, subscribe };
+    return { add, update, remove, subscribe };
 }
+
+// User Profile DAO is special as it uses the auth UID as the document ID
+const userProfileDAO = {
+    get: async (userId: string): Promise<UserProfile | null> => {
+        const docRef = doc(db, 'userProfile', userId);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as UserProfile : null;
+    },
+    update: async (userId: string, data: Partial<Omit<UserProfile, 'id'>>) => {
+        const docRef = doc(db, 'userProfile', userId);
+        await updateDoc(docRef, data);
+    },
+    remove: async (userId: string) => {
+        const docRef = doc(db, 'userProfile', userId);
+        await deleteDoc(docRef);
+    }
+};
+
 
 export const customersDAO = createFirestoreDAO<Customer>('customers');
 
 const getInvoiceStatus = (dueAmount: number, paidAmount: number): Invoice['status'] => {
     if (dueAmount <= 0) return 'Paid';
     if (paidAmount > 0 && dueAmount > 0) return 'Partial';
-    // Overdue logic can be added here based on dueDate
     return 'Pending';
 }
 
@@ -198,9 +189,8 @@ const getInvoiceStatus = (dueAmount: number, paidAmount: number): Invoice['statu
 const createInvoicesDAO = () => {
     const baseDAO = createFirestoreDAO<Invoice>('invoices');
 
-    const addInvoice = async (invoiceData: Omit<Invoice, 'id' | 'status'> & { status?: Invoice['status'] }) => {
+    const addInvoice = async (invoiceData: Omit<Invoice, 'id' | 'status'> & { status?: Invoice['status'], userId: string }) => {
         return runTransaction(db, async (transaction) => {
-            // --- READS FIRST ---
             const customerRef = doc(db, 'customers', invoiceData.customer.id);
             const customerDoc = await transaction.get(customerRef);
             if (!customerDoc.exists()) {
@@ -210,7 +200,7 @@ const createInvoicesDAO = () => {
 
             const productDocs = new Map<string, any>();
             for (const item of invoiceData.items) {
-                if (item.productId) { // Only check stock for inventory items
+                if (item.productId) {
                     const productRef = doc(db, 'products', item.productId);
                     const productDoc = await transaction.get(productRef);
                     if (!productDoc.exists() || productDoc.data().stock < item.quantity) {
@@ -220,7 +210,6 @@ const createInvoicesDAO = () => {
                 }
             }
 
-            // --- WRITES AFTER ---
             const newInvoiceRef = doc(collection(db, 'invoices'));
             
             const finalInvoiceData = {
@@ -262,7 +251,6 @@ const createInvoicesDAO = () => {
 
     const updateInvoice = async (invoiceId: string, updatedData: Partial<Omit<Invoice, 'id'>>, originalInvoice: Invoice) => {
         return runTransaction(db, async (transaction) => {
-            // --- READS FIRST ---
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const currentInvoiceDoc = await transaction.get(invoiceRef);
             if (!currentInvoiceDoc.exists()) throw new Error("Invoice not found!");
@@ -274,11 +262,9 @@ const createInvoicesDAO = () => {
             
             const newInvoiceData = { ...currentInvoiceDoc.data(), ...updatedData } as Invoice;
 
-             // Recalculate status
             if (updatedData.dueAmount !== undefined || updatedData.paidAmount !== undefined) {
                 newInvoiceData.status = getInvoiceStatus(newInvoiceData.dueAmount!, newInvoiceData.paidAmount!);
             }
-
 
             const allProductIds = new Set([...originalInvoice.items.map(i => i.productId), ...newInvoiceData.items.map(i => i.productId)]);
             const productDocs = new Map<string, any>();
@@ -291,7 +277,6 @@ const createInvoicesDAO = () => {
                 }
             }
 
-            // --- WRITES AFTER ---
             transaction.update(invoiceRef, newInvoiceData as any);
 
             const amountDifference = newInvoiceData.amount - originalInvoice.amount;
@@ -335,7 +320,6 @@ const createInvoicesDAO = () => {
     
      const removeInvoice = async (invoiceId: string) => {
         return runTransaction(db, async (transaction) => {
-            // --- READS FIRST ---
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const invoiceDoc = await transaction.get(invoiceRef);
             if (!invoiceDoc.exists()) {
@@ -357,7 +341,6 @@ const createInvoicesDAO = () => {
                 }
             }
 
-            // --- WRITES AFTER ---
             transaction.delete(invoiceRef);
 
             if (customerDoc.exists()) {
@@ -390,12 +373,22 @@ const createInvoicesDAO = () => {
         });
     };
 
+    const deleteAllForUser = async (userId: string) => {
+        const q = query(collection(db, 'invoices'), where("userId", "==", userId));
+        const snapshot = await getDocs(q);
+        const batch = writeBatch(db);
+        snapshot.forEach(doc => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
+    };
 
     return {
         ...baseDAO,
         add: addInvoice,
         update: updateInvoice,
         remove: removeInvoice,
+        deleteAllForUser,
     }
 }
 
@@ -404,4 +397,23 @@ export const productsDAO = createFirestoreDAO<Product>('products');
 export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
 export const purchasesDAO = createFirestoreDAO<Purchase>('purchases');
 export const businessProfileDAO = createFirestoreDAO<BusinessProfile>('businessProfile');
-export const userProfileDAO = createFirestoreDAO<UserProfile>('userProfile');
+export { userProfileDAO };
+
+export const deleteAllUserData = async (userId: string) => {
+    console.log(`Deleting all data for user ${userId}`);
+    const batch = writeBatch(db);
+
+    const collections = ['customers', 'invoices', 'products', 'purchases', 'vendors', 'businessProfile'];
+    
+    for (const coll of collections) {
+        const q = query(collection(db, coll), where("userId", "==", userId));
+        const snapshot = await getDocs(q);
+        snapshot.forEach(doc => batch.delete(doc.ref));
+    }
+    
+    const userProfileRef = doc(db, 'userProfile', userId);
+    batch.delete(userProfileRef);
+    
+    await batch.commit();
+    console.log(`Successfully deleted all data for user ${userId}`);
+};

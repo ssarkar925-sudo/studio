@@ -12,11 +12,13 @@ import { Loader2, Upload } from 'lucide-react';
 import { useEffect, useState, useRef } from 'react';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Icons } from '@/components/icons';
+import { useAuth } from '@/components/auth-provider';
 
 export function BusinessProfileClient() {
   const { toast } = useToast();
   const { data: profiles, isLoading } = useFirestoreData(businessProfileDAO);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { user } = useAuth();
 
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [companyName, setCompanyName] = useState('');
@@ -58,7 +60,7 @@ export function BusinessProfileClient() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSaving) return;
+    if (isSaving || !user) return;
 
     if (!companyName) {
       toast({
@@ -70,7 +72,7 @@ export function BusinessProfileClient() {
     }
 
     setIsSaving(true);
-    const updatedProfileData: Partial<BusinessProfile> = {
+    const updatedProfileData: Omit<BusinessProfile, 'id' | 'userId'> = {
       companyName,
       contactPerson,
       contactNumber,
@@ -82,8 +84,7 @@ export function BusinessProfileClient() {
       if (profile) {
         await businessProfileDAO.update(profile.id, updatedProfileData);
       } else {
-        // We add .id here because the DAO returns the full object with the new ID
-        const newProfile = await businessProfileDAO.add(updatedProfileData as Omit<BusinessProfile, 'id'>);
+        const newProfile = await businessProfileDAO.add({...updatedProfileData, userId: user.uid });
         setProfile(newProfile);
       }
       toast({

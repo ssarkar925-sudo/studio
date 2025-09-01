@@ -26,6 +26,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
+import { useAuth } from '@/components/auth-provider';
 
 
 // This component will handle both tabs logic now
@@ -39,11 +40,13 @@ export function InventoryClient({ activeTab, products: initialProducts, purchase
 function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
   const { toast } = useToast();
   const router = useRouter();
+  const { user } = useAuth();
   const [products, setProducts] = useState(initialProducts);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   
   useEffect(() => {
     // Filter out items that have been out of stock for more than 30 days
+    if (!user) return;
     const now = new Date();
     const cleanupPromises: Promise<void>[] = [];
     
@@ -75,7 +78,6 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
           title: 'Inventory Cleaned',
           description: `${cleanupPromises.length} old out-of-stock item(s) automatically removed.`
         });
-        // The real-time listener will update the UI, so no need to refresh state here
       }).catch(err => {
         console.error("Failed to cleanup old stock", err);
         toast({
@@ -87,7 +89,7 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
     }
 
     setProducts(visibleProducts);
-  }, [initialProducts, toast]);
+  }, [initialProducts, toast, user]);
 
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
 
@@ -294,6 +296,7 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+  const { user } = useAuth();
   const { data: allProducts, isLoading: productsLoading } = useFirestoreData(productsDAO);
 
   useEffect(() => {
@@ -367,7 +370,7 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
   };
 
   const handleMarkAsReceived = async (purchase: Purchase) => {
-    if (productsLoading) {
+    if (productsLoading || !user) {
       toast({ title: 'Please wait', description: 'Product data is loading.' });
       return;
     }
@@ -382,6 +385,7 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
 
             if (item.isNew) {
                 await productsDAO.add({
+                    userId: user.uid,
                     name: item.productName,
                     purchasePrice: purchasePriceWithCharges,
                     sellingPrice: purchasePriceWithCharges * 1.5, // 50% markup
@@ -391,9 +395,9 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
                 });
             } else {
                 const existingProduct = allProducts.find(p => p.id === item.productId);
-                // This is a new batch of an existing product, create a new entry.
                 if(existingProduct) {
                     await productsDAO.add({
+                        userId: user.uid,
                         name: existingProduct.name,
                         purchasePrice: purchasePriceWithCharges,
                         sellingPrice: purchasePriceWithCharges * 1.5,

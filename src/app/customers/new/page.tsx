@@ -19,15 +19,17 @@ import { useRouter } from 'next/navigation';
 import { customersDAO } from '@/lib/data';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/components/auth-provider';
 
 export default function NewCustomerPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSaving) return;
+    if (isSaving || !user) return;
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
@@ -47,6 +49,7 @@ export default function NewCustomerPage() {
     setIsSaving(true);
     try {
       await customersDAO.add({
+        userId: user.uid,
         name,
         email,
         phone,
@@ -60,7 +63,7 @@ export default function NewCustomerPage() {
         title: 'Customer Created',
         description: `Successfully created customer: ${name}.`,
       });
-      router.push('/customers');
+      router.push('/contacts?tab=customers');
     } catch (error) {
       console.error("Creation failed", error);
       toast({
@@ -107,7 +110,7 @@ export default function NewCustomerPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.push('/customers')} disabled={isSaving}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/contacts?tab=customers')} disabled={isSaving}>Cancel</Button>
                 <Button type="submit" disabled={isSaving}>
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Customer

@@ -18,15 +18,17 @@ import { useRouter } from 'next/navigation';
 import { vendorsDAO } from '@/lib/data';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/components/auth-provider';
 
 export default function NewVendorPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if(isSaving) return;
+    if(isSaving || !user) return;
 
     const formData = new FormData(e.currentTarget);
     const vendorName = formData.get('vendorName') as string;
@@ -34,6 +36,7 @@ export default function NewVendorPage() {
     const contactNumber = formData.get('contactNumber') as string;
     const email = formData.get('email') as string;
     const gstn = formData.get('gstn') as string;
+    const address = formData.get('address') as string;
 
     if (!vendorName) {
        toast({
@@ -47,18 +50,20 @@ export default function NewVendorPage() {
     setIsSaving(true);
     try {
       await vendorsDAO.add({
+        userId: user.uid,
         vendorName,
         contactPerson,
         contactNumber,
         email,
         gstn,
+        address,
       });
       
       toast({
         title: 'Vendor Created',
         description: `Successfully created vendor: ${vendorName}.`,
       });
-      router.push('/vendors');
+      router.push('/contacts?tab=vendors');
     } catch (error) {
        console.error("Creation failed:", error);
        toast({
@@ -106,10 +111,14 @@ export default function NewVendorPage() {
                   <Label htmlFor="gstn">GSTN</Label>
                   <Input id="gstn" name="gstn" type="text" className="w-full" placeholder="29AABCU9603R1ZM" />
                 </div>
+                <div className="grid gap-3">
+                  <Label htmlFor="address">Address</Label>
+                  <Textarea id="address" name="address" placeholder="Enter vendor's address" />
+                </div>
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.push('/vendors')} disabled={isSaving}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/contacts?tab=vendors')} disabled={isSaving}>Cancel</Button>
                 <Button type="submit" disabled={isSaving}>
                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Save Vendor

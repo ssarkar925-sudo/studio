@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   FileText,
@@ -34,6 +34,10 @@ import {
 } from '@/components/ui/sheet';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { businessProfileDAO } from '@/lib/data';
+import { useAuth } from './auth-provider';
+import { signOut } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
   { href: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -46,6 +50,12 @@ const menuItems = [
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: profiles } = useFirestoreData(businessProfileDAO);
+  const { user } = useAuth();
+  
+  if (!user) {
+    return null; // Or a loading spinner, this is handled by AuthProvider
+  }
+  
   const companyName = profiles[0]?.companyName || 'SC Billing';
   const logoUrl = profiles[0]?.logoUrl;
 
@@ -137,6 +147,26 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 function UserMenu() {
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const handleSignOut = async () => {
+        try {
+            await signOut(auth);
+            toast({
+                title: 'Signed Out',
+                description: 'You have been successfully signed out.',
+            });
+            router.push('/login');
+        } catch (error) {
+            toast({
+                variant: 'destructive',
+                title: 'Sign Out Failed',
+                description: 'An error occurred while signing out.',
+            });
+        }
+    };
+  
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -156,11 +186,9 @@ function UserMenu() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link href="/login">
-            <LogOut />
-            <span>Sign Out</span>
-          </Link>
+        <DropdownMenuItem onClick={handleSignOut}>
+          <LogOut />
+          <span>Sign Out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

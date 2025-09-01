@@ -43,6 +43,7 @@ import {
   DialogTrigger,
   DialogClose
 } from "@/components/ui/dialog"
+import { useAuth } from '@/components/auth-provider';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -58,6 +59,7 @@ type InvoiceItem = {
 export default function NewInvoicePage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { user } = useAuth();
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const { data: customers } = useFirestoreData(customersDAO);
   const { data: products } = useFirestoreData(productsDAO);
@@ -131,7 +133,6 @@ export default function NewInvoicePage() {
         isManual: false
       };
       
-      // If the first item is empty, replace it. Otherwise, add the new item.
       if (items.length === 1 && items[0].productName === '') {
          setItems([newItem]);
       } else {
@@ -154,6 +155,7 @@ export default function NewInvoicePage() {
 
   const handleNewCustomerSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!user) return;
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
 
@@ -167,6 +169,7 @@ export default function NewInvoicePage() {
 
     try {
       const newCustomer = await customersDAO.add({
+        userId: user.uid,
         name: name,
         email: formData.get('email') as string,
         phone: formData.get('phone') as string,
@@ -192,7 +195,7 @@ export default function NewInvoicePage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSaving) return;
+    if (isSaving || !user) return;
 
     // Filter out empty rows before saving
     const finalItems = items.filter(i => i.productName && i.sellingPrice > 0 && i.quantity > 0);
@@ -220,6 +223,7 @@ export default function NewInvoicePage() {
     try {
       const invoiceNumber = `INV-${Date.now()}`;
       await invoicesDAO.add({
+        userId: user.uid,
         invoiceNumber,
         customer: {
           id: customer.id,
@@ -515,5 +519,3 @@ export default function NewInvoicePage() {
     </>
   );
 }
-
-    

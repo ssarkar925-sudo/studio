@@ -1,0 +1,31 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+  
+    // Helper function to check ownership
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Users can only manage their own profile
+    match /userProfile/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Any authenticated user can create a business profile (linked to them)
+    // Only the owner can read or update it.
+    match /businessProfile/{profileId} {
+      allow read, update: if isOwner(resource.data.userId);
+      allow create: if request.auth != null && isOwner(request.resource.data.userId);
+    }
+    
+    // Generic rule for user-specific collections
+    // Customers, Invoices, Products, Purchases, Vendors
+    match /{collection}/{docId} {
+      allow read, write: if isOwner(get(/databases/$(database)/documents/{collection}/$(docId)).data.userId);
+      allow create: if request.auth != null && isOwner(request.resource.data.userId);
+    }
+  }
+}

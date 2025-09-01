@@ -7,10 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { userProfileDAO, businessProfileDAO, invoicesDAO, customersDAO, productsDAO, purchasesDAO, vendorsDAO, type UserProfile } from '@/lib/data';
+import { userProfileDAO, deleteAllUserData } from '@/lib/data';
 import { Loader2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useFirestoreData } from '@/hooks/use-firestore-data';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,67 +32,59 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/auth-provider';
+import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 
 
 export function UserProfileClient() {
   const { toast } = useToast();
   const router = useRouter();
-  const { data: profiles, isLoading } = useFirestoreData(userProfileDAO);
-  const { data: businessProfiles } = useFirestoreData(businessProfileDAO);
-  const { data: invoices } = useFirestoreData(invoicesDAO);
-  const { data: customers } = useFirestoreData(customersDAO);
-  const { data: products } = useFirestoreData(productsDAO);
-  const { data: purchases } = useFirestoreData(purchasesDAO);
-  const { data: vendors } = useFirestoreData(vendorsDAO);
-
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
+  const { user } = useAuth();
+  
+  const [profile, setProfile] = useState<{name: string, email: string, phone: string} | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
 
 
   useEffect(() => {
-    // For this example, we'll create a default profile if one doesn't exist
-    // In a real app, this would be tied to the logged-in user
-    if (!isLoading) {
-      if (profiles.length > 0) {
-        const currentProfile = profiles[0];
-        setProfile(currentProfile);
-        setName(currentProfile.name);
-        setEmail(currentProfile.email);
-        setPhone(currentProfile.phone || '');
-      } else {
-        // Create a default user for demo purposes
-        const defaultUser = { name: 'Sandeep C.', email: 'sandeep@example.com', phone: '' };
-         userProfileDAO.add(defaultUser).then(newProfile => {
-             setProfile(newProfile);
-             setName(newProfile.name);
-             setEmail(newProfile.email);
-             setPhone(newProfile.phone || '');
-         });
-      }
+    if (user) {
+        userProfileDAO.get(user.uid).then(userProfile => {
+            if (userProfile) {
+                setProfile({
+                    name: userProfile.name || user.displayName || '',
+                    email: userProfile.email || user.email || '',
+                    phone: userProfile.phone || user.phoneNumber || ''
+                });
+            }
+            setIsLoading(false);
+        })
     }
-  }, [profiles, isLoading]);
+  }, [user]);
+
+  const handleProfileChange = (field: 'name' | 'phone', value: string) => {
+    if (profile) {
+        setProfile({...profile, [field]: value});
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSaving || !profile) return;
+    if (isSaving || !profile || !user) return;
 
-    if (!name || !email) {
+    if (!profile.name) {
       toast({
         variant: 'destructive',
         title: 'Missing Fields',
-        description: 'Name and Email are required.',
+        description: 'Name is required.',
       });
       return;
     }
 
     setIsSaving(true);
     try {
-      await userProfileDAO.update(profile.id, { name, email, phone });
+      await userProfileDAO.update(user.uid, { name: profile.name, phone: profile.phone });
       toast({
         title: 'Profile Saved',
         description: 'Your user profile has been updated.',
@@ -110,68 +101,72 @@ export function UserProfileClient() {
     }
   };
   
-  const handleChangePassword = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleChangePassword = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!user) return;
+    
     const formData = new FormData(e.currentTarget);
-    const newPassword = formData.get('newPassword');
-    const confirmPassword = formData.get('confirmPassword');
+    const oldPassword = formData.get('oldPassword') as string;
+    const newPassword = formData.get('newPassword') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
 
     if (newPassword !== confirmPassword) {
-      toast({
-        variant: 'destructive',
-        title: 'Passwords do not match',
-      });
+      toast({ variant: 'destructive', title: 'Passwords do not match' });
       return;
     }
+    if (newPassword.length < 6) {
+        toast({ variant: 'destructive', title: 'Password too short', description: 'Password must be at least 6 characters long.' });
+        return;
+    }
 
-    toast({
-        title: 'Password Changed',
-        description: 'Your password has been successfully updated.',
-    });
-    setIsPasswordDialogOpen(false);
+    try {
+        const credential = EmailAuthProvider.credential(user.email!, oldPassword);
+        await reauthenticateWithCredential(user, credential);
+        await updatePassword(user, newPassword);
+        toast({ title: 'Password Changed', description: 'Your password has been successfully updated.' });
+        setIsPasswordDialogOpen(false);
+    } catch (error: any) {
+        console.error("Password change failed", error);
+         toast({ variant: 'destructive', title: 'Password Change Failed', description: error.code === 'auth/wrong-password' ? 'The old password you entered is incorrect.' : error.message});
+    }
   }
 
   const handleDeleteAccount = async () => {
+    if (!user) return;
+    
     toast({
         title: 'Account Deletion in Progress...',
         description: 'Please wait while we remove all your data.',
     });
 
     try {
-        // Array of promises for all deletion operations
-        const deletionPromises: Promise<any>[] = [];
-
-        // Delete all collections' documents
-        if (profile) deletionPromises.push(userProfileDAO.remove(profile.id));
-        businessProfiles.forEach(p => deletionPromises.push(businessProfileDAO.remove(p.id)));
-        invoices.forEach(i => deletionPromises.push(invoicesDAO.remove(i.id)));
-        customers.forEach(c => deletionPromises.push(customersDAO.remove(c.id)));
-        products.forEach(p => deletionPromises.push(productsDAO.remove(p.id)));
-        purchases.forEach(p => deletionPromises.push(purchasesDAO.remove(p.id)));
-        vendors.forEach(v => deletionPromises.push(vendorsDAO.remove(v.id)));
-        
-        await Promise.all(deletionPromises);
-
+        await deleteAllUserData(user.uid);
+        await user.delete();
         toast({
             title: 'Account Deleted Successfully',
             description: 'Your account and all data have been removed. Redirecting you to the login page.',
         });
-
-        // Add a delay to allow the user to read the toast
-        setTimeout(() => router.push('/login'), 2000);
-
-    } catch (error) {
+        router.push('/login');
+    } catch (error: any) {
         console.error("Failed to delete account:", error);
-        toast({
-            variant: 'destructive',
-            title: 'Deletion Failed',
-            description: 'There was an error deleting your account. Please try again.',
-        });
+         if (error.code === 'auth/requires-recent-login') {
+            toast({
+                variant: 'destructive',
+                title: 'Re-authentication Required',
+                description: 'This is a sensitive operation. Please log out and log back in before deleting your account.',
+            });
+         } else {
+            toast({
+                variant: 'destructive',
+                title: 'Deletion Failed',
+                description: 'There was an error deleting your account. Please try again.',
+            });
+         }
     }
   }
 
 
-  if (isLoading) {
+  if (isLoading || !profile) {
     return <div className="mt-4 text-center text-muted-foreground">Loading profile...</div>;
   }
 
@@ -188,11 +183,11 @@ export function UserProfileClient() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="grid gap-3">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
+                  <Input id="name" value={profile.name} onChange={(e) => handleProfileChange('name', e.target.value)} required />
                 </div>
                 <div className="grid gap-3">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <Input id="phone" value={profile.phone} onChange={(e) => handleProfileChange('phone', e.target.value)} />
                 </div>
               </div>
               <div className="grid gap-3">
@@ -200,9 +195,8 @@ export function UserProfileClient() {
                 <Input
                   id="email"
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+                  value={profile.email}
+                  disabled
                 />
               </div>
             </div>

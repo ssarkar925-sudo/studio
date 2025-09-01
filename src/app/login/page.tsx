@@ -6,30 +6,95 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
-import { LogIn } from 'lucide-react';
+import { LogIn, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { useAuth } from '@/components/auth-provider';
 
 export default function LoginPage() {
     const { toast } = useToast();
     const router = useRouter();
+    const { user, isLoading } = useAuth();
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [isGoogleLoggingIn, setIsGoogleLoggingIn] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        toast({
-            title: 'Login Successful',
-            description: "Welcome back! Redirecting you to the dashboard...",
-        });
-        // Redirect to dashboard after a short delay
-        setTimeout(() => router.push('/'), 1500);
+        setIsLoggingIn(true);
+        try {
+            await signInWithEmailAndPassword(auth, email, password);
+            toast({
+                title: 'Login Successful',
+                description: "Welcome back! Redirecting you to the dashboard...",
+            });
+            router.push('/');
+        } catch (error: any) {
+            console.error("Login failed", error);
+            toast({
+                variant: 'destructive',
+                title: 'Login Failed',
+                description: error.message || "Please check your credentials and try again.",
+            });
+        } finally {
+            setIsLoggingIn(false);
+        }
     }
     
-    const handleGoogleLogin = () => {
-         toast({
-            title: 'Login with Google',
-            description: "This feature is for demonstration and not yet implemented.",
-        });
+    const handleGoogleLogin = async () => {
+        setIsGoogleLoggingIn(true);
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+             toast({
+                title: 'Login Successful',
+                description: "Welcome back!",
+            });
+            router.push('/');
+        } catch (error: any) {
+            console.error("Google login failed", error);
+            toast({
+                variant: 'destructive',
+                title: 'Google Login Failed',
+                description: error.message || "Could not log in with Google. Please try again.",
+            });
+        } finally {
+            setIsGoogleLoggingIn(false);
+        }
+    }
+    
+    const handleForgotPassword = async () => {
+        if (!email) {
+            toast({
+                variant: 'destructive',
+                title: 'Email Required',
+                description: 'Please enter your email address to reset your password.',
+            });
+            return;
+        }
+        try {
+            await sendPasswordResetEmail(auth, email);
+            toast({
+                title: 'Password Reset Email Sent',
+                description: 'Check your inbox for a link to reset your password.',
+            });
+        } catch (error: any) {
+             console.error("Password reset failed", error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: error.message || 'Could not send password reset email.',
+            });
+        }
+    }
+    
+    if (isLoading || user) {
+        return <div className="flex h-screen items-center justify-center">Loading...</div>;
     }
 
   return (
@@ -45,7 +110,7 @@ export default function LoginPage() {
           </div>
         </div>
         <div className="flex items-center justify-center p-8">
-          <Card className="w-full animate-in fade-in-50 slide-in-from-bottom-4 duration-1000">
+          <Card className="w-full">
             <CardHeader>
               <CardTitle>Login</CardTitle>
               <CardDescription>
@@ -56,29 +121,29 @@ export default function LoginPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" placeholder="m@example.com" required />
+                  <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                     <div className="flex items-center justify-between">
                         <Label htmlFor="password">Password</Label>
-                        <Link
-                            href="#"
-                            className="text-sm font-medium text-primary hover:underline"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                toast({ title: 'Forgot Password', description: 'A password reset link has been sent to your email (simulated).'});
-                            }}
+                        <Button
+                            variant="link"
+                            type="button"
+                            className="p-0 h-auto text-sm font-medium text-primary hover:underline"
+                            onClick={handleForgotPassword}
                         >
                             Forgot password?
-                        </Link>
+                        </Button>
                     </div>
-                  <Input id="password" type="password" required />
+                  <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
                 </div>
                 <div className="space-y-2 pt-2">
-                    <Button type="submit" className="w-full">
-                        <LogIn className="mr-2" /> Login
+                    <Button type="submit" className="w-full" disabled={isLoggingIn || isGoogleLoggingIn}>
+                        {isLoggingIn && <Loader2 className="mr-2 animate-spin" />}
+                        Login
                     </Button>
-                    <Button variant="outline" className="w-full" type="button" onClick={handleGoogleLogin}>
+                    <Button variant="outline" className="w-full" type="button" onClick={handleGoogleLogin} disabled={isLoggingIn || isGoogleLoggingIn}>
+                        {isGoogleLoggingIn && <Loader2 className="mr-2 animate-spin" />}
                         Login with Google
                     </Button>
                 </div>
@@ -86,12 +151,8 @@ export default function LoginPage() {
                <div className="mt-4 text-center text-sm">
                     Don&apos;t have an account?{' '}
                     <Link 
-                        href="#" 
+                        href="/signup" 
                         className="font-medium text-primary hover:underline"
-                        onClick={(e) => {
-                            e.preventDefault();
-                            toast({ title: 'Sign Up', description: 'The sign-up feature is for demonstration purposes.'});
-                        }}
                     >
                         Sign up
                     </Link>

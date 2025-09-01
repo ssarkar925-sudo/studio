@@ -1,19 +1,22 @@
 
 import { initializeApp, getApp, getApps } from 'firebase/app';
+import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  "apiKey": "AIzaSyB1DcmZSlM0J6UksXg8KPvj0idapl25qgk",
-  "authDomain": "sarkar-comm.firebaseapp.com",
-  "projectId": "sarkar-comm",
-  "storageBucket": "sarkar-comm.firebasestorage.app",
-  "messagingSenderId": "21057194965",
-  "appId": "1:21057194965:web:a09b91a589391fa8884b5c",
-  "measurementId": "G-5BLS7YRS23"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PULIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
+
 
 // Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
+const auth = getAuth(app);
 
-export { app, db };
+export { app, db, auth };

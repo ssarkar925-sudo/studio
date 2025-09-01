@@ -2,22 +2,30 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/components/auth-provider';
 
 type Dao<T> = {
-  subscribe: (callback: (data: T[]) => void, onError: (error: Error) => void) => () => void;
+  subscribe: (userId: string, callback: (data: T[]) => void, onError: (error: Error) => void) => () => void;
 };
 
 export function useFirestoreData<T>(dao: Dao<T>) {
   const [data, setData] = useState<T[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const { user } = useAuth();
 
   useEffect(() => {
+    if (!user) {
+      setData([]);
+      setIsLoading(false);
+      return;
+    };
+    
     setIsLoading(true);
     setError(null);
     
-    // The unsubscribe function is returned by dao.subscribe
     const unsubscribe = dao.subscribe(
+      user.uid,
       (newData) => {
         setData(newData);
         setIsLoading(false);
@@ -29,11 +37,10 @@ export function useFirestoreData<T>(dao: Dao<T>) {
       }
     );
 
-    // Cleanup subscription on component unmount
     return () => {
       unsubscribe();
     };
-  }, [dao]); // Rerun effect if dao changes
+  }, [dao, user]);
 
   return { data, isLoading, error };
 }

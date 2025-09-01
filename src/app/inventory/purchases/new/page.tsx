@@ -18,6 +18,7 @@ import { useEffect, useState, useRef, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { extractPurchaseInfoFromBill } from '@/ai/flows/extract-purchase-info-flow';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
+import { useAuth } from '@/components/auth-provider';
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -33,6 +34,7 @@ type PurchaseItem = {
 export default function NewPurchasePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { data: vendors } = useFirestoreData(vendorsDAO);
   const { data: products } = useFirestoreData(productsDAO);
   const [orderDate, setOrderDate] = useState<Date | undefined>(new Date());
@@ -115,8 +117,6 @@ export default function NewPurchasePage() {
             if (existingVendor) {
                 setVendorId(existingVendor.id);
             } else {
-                // If vendor does not exist, you could potentially add it or prompt the user.
-                // For now, we leave it blank but show a toast.
                 toast({ title: 'New Vendor Detected', description: `"${result.vendorName}" is not in your vendor list.`});
             }
         }
@@ -150,7 +150,6 @@ export default function NewPurchasePage() {
         toast({ variant: 'destructive', title: 'Extraction Failed', description: 'Could not extract details from the image.' });
       } finally {
         setIsExtracting(false);
-         // Reset file input
         if(fileInputRef.current) fileInputRef.current.value = "";
       }
     };
@@ -163,7 +162,7 @@ export default function NewPurchasePage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSaving) return;
+    if (isSaving || !user) return;
     
     const vendor = vendors.find(v => v.id === vendorId);
 
@@ -179,6 +178,7 @@ export default function NewPurchasePage() {
     setIsSaving(true);
     try {
       await purchasesDAO.add({
+          userId: user.uid,
           vendorId: vendor.id,
           vendorName: vendor.vendorName,
           orderDate: format(orderDate, 'dd/MM/yyyy'),
