@@ -165,17 +165,28 @@ const createInvoicesDAO = () => {
 
     const addInvoice = async (invoiceData: Omit<Invoice, 'id'>) => {
         return runTransaction(db, async (transaction) => {
-            // 1. Add the new invoice
-            const newInvoiceRef = doc(collection(db, 'invoices'));
-            transaction.set(newInvoiceRef, invoiceData);
-
-            // 2. Update customer aggregates
+            // --- READS FIRST ---
             const customerRef = doc(db, 'customers', invoiceData.customer.id);
             const customerDoc = await transaction.get(customerRef);
             if (!customerDoc.exists()) {
                 throw new Error("Customer not found!");
             }
             const customerData = customerDoc.data();
+
+            const productDocs = new Map<string, any>();
+            for (const item of invoiceData.items) {
+                const productRef = doc(db, 'products', item.productId);
+                const productDoc = await transaction.get(productRef);
+                if (!productDoc.exists() || productDoc.data().stock < item.quantity) {
+                    throw new Error(`Not enough stock for ${item.productName}.`);
+                }
+                productDocs.set(item.productId, productDoc);
+            }
+
+            // --- WRITES AFTER ---
+            const newInvoiceRef = doc(collection(db, 'invoices'));
+            transaction.set(newInvoiceRef, invoiceData);
+
             const newTotalInvoiced = (customerData.totalInvoiced || 0) + invoiceData.amount;
             const newTotalPaid = (customerData.totalPaid || 0) + (invoiceData.status === 'Paid' ? invoiceData.amount : 0);
             const newInvoicesCount = (customerData.invoices || 0) + 1;
@@ -186,19 +197,12 @@ const createInvoicesDAO = () => {
                 invoices: newInvoicesCount,
             });
 
-            // 3. Decrement stock for each item
             for (const item of invoiceData.items) {
-                const productRef = doc(db, 'products', item.productId);
-                const productDoc = await transaction.get(productRef);
-                if (productDoc.exists()) {
-                    const currentStock = productDoc.data().stock;
-                    if (currentStock < item.quantity) {
-                        throw new Error(`Not enough stock for ${item.productName}. Available: ${currentStock}, Requested: ${item.quantity}`);
-                    }
-                    const newStock = currentStock - item.quantity;
+                const productDoc = productDocs.get(item.productId);
+                if (productDoc) {
+                    const productRef = doc(db, 'products', item.productId);
+                    const newStock = productDoc.data().stock - item.quantity;
                     transaction.update(productRef, { stock: newStock });
-                } else {
-                    throw new Error(`Product with ID ${item.productId} not found.`);
                 }
             }
 
@@ -208,24 +212,29 @@ const createInvoicesDAO = () => {
 
     const updateInvoice = async (invoiceId: string, updatedData: Partial<Omit<Invoice, 'id'>>, originalInvoice: Invoice) => {
         return runTransaction(db, async (transaction) => {
+            // --- READS FIRST ---
             const invoiceRef = doc(db, 'invoices', invoiceId);
-            
-            // 1. Get current invoice from transaction to avoid race conditions
             const currentInvoiceDoc = await transaction.get(invoiceRef);
             if (!currentInvoiceDoc.exists()) throw new Error("Invoice not found!");
-            const currentInvoice = { id: currentInvoiceDoc.id, ...currentInvoiceDoc.data()} as Invoice;
             
-            // 2. Update invoice
-            transaction.update(invoiceRef, updatedData);
-
-            const newInvoiceData = { ...currentInvoice, ...updatedData };
-
-            // 3. Adjust customer aggregates
-            const customerId = originalInvoice.customer.id;
-            const customerRef = doc(db, 'customers', customerId);
+            const customerRef = doc(db, 'customers', originalInvoice.customer.id);
             const customerDoc = await transaction.get(customerRef);
-             if (!customerDoc.exists()) throw new Error("Customer not found!");
+            if (!customerDoc.exists()) throw new Error("Customer not found!");
             const customerData = customerDoc.data();
+            
+            const newInvoiceData = { ...currentInvoiceDoc.data(), ...updatedData } as Invoice;
+            const allProductIds = new Set([...originalInvoice.items.map(i => i.productId), ...newInvoiceData.items.map(i => i.productId)]);
+            const productDocs = new Map<string, any>();
+            for (const productId of allProductIds) {
+                const productRef = doc(db, 'products', productId);
+                const productDoc = await transaction.get(productRef);
+                 if (productDoc.exists()) {
+                    productDocs.set(productId, productDoc);
+                }
+            }
+
+            // --- WRITES AFTER ---
+            transaction.update(invoiceRef, updatedData);
 
             const amountDifference = newInvoiceData.amount - originalInvoice.amount;
             const paidAmountDifference = 
@@ -237,39 +246,32 @@ const createInvoicesDAO = () => {
                 totalPaid: customerData.totalPaid + paidAmountDifference,
             });
             
-            // 4. Adjust stock levels
-            const originalItems = originalInvoice.items;
-            const newItems = newInvoiceData.items;
-
-            // Create maps for easier lookup
-            const originalItemsMap = new Map(originalItems.map(item => [item.productId, item.quantity]));
-            const newItemsMap = new Map(newItems.map(item => [item.productId, item.quantity]));
-
-            const allProductIds = new Set([...originalItemsMap.keys(), ...newItemsMap.keys()]);
+            const originalItemsMap = new Map(originalInvoice.items.map(item => [item.productId, item.quantity]));
+            const newItemsMap = new Map(newInvoiceData.items.map(item => [item.productId, item.quantity]));
             
             for(const productId of allProductIds) {
                 const originalQty = originalItemsMap.get(productId) || 0;
                 const newQty = newItemsMap.get(productId) || 0;
-                const stockChange = originalQty - newQty; // If new > old, stockChange is positive (increase stock). If old > new, stockChange is negative (decrease stock).
+                const stockChange = originalQty - newQty;
 
                 if(stockChange !== 0) {
-                    const productRef = doc(db, 'products', productId);
-                    const productDoc = await transaction.get(productRef);
-                    if(productDoc.exists()) {
-                         const currentStock = productDoc.data().stock;
-                         if (currentStock < -stockChange) { // -stockChange is what we need to remove
-                             throw new Error(`Not enough stock for ${productId}. Available: ${currentStock}, Additional required: ${-stockChange}`);
+                    const productDoc = productDocs.get(productId);
+                    if (productDoc) {
+                        const productRef = doc(db, 'products', productId);
+                        const currentStock = productDoc.data().stock;
+                         if (currentStock + stockChange < 0) {
+                             throw new Error(`Not enough stock for product ID ${productId}.`);
                          }
                         transaction.update(productRef, { stock: currentStock + stockChange });
                     }
                 }
             }
-
         });
     };
     
      const removeInvoice = async (invoiceId: string) => {
         return runTransaction(db, async (transaction) => {
+            // --- READS FIRST ---
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const invoiceDoc = await transaction.get(invoiceRef);
             if (!invoiceDoc.exists()) {
@@ -277,12 +279,21 @@ const createInvoicesDAO = () => {
             }
             const invoiceData = {id: invoiceDoc.id, ...invoiceDoc.data()} as Invoice;
 
-            // 1. Delete the invoice
-            transaction.delete(invoiceRef);
-
-            // 2. Update customer aggregates
             const customerRef = doc(db, 'customers', invoiceData.customer.id);
             const customerDoc = await transaction.get(customerRef);
+            
+            const productDocs = new Map<string, any>();
+            for (const item of invoiceData.items) {
+                const productRef = doc(db, 'products', item.productId);
+                const productDoc = await transaction.get(productRef);
+                if (productDoc.exists()) {
+                    productDocs.set(item.productId, productDoc);
+                }
+            }
+
+            // --- WRITES AFTER ---
+            transaction.delete(invoiceRef);
+
             if (customerDoc.exists()) {
                 const customerData = customerDoc.data();
                 const newTotalInvoiced = customerData.totalInvoiced - invoiceData.amount;
@@ -295,11 +306,10 @@ const createInvoicesDAO = () => {
                 });
             }
 
-            // 3. Restore stock for each item
             for (const item of invoiceData.items) {
-                const productRef = doc(db, 'products', item.productId);
-                 const productDoc = await transaction.get(productRef);
-                if (productDoc.exists()) {
+                const productDoc = productDocs.get(item.productId);
+                if(productDoc) {
+                    const productRef = doc(db, 'products', item.productId);
                     const newStock = productDoc.data().stock + item.quantity;
                     transaction.update(productRef, { stock: newStock });
                 }
