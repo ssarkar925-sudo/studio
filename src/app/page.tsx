@@ -1,16 +1,15 @@
 
+'use client';
+
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { invoicesDAO, Invoice } from '@/lib/data';
 import { DollarSign, FileText, Clock } from 'lucide-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { DashboardClient } from '@/components/dashboard-client';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
-async function getDashboardData() {
-  // This now runs on the server
-  const invoices = await invoicesDAO.load();
+export default function DashboardPage() {
+  const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
 
   const totalRevenue = invoices
     .filter((i) => i.status === 'Paid')
@@ -22,13 +21,14 @@ async function getDashboardData() {
 
   const overdue = invoices.filter((i) => i.status === 'Overdue').length;
   
-  return { invoices, totalRevenue, outstanding, overdue };
-}
+  if (isLoading) {
+      return (
+          <AppLayout>
+               <div className="text-center text-muted-foreground">Loading dashboard...</div>
+          </AppLayout>
+      )
+  }
 
-
-export default async function DashboardPage() {
-  const { invoices, totalRevenue, outstanding, overdue } = await getDashboardData();
-  
   return (
     <AppLayout>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

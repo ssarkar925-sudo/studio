@@ -3,9 +3,6 @@
 
 import { useState, useEffect } from 'react';
 
-// THIS HOOK IS DEPRECATED AND WILL BE REMOVED.
-// DO NOT USE. Data should be fetched on the server.
-
 type Dao<T> = {
   subscribe: (callback: (data: T[]) => void, onError: (error: Error) => void) => () => void;
 };
@@ -19,6 +16,7 @@ export function useFirestoreData<T>(dao: Dao<T>) {
     setIsLoading(true);
     setError(null);
     
+    // The unsubscribe function is returned by dao.subscribe
     const unsubscribe = dao.subscribe(
       (newData) => {
         setData(newData);
@@ -31,10 +29,11 @@ export function useFirestoreData<T>(dao: Dao<T>) {
       }
     );
 
+    // Cleanup subscription on component unmount
     return () => {
       unsubscribe();
     };
-  }, [dao]);
+  }, [dao]); // Rerun effect if dao changes
 
   return { data, isLoading, error };
 }

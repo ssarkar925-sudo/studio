@@ -1,14 +1,21 @@
 
+'use client';
+
 import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { productsDAO, purchasesDAO } from '@/lib/data';
 import { Upload } from 'lucide-react';
 import { InventoryTabs } from './inventory-tabs';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
+import { useSearchParams } from 'next/navigation';
 
+export default function InventoryPage() {
+  const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
+  const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
+  const searchParams = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'stock';
 
-export default async function InventoryPage({ searchParams }: { searchParams: { tab: string }}) {
-  const products = await productsDAO.load();
-  const purchases = await purchasesDAO.load();
+  const isLoading = productsLoading || purchasesLoading;
 
   return (
     <AppLayout>
@@ -21,11 +28,15 @@ export default async function InventoryPage({ searchParams }: { searchParams: { 
           </Button>
         </div>
       </div>
-      <InventoryTabs 
-        activeTab={searchParams.tab || "stock"}
-        products={products}
-        purchases={purchases}
-      />
+       {isLoading ? (
+        <div className="mt-4 text-center text-muted-foreground">Loading inventory...</div>
+      ) : (
+        <InventoryTabs 
+          activeTab={activeTab}
+          products={products}
+          purchases={purchases}
+        />
+      )}
     </AppLayout>
   );
 }

@@ -1,7 +1,6 @@
 
 'use client';
 
-import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -22,7 +21,7 @@ import { vendorsDAO, Vendor } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -38,10 +37,15 @@ import {
 } from '@/components/ui/alert-dialog';
 
 
-export function VendorsClient({ vendors }: { vendors: Vendor[] }) {
+export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }) {
   const { toast } = useToast();
   const router = useRouter();
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
+  const [vendors, setVendors] = useState(initialVendors);
+
+  useEffect(() => {
+    setVendors(initialVendors);
+  }, [initialVendors]);
   
   const allVendorsSelected = useMemo(() => selectedVendors.length > 0 && selectedVendors.length === vendors.length, [selectedVendors, vendors]);
 
@@ -69,7 +73,6 @@ export function VendorsClient({ vendors }: { vendors: Vendor[] }) {
         description: `${selectedVendors.length} vendor(s) have been deleted.`,
     });
     setSelectedVendors([]);
-    router.refresh();
   };
 
 
@@ -84,7 +87,6 @@ export function VendorsClient({ vendors }: { vendors: Vendor[] }) {
           title: `Vendor Deleted`,
           description: `Vendor ${vendorName} has been deleted.`,
         });
-        router.refresh();
     }
   };
 
@@ -183,7 +185,7 @@ export function VendorsClient({ vendors }: { vendors: Vendor[] }) {
                               <AlertDialogTitle>Are you sure?</AlertDialogTitle>
                               <AlertDialogDescription>
                                 This action cannot be undone. This will permanently delete vendor &quot;{vendor.vendorName}&quot;.
-                              </AlertDialogDescription>
+                              </Description>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>

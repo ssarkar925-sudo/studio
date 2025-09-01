@@ -23,7 +23,7 @@ import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
@@ -38,10 +38,15 @@ import {
 } from '@/components/ui/alert-dialog';
 
 
-export function InvoicesClient({ invoices }: {invoices: Invoice[]}) {
+export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice[]}) {
   const { toast } = useToast();
   const router = useRouter();
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
+  const [invoices, setInvoices] = useState(initialInvoices);
+
+  useEffect(() => {
+    setInvoices(initialInvoices);
+  }, [initialInvoices]);
   
   const allInvoicesSelected = useMemo(() => selectedInvoices.length > 0 && selectedInvoices.length === invoices.length, [selectedInvoices, invoices]);
 
@@ -70,7 +75,6 @@ export function InvoicesClient({ invoices }: {invoices: Invoice[]}) {
           description: `${selectedInvoices.length} invoice(s) have been deleted.`,
       });
       setSelectedInvoices([]);
-      router.refresh();
     } catch (error) {
        toast({
           variant: 'destructive',
@@ -87,7 +91,6 @@ export function InvoicesClient({ invoices }: {invoices: Invoice[]}) {
           title: `Invoice Deleted`,
           description: `Invoice ${invoiceNumber} has been deleted.`,
         });
-        router.refresh();
     } catch (error) {
         toast({
           variant: 'destructive',
