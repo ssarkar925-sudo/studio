@@ -7,7 +7,7 @@ import { invoicesDAO, Invoice, businessProfileDAO, customersDAO, vendorsDAO, pur
 import { DollarSign, FileText, Clock, Bot, Send, Users, Store, Truck, PackageX } from 'lucide-react';
 import { DashboardClient } from '@/app/dashboard-client';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, Suspense } from 'react';
 import { analyzeDashboard, AnalyzeDashboardOutput, ChatMessage } from '@/ai/flows/analyze-dashboard-flow';
 import { subMonths, format, parse, startOfMonth } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -294,145 +294,176 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
   );
 }
 
+function StatCards() {
+    const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
+    const { data: customers, isLoading: customersLoading } = useFirestoreData(customersDAO);
+    const { data: vendors, isLoading: vendorsLoading } = useFirestoreData(vendorsDAO);
+    const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
 
-export default function DashboardPage() {
-  const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
-  const { data: profiles, isLoading: profilesLoading } = useFirestoreData(businessProfileDAO);
-  const { data: customers, isLoading: customersLoading } = useFirestoreData(customersDAO);
-  const { data: vendors, isLoading: vendorsLoading } = useFirestoreData(vendorsDAO);
-  const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
-  const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
+    const outstanding = useMemo(() => invoices
+        .filter((i) => i.status === 'Pending' || i.status === 'Overdue')
+        .reduce((sum, i) => sum + i.amount, 0), [invoices]);
 
-  const companyName = profiles[0]?.companyName;
+    const overdue = useMemo(() => invoices.filter((i) => i.status === 'Overdue').length, [invoices]);
+    const totalCustomers = useMemo(() => customers.length, [customers]);
+    const totalVendors = useMemo(() => vendors.length, [vendors]);
+    const lowStockItems = useMemo(() => products.filter(p => p.stock > 0 && p.stock <= 10).length, [products]);
 
-  useEffect(() => {
-    if (companyName) {
-      document.title = `${companyName} | Dashboard`;
-    } else {
-      document.title = 'Dashboard | SC Billing';
-    }
-  }, [companyName]);
-
-  const outstanding = invoices
-    .filter((i) => i.status === 'Pending' || i.status === 'Overdue')
-    .reduce((sum, i) => sum + i.amount, 0);
-
-  const overdue = invoices.filter((i) => i.status === 'Overdue').length;
-  
-  const totalCustomers = customers.length;
-  const totalVendors = vendors.length;
-  const upcomingDeliveries = purchases.filter(p => p.status === 'Pending').length;
-  const lowStockItems = products.filter(p => p.stock > 0 && p.stock <= 10).length;
-
-
-  const isLoading = invoicesLoading || profilesLoading || customersLoading || vendorsLoading || purchasesLoading || productsLoading;
-
-  if (isLoading) {
-      return (
-          <AppLayout>
-               <div className="text-center text-muted-foreground">Loading dashboard...</div>
-          </AppLayout>
-      )
-  }
-
-  return (
-    <AppLayout>
-      <h1 className="text-2xl font-semibold mb-4">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              ₹{outstanding.toLocaleString()}
+    const isLoading = invoicesLoading || customersLoading || vendorsLoading || productsLoading;
+    
+    if (isLoading) {
+        return (
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <Card key={i}>
+                        <CardHeader>
+                           <Skeleton className="h-5 w-3/4" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-8 w-1/2" />
+                            <Skeleton className="h-4 w-full mt-2" />
+                        </CardContent>
+                    </Card>
+                ))}
             </div>
-            <p className="text-xs text-muted-foreground">
-              Across all pending invoices
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Overdue Invoices</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">+{overdue}</div>
-            <p className="text-xs text-muted-foreground">
-              Invoices past their due date
-            </p>
-          </CardContent>
-        </Card>
-        <Link href="/inventory?tab=stock">
-             <Card className='hover:bg-muted/50 transition-colors'>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
-                    <PackageX className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{lowStockItems}</div>
-                    <p className="text-xs text-muted-foreground">
-                    Items with stock of 10 or less
-                    </p>
-                </CardContent>
-            </Card>
-        </Link>
-        <Link href="/contacts?tab=customers">
-            <Card className='hover:bg-muted/50 transition-colors'>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{totalCustomers}</div>
-                    <p className="text-xs text-muted-foreground">
-                    Manage all your customers
-                    </p>
-                </CardContent>
-            </Card>
-        </Link>
-        <Link href="/contacts?tab=vendors">
-            <Card className='hover:bg-muted/50 transition-colors'>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
-                    <Store className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{totalVendors}</div>
-                    <p className="text-xs text-muted-foreground">
-                    Manage all your vendors
-                    </p>
-                </CardContent>
-            </Card>
-        </Link>
-      </div>
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
-        <DashboardClient invoices={invoices} />
-        <div className="lg:col-span-2 grid grid-cols-1 gap-6">
+        )
+    }
+
+
+    return (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <Card>
-              <CardHeader>
-                <CardTitle>Recent Invoices</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <RecentInvoices invoices={invoices} />
-              </CardContent>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">
+                    ₹{outstanding.toLocaleString()}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                    Across all pending invoices
+                    </p>
+                </CardContent>
             </Card>
             <Card>
-              <CardHeader>
-                <CardTitle>Upcoming Deliveries</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <UpcomingDeliveries purchases={purchases} />
-              </CardContent>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Overdue Invoices</CardTitle>
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">+{overdue}</div>
+                    <p className="text-xs text-muted-foreground">
+                    Invoices past their due date
+                    </p>
+                </CardContent>
             </Card>
+            <Link href="/inventory?tab=stock">
+                <Card className='hover:bg-muted/50 transition-colors'>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
+                        <PackageX className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{lowStockItems}</div>
+                        <p className="text-xs text-muted-foreground">
+                        Items with stock of 10 or less
+                        </p>
+                    </CardContent>
+                </Card>
+            </Link>
+            <Link href="/contacts?tab=customers">
+                <Card className='hover:bg-muted/50 transition-colors'>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Customers</CardTitle>
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{totalCustomers}</div>
+                        <p className="text-xs text-muted-foreground">
+                        Manage all your customers
+                        </p>
+                    </CardContent>
+                </Card>
+            </Link>
+            <Link href="/contacts?tab=vendors">
+                <Card className='hover:bg-muted/50 transition-colors'>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Vendors</CardTitle>
+                        <Store className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{totalVendors}</div>
+                        <p className="text-xs text-muted-foreground">
+                        Manage all your vendors
+                        </p>
+                    </CardContent>
+                </Card>
+            </Link>
         </div>
-        <AiAnalyzer invoices={invoices} isLoading={isLoading} />
-      </div>
-    </AppLayout>
-  );
+    )
 }
 
-
+function MainDashboardContent() {
+    const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
+    const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
     
+    return (
+        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
+            <Suspense fallback={<Card className="lg:col-span-3"><CardContent><Skeleton className="h-[300px] w-full"/></CardContent></Card>}>
+                 <DashboardClient invoices={invoices} />
+            </Suspense>
+            <div className="lg:col-span-2 grid grid-cols-1 gap-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Recent Invoices</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                         <Suspense fallback={<Skeleton className="h-40"/>}>
+                            <RecentInvoices invoices={invoices} />
+                         </Suspense>
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Upcoming Deliveries</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Suspense fallback={<Skeleton className="h-40"/>}>
+                            <UpcomingDeliveries purchases={purchases} />
+                        </Suspense>
+                    </CardContent>
+                </Card>
+            </div>
+            <Suspense fallback={<Card className="lg:col-span-2"><CardContent><Skeleton className="h-[500px] w-full"/></CardContent></Card>}>
+                <AiAnalyzer invoices={invoices} isLoading={invoicesLoading} />
+            </Suspense>
+        </div>
+    )
+}
+
+export default function DashboardPage() {
+    return (
+        <AppLayout>
+        <h1 className="text-2xl font-semibold mb-4">Dashboard</h1>
+            <Suspense fallback={
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                        <Card key={i}>
+                            <CardHeader>
+                               <Skeleton className="h-5 w-3/4" />
+                            </CardHeader>
+                            <CardContent>
+                                <Skeleton className="h-8 w-1/2" />
+                                <Skeleton className="h-4 w-full mt-2" />
+                            </CardContent>
+                        </Card>
+                    ))}
+                </div>
+            }>
+                <StatCards/>
+            </Suspense>
+            <MainDashboardContent/>
+        </AppLayout>
+    );
+}
