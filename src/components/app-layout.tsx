@@ -46,7 +46,7 @@ const menuItems = [
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: profiles } = useFirestoreData(businessProfileDAO);
-  const companyName = profiles[0]?.companyName || 'Vyapar Co';
+  const companyName = profiles[0]?.companyName || 'SC Billing';
   const logoUrl = profiles[0]?.logoUrl;
 
   return (
@@ -71,7 +71,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                         href="/"
                         className="flex items-center gap-2 text-lg font-semibold"
                         >
-                        {logoUrl ? <Avatar className="h-6 w-6"><AvatarImage src={logoUrl} alt={companyName} /></Avatar> : <Icons.logo className="h-6 w-6 text-primary" />}
+                        <Avatar className="h-6 w-6">
+                            {logoUrl ? <AvatarImage src={logoUrl} alt={companyName} /> : <Icons.logo className="h-6 w-6 text-primary" />}
+                        </Avatar>
                         <span >{companyName}</span>
                         </Link>
                     </SheetTitle>
@@ -115,7 +117,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 href="/"
                 className="flex items-center gap-2 text-lg font-semibold md:text-base"
             >
-                {logoUrl ? <Avatar className="h-6 w-6"><AvatarImage src={logoUrl} alt={companyName} /></Avatar> : <Icons.logo className="h-6 w-6 text-primary" />}
+                <Avatar className="h-6 w-6">
+                    {logoUrl ? <AvatarImage src={logoUrl} alt={companyName} /> : <Icons.logo className="h-6 w-6 text-primary" />}
+                </Avatar>
                 <span className="">{companyName}</span>
             </Link>
            <UserMenu />

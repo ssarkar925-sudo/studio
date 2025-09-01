@@ -4,8 +4,8 @@ import { Toaster } from '@/components/ui/toaster';
 
 export const metadata: Metadata = {
   title: {
-    template: '%s | Vyapar Co',
-    default: 'Vyapar Co',
+    template: '%s | SC Billing',
+    default: 'SC Billing',
   },
   description: 'Invoicing made simple',
 };

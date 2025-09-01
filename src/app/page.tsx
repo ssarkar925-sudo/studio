@@ -314,7 +314,7 @@ export default function DashboardPage() {
     if (companyName) {
       document.title = `${companyName} | Dashboard`;
     } else {
-      document.title = 'Dashboard | Vyapar Co';
+      document.title = 'Dashboard | SC Billing';
     }
   }, [companyName]);
 
