@@ -320,7 +320,7 @@ const createInvoicesDAO = () => {
                          }
                         const newStock = currentStock + stockChange;
                         const productUpdate: Partial<Product> = { stock: newStock };
-                        if (newStock === 0) {
+                        if (newStock <= 0) {
                            productUpdate.outOfStockDate = format(new Date(), 'PPP');
                         } else if (newStock > 0 && productDoc.data().outOfStockDate) {
                            productUpdate.outOfStockDate = undefined; // Or delete the field
