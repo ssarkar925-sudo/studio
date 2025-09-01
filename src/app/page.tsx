@@ -3,8 +3,8 @@
 
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { invoicesDAO, Invoice, businessProfileDAO, customersDAO, vendorsDAO, purchasesDAO, Purchase } from '@/lib/data';
-import { DollarSign, FileText, Clock, Bot, Send, Users, Store, Truck } from 'lucide-react';
+import { invoicesDAO, Invoice, businessProfileDAO, customersDAO, vendorsDAO, purchasesDAO, Purchase, productsDAO, Product } from '@/lib/data';
+import { DollarSign, FileText, Clock, Bot, Send, Users, Store, Truck, PackageX } from 'lucide-react';
 import { DashboardClient } from '@/app/dashboard-client';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useEffect, useState, useMemo, useRef } from 'react';
@@ -306,6 +306,7 @@ export default function DashboardPage() {
   const { data: customers, isLoading: customersLoading } = useFirestoreData(customersDAO);
   const { data: vendors, isLoading: vendorsLoading } = useFirestoreData(vendorsDAO);
   const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
+  const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
 
   const companyName = profiles[0]?.companyName;
 
@@ -317,11 +318,6 @@ export default function DashboardPage() {
     }
   }, [companyName]);
 
-
-  const totalRevenue = invoices
-    .filter((i) => i.status === 'Paid')
-    .reduce((sum, i) => sum + i.amount, 0);
-
   const outstanding = invoices
     .filter((i) => i.status === 'Pending' || i.status === 'Overdue')
     .reduce((sum, i) => sum + i.amount, 0);
@@ -331,8 +327,10 @@ export default function DashboardPage() {
   const totalCustomers = customers.length;
   const totalVendors = vendors.length;
   const upcomingDeliveries = purchases.filter(p => p.status === 'Pending').length;
+  const lowStockItems = products.filter(p => p.stock > 0 && p.stock <= 10).length;
 
-  const isLoading = invoicesLoading || profilesLoading || customersLoading || vendorsLoading || purchasesLoading;
+
+  const isLoading = invoicesLoading || profilesLoading || customersLoading || vendorsLoading || purchasesLoading || productsLoading;
 
   if (isLoading) {
       return (
@@ -345,21 +343,7 @@ export default function DashboardPage() {
   return (
     <AppLayout>
       <h1 className="text-2xl font-semibold mb-4">Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-                <div className="text-2xl font-bold">
-                ₹{totalRevenue.toLocaleString()}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                Based on all paid invoices
-                </p>
-            </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
@@ -386,6 +370,20 @@ export default function DashboardPage() {
             </p>
           </CardContent>
         </Card>
+        <Link href="/inventory?tab=stock">
+             <Card className='hover:bg-muted/50 transition-colors'>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
+                    <PackageX className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{lowStockItems}</div>
+                    <p className="text-xs text-muted-foreground">
+                    Items with stock of 10 or less
+                    </p>
+                </CardContent>
+            </Card>
+        </Link>
         <Link href="/contacts?tab=customers">
             <Card className='hover:bg-muted/50 transition-colors'>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -410,20 +408,6 @@ export default function DashboardPage() {
                     <div className="text-2xl font-bold">{totalVendors}</div>
                     <p className="text-xs text-muted-foreground">
                     Manage all your vendors
-                    </p>
-                </CardContent>
-            </Card>
-        </Link>
-        <Link href="/inventory?tab=purchases">
-            <Card className='hover:bg-muted/50 transition-colors'>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Upcoming Deliveries</CardTitle>
-                    <Truck className="h-4 w-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{upcomingDeliveries}</div>
-                    <p className="text-xs text-muted-foreground">
-                    Pending purchase orders
                     </p>
                 </CardContent>
             </Card>
@@ -454,3 +438,6 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+
+    
