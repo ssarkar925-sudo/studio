@@ -22,7 +22,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { subDays } from 'date-fns';
-import { Separator } from './separator';
 
 interface DateRangePickerProps {
   dateRange?: DateRange;
@@ -43,12 +42,7 @@ export function DateRangePicker({
   className,
 }: DateRangePickerProps) {
   const [open, setOpen] = React.useState(false);
-  const [selectedRange, setSelectedRange] = React.useState<DateRange | undefined>(date);
-
-  React.useEffect(() => {
-    setSelectedRange(date);
-  }, [date]);
-
+  
   const handlePresetChange = (value: string) => {
     if(value === 'all') {
         onUpdate(undefined);
@@ -58,16 +52,6 @@ export function DateRangePicker({
             onUpdate(preset.range);
         }
     }
-  }
-
-  const handleApply = () => {
-    onUpdate(selectedRange);
-    setOpen(false);
-  }
-  
-  const handleCancel = () => {
-    setSelectedRange(date);
-    setOpen(false);
   }
 
   const getActivePreset = () => {
@@ -82,12 +66,7 @@ export function DateRangePicker({
   
   return (
     <div className={cn('grid gap-2', className)}>
-      <Popover open={open} onOpenChange={(isOpen) => {
-          if (!isOpen) {
-              handleCancel();
-          }
-          setOpen(isOpen);
-      }}>
+      <Popover open={open} onOpenChange={setOpen}>
         <div className="flex items-center gap-2">
              <Select value={getActivePreset()} onValueChange={handlePresetChange}>
                 <SelectTrigger className="w-[180px]">
@@ -129,18 +108,16 @@ export function DateRangePicker({
           <Calendar
             initialFocus
             mode="range"
-            defaultMonth={selectedRange?.from}
-            selected={selectedRange}
-            onSelect={setSelectedRange}
+            defaultMonth={date?.from}
+            selected={date}
+            onSelect={(range) => {
+              onUpdate(range);
+              if (range?.from && range.to) {
+                setOpen(false);
+              }
+            }}
             numberOfMonths={2}
           />
-           <div className="p-4 pt-2">
-            <Separator />
-             <div className="flex items-center justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-                <Button onClick={handleApply}>OK</Button>
-            </div>
-           </div>
         </PopoverContent>
       </Popover>
     </div>
