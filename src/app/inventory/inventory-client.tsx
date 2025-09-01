@@ -296,8 +296,8 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
     if (!purchases) return [];
     return [...purchases].sort((a, b) => {
         try {
-            const dateA = new Date(a.orderDate).getTime();
-            const dateB = new Date(b.orderDate).getTime();
+            const dateA = parse(a.orderDate, 'dd/MM/yyyy', new Date()).getTime();
+            const dateB = parse(b.orderDate, 'dd/MM/yyyy', new Date()).getTime();
             if (isNaN(dateA) || isNaN(dateB)) return 0;
             return dateB - dateA;
         } catch (e) {

@@ -31,7 +31,7 @@ export function DashboardClient({ invoices }: { invoices: Invoice[] }) {
     const months = Array.from({ length: 6 }, (_, i) => {
       const date = subMonths(new Date(), 5 - i);
       return {
-        month: format(date, 'MMMM'),
+        month: format(date, 'MMM yy'),
         total: 0,
         paid: 0,
         start: startOfMonth(date),
@@ -57,7 +57,7 @@ export function DashboardClient({ invoices }: { invoices: Invoice[] }) {
       }
     });
 
-    return months.map(({ month, total, paid }) => ({ month, total, paid }));
+    return months.map(({ month, total, paid }) => ({ month: month.replace(" '", "'"), total, paid }));
   }, [invoices]);
 
   return (
