@@ -10,6 +10,7 @@ import { Icons } from '@/components/icons';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
   const variant = {
@@ -66,10 +67,17 @@ export default function PrintInvoicePage() {
     <PrintLayout>
       <div className="p-10 bg-background text-foreground font-sans">
         <header className="flex justify-between items-start mb-10">
-          <div>
-            <Icons.logo className="h-10 w-10 text-primary mb-4" />
-            <h1 className="text-2xl font-bold">{businessProfile.companyName}</h1>
-            <p className="text-muted-foreground">{businessProfile.address}</p>
+          <div className="flex items-center gap-4">
+             <Avatar className="h-12 w-12">
+                <AvatarImage src={businessProfile.logoUrl} alt={businessProfile.companyName} />
+                <AvatarFallback>
+                    <Icons.logo className="h-6 w-6" />
+                </AvatarFallback>
+            </Avatar>
+            <div>
+                <h1 className="text-2xl font-bold">{businessProfile.companyName}</h1>
+                <p className="text-muted-foreground">{businessProfile.address}</p>
+            </div>
           </div>
           <div className="text-right">
             <h2 className="text-4xl font-bold uppercase text-primary tracking-widest">Invoice</h2>

@@ -38,7 +38,7 @@ export default function PrintReceiptPage() {
     }
   }, [invoice, businessProfile, isLoading]);
 
-  if (isLoading || !invoice) {
+  if (isLoading || !invoice || !businessProfile) {
     return (
         <PrintLayout>
             <div className='w-[58mm] mx-auto p-1 bg-white text-black text-xs'>

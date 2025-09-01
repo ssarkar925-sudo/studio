@@ -93,6 +93,7 @@ export type Purchase = {
 export type BusinessProfile = {
   id: string;
   companyName: string;
+  logoUrl?: string;
   contactPerson?: string;
   contactNumber?: string;
   address?: string;

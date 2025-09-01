@@ -8,19 +8,23 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { businessProfileDAO, type BusinessProfile } from '@/lib/data';
-import { Loader2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Loader2, Upload } from 'lucide-react';
+import { useEffect, useState, useRef } from 'react';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Icons } from '@/components/icons';
 
 export function BusinessProfileClient() {
   const { toast } = useToast();
   const { data: profiles, isLoading } = useFirestoreData(businessProfileDAO);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [profile, setProfile] = useState<BusinessProfile | null>(null);
   const [companyName, setCompanyName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [contactNumber, setContactNumber] = useState('');
   const [address, setAddress] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -31,8 +35,27 @@ export function BusinessProfileClient() {
       setContactPerson(currentProfile.contactPerson || '');
       setContactNumber(currentProfile.contactNumber || '');
       setAddress(currentProfile.address || '');
+      setLogoUrl(currentProfile.logoUrl || null);
     }
   }, [profiles, isLoading]);
+
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // In a real application, you would upload this file to a service like Firebase Storage
+    // and get the public URL. For this demo, we'll use a placeholder.
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        setLogoUrl(e.target?.result as string);
+        toast({
+            title: 'Logo Updated',
+            description: 'Click "Save Changes" to apply your new logo.',
+        })
+    };
+    reader.readAsDataURL(file);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -48,18 +71,21 @@ export function BusinessProfileClient() {
     }
 
     setIsSaving(true);
-    const updatedProfileData = {
+    const updatedProfileData: Partial<BusinessProfile> = {
       companyName,
       contactPerson,
       contactNumber,
       address,
+      logoUrl: logoUrl || '',
     };
 
     try {
       if (profile) {
         await businessProfileDAO.update(profile.id, updatedProfileData);
       } else {
-        await businessProfileDAO.add(updatedProfileData);
+        // We add .id here because the DAO returns the full object with the new ID
+        const newProfile = await businessProfileDAO.add(updatedProfileData as Omit<BusinessProfile, 'id'>);
+        setProfile(newProfile);
       }
       toast({
         title: 'Profile Saved',
@@ -90,14 +116,30 @@ export function BusinessProfileClient() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-6">
-            <div className="grid gap-3">
-              <Label htmlFor="companyName">Company Name</Label>
-              <Input
-                id="companyName"
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                required
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] items-center gap-4">
+                <div className="grid gap-3">
+                    <Label htmlFor="companyName">Company Name</Label>
+                    <Input
+                        id="companyName"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="grid gap-3 justify-items-center">
+                    <Label>Logo</Label>
+                    <Avatar className="h-16 w-16">
+                        <AvatarImage src={logoUrl || undefined} alt="Company Logo" />
+                        <AvatarFallback>
+                            <Icons.logo className="h-8 w-8 text-muted-foreground" />
+                        </AvatarFallback>
+                    </Avatar>
+                    <input type="file" ref={fileInputRef} onChange={handleLogoUpload} className="hidden" accept="image/*" />
+                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Upload
+                    </Button>
+                </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="grid gap-3">
