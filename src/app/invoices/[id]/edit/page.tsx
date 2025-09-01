@@ -81,9 +81,9 @@ export default function EditInvoicePage() {
         if (foundInvoice) {
             setInvoice(foundInvoice);
             setInvoiceNumber(foundInvoice.invoiceNumber);
-            setIssueDate(parse(foundInvoice.issueDate, 'PPP', new Date()));
+            setIssueDate(parse(foundInvoice.issueDate, 'dd/MM/yyyy', new Date()));
             if(foundInvoice.dueDate && foundInvoice.dueDate !== 'N/A') {
-                setDueDate(parse(foundInvoice.dueDate, 'PPP', new Date()));
+                setDueDate(parse(foundInvoice.dueDate, 'dd/MM/yyyy', new Date()));
             }
             setStatus(foundInvoice.status);
             setCustomerId(foundInvoice.customer.id);
@@ -192,8 +192,8 @@ export default function EditInvoicePage() {
         name: customer.name,
         email: customer.email,
       },
-      issueDate: format(issueDate, 'PPP'),
-      dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
+      issueDate: format(issueDate, 'dd/MM/yyyy'),
+      dueDate: dueDate ? format(dueDate, 'dd/MM/yyyy') : 'N/A',
       status: status || 'Pending',
       items: items.map(({id, isManual, ...rest}) => rest),
       subtotal,
@@ -285,7 +285,7 @@ export default function EditInvoicePage() {
                                 )}
                                 >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                {issueDate ? format(issueDate, 'PPP') : <span>Pick a date</span>}
+                                {issueDate ? format(issueDate, 'dd/MM/yyyy') : <span>Pick a date</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
@@ -398,7 +398,7 @@ export default function EditInvoicePage() {
                                         )}
                                         >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
+                                        {dueDate ? format(dueDate, 'dd/MM/yyyy') : <span>Pick a date</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">

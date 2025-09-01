@@ -49,7 +49,7 @@ export default function NewInventoryItemPage() {
       await purchasesDAO.add({
           vendorName: 'N/A (Manual Entry)',
           vendorId: 'manual',
-          orderDate: format(new Date(), 'PPP'),
+          orderDate: format(new Date(), 'dd/MM/yyyy'),
           items: [{
               productId: `new_${Date.now()}`,
               productName: name,

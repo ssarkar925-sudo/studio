@@ -40,7 +40,7 @@ export function DashboardClient({ invoices }: { invoices: Invoice[] }) {
 
     invoices.forEach(invoice => {
       try {
-        const issueDate = parse(invoice.issueDate, 'PPP', new Date());
+        const issueDate = parse(invoice.issueDate, 'dd/MM/yyyy', new Date());
         const monthData = months.find(m => 
             issueDate.getMonth() === m.start.getMonth() && 
             issueDate.getFullYear() === m.start.getFullYear()
@@ -111,7 +111,7 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
   }
   const sortedInvoices = [...invoices].sort((a,b) => {
       try {
-        return parse(b.issueDate, 'PPP', new Date()).getTime() - parse(a.issueDate, 'PPP', new Date()).getTime()
+        return parse(b.issueDate, 'dd/MM/yyyy', new Date()).getTime() - parse(a.issueDate, 'dd/MM/yyyy', new Date()).getTime()
       } catch {
         return 0;
       }

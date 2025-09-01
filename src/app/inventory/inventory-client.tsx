@@ -50,7 +50,7 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
     initialProducts.forEach(product => {
       if (product.outOfStockDate) {
         try {
-          const outOfStockDate = parse(product.outOfStockDate, 'PPP', new Date());
+          const outOfStockDate = parse(product.outOfStockDate, 'dd/MM/yyyy', new Date());
           if (differenceInDays(now, outOfStockDate) > 30) {
             cleanupPromises.push(productsDAO.remove(product.id));
           }
@@ -399,7 +399,7 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
 
         const updatedPurchase: Partial<Purchase> = {
             status: 'Received',
-            receivedDate: format(new Date(), 'PPP'),
+            receivedDate: format(new Date(), 'dd/MM/yyyy'),
         };
         await purchasesDAO.update(purchase.id, updatedPurchase);
 
@@ -591,5 +591,3 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
     </>
   );
 }
-
-    

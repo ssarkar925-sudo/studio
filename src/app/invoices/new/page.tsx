@@ -143,8 +143,8 @@ export default function NewInvoicePage() {
           name: customer.name,
           email: customer.email,
         },
-        issueDate: format(new Date(), 'PPP'),
-        dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
+        issueDate: format(new Date(), 'dd/MM/yyyy'),
+        dueDate: dueDate ? format(dueDate, 'dd/MM/yyyy') : 'N/A',
         items: finalItems.map(({id, isManual, ...rest}) => rest),
         subtotal,
         gstPercentage,
@@ -285,7 +285,7 @@ export default function NewInvoicePage() {
                                         )}
                                         >
                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                        {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
+                                        {dueDate ? format(dueDate, 'dd/MM/yyyy') : <span>Pick a date</span>}
                                         </Button>
                                     </PopoverTrigger>
                                     <PopoverContent className="w-auto p-0">

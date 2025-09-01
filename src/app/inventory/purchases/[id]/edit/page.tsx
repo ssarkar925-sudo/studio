@@ -68,7 +68,7 @@ export default function EditPurchasePage() {
       }
       setPurchase(foundPurchase);
       setVendorId(foundPurchase.vendorId);
-      setOrderDate(parse(foundPurchase.orderDate, 'PPP', new Date()));
+      setOrderDate(parse(foundPurchase.orderDate, 'dd/MM/yyyy', new Date()));
       // Add a temporary unique `id` to each item for the key prop in React
       setItems(foundPurchase.items.map(item => ({...item, id: `item-${Math.random()}`})));
       setPaymentDone(foundPurchase.paymentDone || 0);
@@ -154,7 +154,7 @@ export default function EditPurchasePage() {
       await purchasesDAO.update(purchaseId, {
           vendorId: vendor.id,
           vendorName: vendor.vendorName,
-          orderDate: format(orderDate, 'PPP'),
+          orderDate: format(orderDate, 'dd/MM/yyyy'),
           items: items.map(({id, ...rest}) => ({...rest})),
           totalAmount,
           paymentDone,
@@ -230,7 +230,7 @@ export default function EditPurchasePage() {
                                     )}
                                     >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {orderDate ? format(orderDate, 'PPP') : <span>Pick a date</span>}
+                                    {orderDate ? format(orderDate, 'dd/MM/yyyy') : <span>Pick a date</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">

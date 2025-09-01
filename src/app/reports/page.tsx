@@ -44,7 +44,7 @@ export default function ReportsPage() {
 
     return invoices.filter(invoice => {
         try {
-            const issueDate = startOfDay(parse(invoice.issueDate, 'PPP', new Date()));
+            const issueDate = startOfDay(parse(invoice.issueDate, 'dd/MM/yyyy', new Date()));
             return issueDate >= fromDate && issueDate <= toDate;
         } catch(e) {
             return false;
@@ -92,7 +92,7 @@ export default function ReportsPage() {
       });
 
       try {
-          const monthKey = format(parse(invoice.issueDate, 'PPP', new Date()), 'yyyy-MM');
+          const monthKey = format(parse(invoice.issueDate, 'dd/MM/yyyy', new Date()), 'yyyy-MM');
           if(!salesByMonth[monthKey]) salesByMonth[monthKey] = 0;
           salesByMonth[monthKey] += invoice.items.reduce((profit, item) => {
               const product = productsMap.get(item.productId);

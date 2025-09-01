@@ -121,7 +121,7 @@ export default function NewPurchasePage() {
             }
         }
         if (result.orderDate) {
-            setOrderDate(parse(result.orderDate, 'MMMM d, yyyy', new Date()));
+            setOrderDate(parse(result.orderDate, 'dd/MM/yyyy', new Date()));
         }
         if (result.items) {
             const newItems: PurchaseItem[] = result.items.map(item => {
@@ -181,7 +181,7 @@ export default function NewPurchasePage() {
       await purchasesDAO.add({
           vendorId: vendor.id,
           vendorName: vendor.vendorName,
-          orderDate: format(orderDate, 'PPP'),
+          orderDate: format(orderDate, 'dd/MM/yyyy'),
           items: items.map(({id, ...rest}) => ({...rest})),
           totalAmount,
           paymentDone,
@@ -246,7 +246,7 @@ export default function NewPurchasePage() {
                                     )}
                                     >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {orderDate ? format(orderDate, 'PPP') : <span>Pick a date</span>}
+                                    {orderDate ? format(orderDate, 'dd/MM/yyyy') : <span>Pick a date</span>}
                                     </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-auto p-0">

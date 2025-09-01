@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow to extract purchase information from a bill image.
@@ -21,7 +22,7 @@ export type ExtractPurchaseInfoInput = z.infer<typeof ExtractPurchaseInfoInputSc
 
 const ExtractedPurchaseInfoSchema = z.object({
   vendorName: z.string().optional().describe('The name of the vendor or seller.'),
-  orderDate: z.string().optional().describe("The date of the order in 'Month Day, Year' format (e.g., 'July 2, 2024')."),
+  orderDate: z.string().optional().describe("The date of the order in 'dd/MM/yyyy' format (e.g., '02/07/2024')."),
   items: z.array(z.object({
     productName: z.string().describe('The name of the item.'),
     quantity: z.number().describe('The quantity of the item.'),
@@ -48,7 +49,7 @@ const prompt = ai.definePrompt({
   prompt: `You are an expert at extracting structured information from images of invoices and bills. Analyze the provided image and extract the following details. If a value is not present, omit the field.
 
 - The vendor's name.
-- The date of the order. Format it as Month Day, Year (e.g., 'July 2, 2024').
+- The date of the order. Format it as dd/MM/yyyy (e.g., '02/07/2024').
 - A list of all items, including their name, quantity, and unit price (purchasePrice). You must calculate the total for each item by multiplying the quantity and purchasePrice.
 - The GST percentage, if mentioned.
 - Any delivery or shipping charges.
