@@ -27,7 +27,7 @@ export default function EditCustomerPage() {
   const params = useParams();
   const customerId = Array.isArray(params.id) ? params.id[0] : params.id;
   
-  const { data: customers, isLoading, setData: setCustomers } = useFirestoreData(customersDAO);
+  const { data: customers, isLoading } = useFirestoreData(customersDAO);
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   // State for form fields
@@ -91,8 +91,7 @@ export default function EditCustomerPage() {
         title: 'Update Failed',
         description: 'Could not update customer.',
       });
-    } finally {
-        setIsSaving(false);
+       setIsSaving(false);
     }
   };
   

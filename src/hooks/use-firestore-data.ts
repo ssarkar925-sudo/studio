@@ -3,12 +3,8 @@
 
 import { useState, useEffect } from 'react';
 
-// Custom event to signal data changes - This can be removed if not used elsewhere,
-// as onSnapshot provides real-time updates.
-const DATA_CHANGE_EVENT = 'onFirestoreDataChange';
-
 type Dao<T> = {
-  subscribe: (callback: (data: T[]) => void) => () => void;
+  subscribe: (callback: (data: T[]) => void, onError: (error: Error) => void) => () => void;
 };
 
 export function useFirestoreData<T>(dao: Dao<T>) {
@@ -17,13 +13,9 @@ export function useFirestoreData<T>(dao: Dao<T>) {
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // Set loading state to true whenever the hook re-runs with a new DAO.
     setIsLoading(true);
     setError(null);
     
-    // The subscribe method from the DAO should return an unsubscribe function.
-    // It's assumed to handle the connection to Firestore and call the callback
-    // with new data.
     const unsubscribe = dao.subscribe(
       (newData) => {
         setData(newData);
@@ -36,18 +28,10 @@ export function useFirestoreData<T>(dao: Dao<T>) {
       }
     );
 
-    // The cleanup function that React will run when the component unmounts.
-    // This is crucial to prevent memory leaks.
     return () => {
       unsubscribe();
     };
-  }, [dao]); // The effect re-runs if the dao object changes.
+  }, [dao]);
 
-  return { data, setData, isLoading, error };
-}
-
-// This function can be used to manually trigger a re-fetch if needed, although
-// Firestore's real-time updates should handle most cases.
-export function notifyDataChange() {
-    window.dispatchEvent(new Event(DATA_CHANGE_EVENT));
+  return { data, isLoading, error };
 }

@@ -1,7 +1,6 @@
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc } from 'firebase/firestore';
-import { notifyDataChange } from '@/hooks/use-firestore-data';
 
 export type InvoiceItem = {
     productId: string;
@@ -97,7 +96,6 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
     const add = async (item: Omit<T, 'id'>) => {
         try {
             const docRef = await addDoc(collectionRef, item);
-            notifyDataChange();
             return { ...item, id: docRef.id } as T;
         } catch (error) {
              console.error(`Error writing to Firestore collection “${collectionName}”:`, error);
@@ -109,7 +107,6 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
         try {
             const docRef = doc(db, collectionName, id);
             await updateDoc(docRef, updatedItem);
-            notifyDataChange();
         } catch (error) {
             console.error(`Error updating document in Firestore collection “${collectionName}”:`, error);
             throw error;
@@ -120,7 +117,6 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
        try {
             const docRef = doc(db, collectionName, id);
             await deleteDoc(docRef);
-            notifyDataChange();
        } catch (error) {
            console.error(`Error deleting document from Firestore collection “${collectionName}”:`, error);
            throw error;
@@ -192,9 +188,6 @@ const createInvoicesDAO = () => {
             }
 
             return { ...invoiceData, id: newInvoiceRef.id };
-        }).then(invoice => {
-            notifyDataChange();
-            return invoice;
         });
     };
 
@@ -257,8 +250,6 @@ const createInvoicesDAO = () => {
                 }
             }
 
-        }).then(() => {
-            notifyDataChange();
         });
     };
     
@@ -298,8 +289,6 @@ const createInvoicesDAO = () => {
                     transaction.update(productRef, { stock: newStock });
                 }
             }
-        }).then(() => {
-            notifyDataChange();
         });
     };
 

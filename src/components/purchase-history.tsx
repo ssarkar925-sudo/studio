@@ -28,7 +28,7 @@ import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useRouter } from 'next/navigation';
 
 export function PurchaseHistory() {
-  const { data: purchases, setData: setPurchases } = useFirestoreData(purchasesDAO);
+  const { data: purchases } = useFirestoreData(purchasesDAO);
   const { data: allProducts, isLoading: productsLoading } = useFirestoreData(productsDAO);
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const { toast } = useToast();

@@ -176,7 +176,6 @@ export default function EditInvoicePage() {
             title: "Update Failed",
             description: "An error occurred while updating the invoice."
         })
-    } finally {
         setIsSaving(false);
     }
   };

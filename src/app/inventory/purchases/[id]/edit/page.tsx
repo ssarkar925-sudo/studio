@@ -176,8 +176,7 @@ export default function EditPurchasePage() {
           title: 'Update Failed',
           description: 'Could not update purchase order.',
       });
-    } finally {
-        setIsSaving(false);
+       setIsSaving(false);
     }
   };
 

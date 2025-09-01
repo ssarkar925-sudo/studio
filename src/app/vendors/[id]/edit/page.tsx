@@ -94,8 +94,7 @@ export default function EditVendorPage() {
         title: 'Update Failed',
         description: 'Could not update vendor.',
       });
-    } finally {
-        setIsSaving(false);
+      setIsSaving(false);
     }
   };
 
