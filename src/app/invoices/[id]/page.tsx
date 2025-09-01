@@ -93,50 +93,60 @@ export default function InvoiceDetailsPage() {
     setIsSharing(true);
     toast({
         title: 'Generating PDF...',
-        description: 'Please wait while we create the invoice PDF for sharing.'
+        description: 'Please wait while we create the invoice PDF.'
     });
 
     try {
-        const invoicePrintElement = document.createElement('div');
-        invoicePrintElement.style.position = 'absolute';
-        invoicePrintElement.style.left = '-9999px';
-        invoicePrintElement.style.width = '800px';
-
-        // We need to render the print component off-screen to generate the PDF
-        const printContent = await (await fetch(`/invoices/${invoiceId}/print`)).text();
-        // This is a simplified approach; a more robust solution would use ReactDOMServer or a dedicated render-to-string method.
-        invoicePrintElement.innerHTML = printContent;
-        document.body.appendChild(invoicePrintElement);
+        const printContentUrl = `/invoices/${invoiceId}/print`;
         
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Use an iframe to load the content in the same security context
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'absolute';
+        iframe.style.left = '-9999px';
+        iframe.style.width = '800px';
+        iframe.src = printContentUrl;
+        
+        document.body.appendChild(iframe);
 
-        const canvas = await html2canvas(invoicePrintElement, {
-            scale: 2,
+        await new Promise<void>((resolve, reject) => {
+            iframe.onload = () => {
+                setTimeout(async () => {
+                    try {
+                        const invoicePrintElement = iframe.contentWindow?.document.body;
+                        if (!invoicePrintElement) {
+                           throw new Error("Could not access iframe content.");
+                        }
+
+                        const canvas = await html2canvas(invoicePrintElement, {
+                            scale: 2,
+                            useCORS: true,
+                        });
+                        
+                        const pdf = new jsPDF('p', 'mm', 'a4');
+                        const imgData = canvas.toDataURL('image/png');
+                        const pdfWidth = pdf.internal.pageSize.getWidth();
+                        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                        
+                        const pdfBlob = pdf.output('blob');
+                        const pdfUrl = URL.createObjectURL(pdfBlob);
+                        
+                        // Open the PDF in a new tab
+                        window.open(pdfUrl, '_blank');
+
+                        toast({
+                            title: 'PDF Ready!',
+                            description: 'Your PDF has been opened in a new tab. You can share it from there.',
+                        });
+
+                        resolve();
+                    } catch (e) {
+                       reject(e);
+                    }
+                }, 1000); // Wait for images/styles to load
+            };
+             iframe.onerror = (e) => reject(e);
         });
-
-        document.body.removeChild(invoicePrintElement);
-
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgData = canvas.toDataURL('image/png');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-
-        // In a real application, you would upload this PDF to a cloud storage (like Firebase Storage)
-        // and get a public URL. For this demo, we'll use a placeholder.
-        const pdfBlob = pdf.output('blob');
-        console.log("PDF Blob generated, ready for upload.", pdfBlob);
-        const invoiceUrl = "https://example.com/invoice.pdf"; // Placeholder URL
-        
-        toast({
-            title: 'PDF Ready!',
-            description: 'PDF has been generated. You would now upload it.',
-        });
-        
-        const message = `Hello ${invoice.customer.name},\n\nPlease find your invoice here: ${invoiceUrl}\n\nTotal Amount: ₹${invoice.amount.toFixed(2)}\nAmount Due: ₹${(invoice.dueAmount || 0).toFixed(2)}\n\nThank you!`;
-        const encodedMessage = encodeURIComponent(message);
-        const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
-        window.open(whatsappUrl, '_blank');
 
     } catch (error) {
         console.error("Failed to generate or share PDF", error);
@@ -146,6 +156,8 @@ export default function InvoiceDetailsPage() {
             description: 'Could not generate the invoice PDF for sharing.',
         });
     } finally {
+        const iframes = document.querySelectorAll('iframe');
+        iframes.forEach(frame => frame.remove());
         setIsSharing(false);
     }
 };
