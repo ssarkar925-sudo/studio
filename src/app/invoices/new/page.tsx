@@ -283,11 +283,11 @@ export default function NewInvoicePage() {
                             <div className="flex flex-col sm:flex-row gap-2">
                                 <Button type="button" variant="outline" onClick={() => handleAddItem(false)} className="w-full sm:w-auto">
                                     <PlusCircle className="mr-2" />
-                                    Add Item from Inventory
+                                    Add Item
                                 </Button>
-                                 <Button type="button" variant="outline" onClick={() => handleAddItem(true)} className="w-full sm:w-auto">
+                                 <Button type="button" variant="ghost" onClick={() => handleAddItem(true)} className="w-full sm:w-auto">
                                     <PlusCircle className="mr-2" />
-                                    Add Item Manually
+                                    Add Manually
                                 </Button>
                             </div>
                         </div>
