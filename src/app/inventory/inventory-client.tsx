@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 
 // This component will handle both tabs logic now
@@ -64,23 +65,37 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
   };
 
   const handleDelete = async (productId: string) => {
-    await productsDAO.remove(productId);
-    toast({
-      title: 'Item Deleted',
-      description: 'The inventory item has been successfully deleted.',
-    });
-    router.refresh();
+    try {
+        await productsDAO.remove(productId);
+        toast({
+          title: 'Item Deleted',
+          description: 'The inventory item has been successfully deleted.',
+        });
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Deletion Failed',
+            description: 'Could not delete the item.',
+        });
+    }
   };
 
   const handleDeleteSelected = async () => {
     const promises = selectedProducts.map(id => productsDAO.remove(id));
-    await Promise.all(promises);
-    toast({
-        title: 'Items Deleted',
-        description: `${selectedProducts.length} item(s) have been deleted.`,
-    });
-    setSelectedProducts([]);
-    router.refresh();
+    try {
+        await Promise.all(promises);
+        toast({
+            title: 'Items Deleted',
+            description: `${selectedProducts.length} item(s) have been deleted.`,
+        });
+        setSelectedProducts([]);
+    } catch (error) {
+        toast({
+            variant: 'destructive',
+            title: 'Deletion Failed',
+            description: 'Could not delete the selected items.',
+        });
+    }
   };
 
   const handleAction = (action: string, productId: string, productName: string) => {
@@ -227,6 +242,7 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
+  const { data: allProducts, isLoading: productsLoading } = useFirestoreData(productsDAO);
 
   useEffect(() => {
     setPurchases(initialPurchases);
@@ -280,64 +296,80 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
       }
     });
 
-    await Promise.all(deletionPromises);
+    try {
+        await Promise.all(deletionPromises);
 
-    if (deletionPromises.length > 0) {
-      toast({
-          title: 'Purchases Deleted',
-          description: `Selected pending purchase(s) have been deleted.`,
-      });
+        if (deletionPromises.length > 0) {
+          toast({
+              title: 'Purchases Deleted',
+              description: `Selected pending purchase(s) have been deleted.`,
+          });
+        }
+        setSelectedPurchases([]);
+    } catch(error) {
+        toast({
+            variant: 'destructive',
+            title: 'Deletion Failed',
+            description: 'An error occurred while deleting purchases.'
+        })
     }
-    setSelectedPurchases([]);
-    router.refresh();
   };
 
   const handleMarkAsReceived = async (purchase: Purchase) => {
-    // This now requires fetching all products on the client, which is not ideal
-    // but necessary for this refactor.
-    const allProducts = await productsDAO.load();
+    if (productsLoading) {
+      toast({ title: 'Please wait', description: 'Product data is loading.' });
+      return;
+    }
     
-    for (const item of purchase.items) {
-        const totalItemsInPurchase = purchase.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
-        const perItemDeliveryCharge = (purchase.deliveryCharges || 0) / totalItemsInPurchase;
-        const purchasePriceWithCharges = item.purchasePrice * (1 + (purchase.gst || 0) / 100) + perItemDeliveryCharge;
+    try {
+        for (const item of purchase.items) {
+            const totalItemsInPurchase = purchase.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
+            const perItemDeliveryCharge = (purchase.deliveryCharges || 0) / totalItemsInPurchase;
+            const purchasePriceWithCharges = item.purchasePrice * (1 + (purchase.gst || 0) / 100) + perItemDeliveryCharge;
 
-        if (item.isNew) {
-            await productsDAO.add({
-                name: item.productName,
-                purchasePrice: purchasePriceWithCharges,
-                sellingPrice: purchasePriceWithCharges * 1.5, // 50% markup
-                stock: item.quantity,
-                sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
-                batchCode: `BCH-${Date.now()}-${Math.random().toString(36).substring(2, 4)}`.toUpperCase(),
-            });
-        } else {
-            const existingProduct = allProducts.find(p => p.id === item.productId);
-            // This is a new batch of an existing product, create a new entry.
-            if(existingProduct) {
+            if (item.isNew) {
                 await productsDAO.add({
-                    name: existingProduct.name,
+                    name: item.productName,
                     purchasePrice: purchasePriceWithCharges,
-                    sellingPrice: purchasePriceWithCharges * 1.5,
+                    sellingPrice: purchasePriceWithCharges * 1.5, // 50% markup
                     stock: item.quantity,
-                    sku: existingProduct.sku,
+                    sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
                     batchCode: `BCH-${Date.now()}-${Math.random().toString(36).substring(2, 4)}`.toUpperCase(),
                 });
+            } else {
+                const existingProduct = allProducts.find(p => p.id === item.productId);
+                // This is a new batch of an existing product, create a new entry.
+                if(existingProduct) {
+                    await productsDAO.add({
+                        name: existingProduct.name,
+                        purchasePrice: purchasePriceWithCharges,
+                        sellingPrice: purchasePriceWithCharges * 1.5,
+                        stock: item.quantity,
+                        sku: existingProduct.sku,
+                        batchCode: `BCH-${Date.now()}-${Math.random().toString(36).substring(2, 4)}`.toUpperCase(),
+                    });
+                }
             }
         }
+
+        const updatedPurchase: Partial<Purchase> = {
+            status: 'Received',
+            receivedDate: format(new Date(), 'PPP'),
+        };
+        await purchasesDAO.update(purchase.id, updatedPurchase);
+
+        toast({
+            title: 'Purchase Received',
+            description: `Stock has been updated for purchase order ${purchase.id.slice(0,8)}...`,
+        });
+    } catch (error) {
+        console.error('Failed to mark purchase as received', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to update stock. Please try again.',
+        });
     }
-
-    const updatedPurchase: Partial<Purchase> = {
-        status: 'Received',
-        receivedDate: format(new Date(), 'PPP'),
-    };
-    await purchasesDAO.update(purchase.id, updatedPurchase);
-
-    toast({
-        title: 'Purchase Received',
-        description: `Stock has been updated for purchase order ${purchase.id.slice(0,8)}...`,
-    });
-    router.refresh();
   }
 
 
