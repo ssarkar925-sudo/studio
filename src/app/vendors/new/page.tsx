@@ -39,19 +39,27 @@ export default function NewVendorPage() {
       return;
     }
 
-    await vendorsDAO.add({
-      vendorName,
-      contactPerson,
-      contactNumber,
-      email,
-      gstn,
-    });
-    
-    toast({
-      title: 'Vendor Created',
-      description: `Successfully created vendor: ${vendorName}.`,
-    });
-    router.push('/vendors');
+    try {
+      await vendorsDAO.add({
+        vendorName,
+        contactPerson,
+        contactNumber,
+        email,
+        gstn,
+      });
+      
+      toast({
+        title: 'Vendor Created',
+        description: `Successfully created vendor: ${vendorName}.`,
+      });
+      router.push('/vendors');
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Creation Failed',
+        description: 'Could not create vendor.',
+      });
+    }
   };
 
   return (

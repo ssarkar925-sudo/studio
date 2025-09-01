@@ -70,18 +70,26 @@ export default function EditCustomerPage() {
       return;
     }
 
-    await customersDAO.update(customer.id, {
-      name,
-      email,
-      phone,
-      address,
-    });
-    
-    toast({
-      title: 'Customer Updated',
-      description: `Successfully updated customer: ${name}.`,
-    });
-    router.push('/customers');
+    try {
+      await customersDAO.update(customer.id, {
+        name,
+        email,
+        phone,
+        address,
+      });
+      
+      toast({
+        title: 'Customer Updated',
+        description: `Successfully updated customer: ${name}.`,
+      });
+      router.push('/customers');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Could not update customer.',
+      });
+    }
   };
   
   if (isLoading || !customer) {

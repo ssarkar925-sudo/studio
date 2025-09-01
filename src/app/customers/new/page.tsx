@@ -39,21 +39,29 @@ export default function NewCustomerPage() {
       return;
     }
 
-    await customersDAO.add({
-      name,
-      email,
-      phone,
-      address,
-      totalInvoiced: 0,
-      totalPaid: 0,
-      invoices: 0,
-    });
-    
-    toast({
-      title: 'Customer Created',
-      description: `Successfully created customer: ${name}.`,
-    });
-    router.push('/customers');
+    try {
+      await customersDAO.add({
+        name,
+        email,
+        phone,
+        address,
+        totalInvoiced: 0,
+        totalPaid: 0,
+        invoices: 0,
+      });
+      
+      toast({
+        title: 'Customer Created',
+        description: `Successfully created customer: ${name}.`,
+      });
+      router.push('/customers');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Creation Failed',
+        description: 'Could not create customer.',
+      });
+    }
   };
 
   return (

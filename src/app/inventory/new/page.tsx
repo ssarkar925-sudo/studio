@@ -39,32 +39,40 @@ export default function NewInventoryItemPage() {
       return;
     }
 
-    // Create a pending purchase order instead of adding directly to stock
-    await purchasesDAO.add({
-        vendorName: 'N/A (Manual Entry)',
-        vendorId: 'manual',
-        orderDate: format(new Date(), 'PPP'),
-        items: [{
-            productId: `new_${Date.now()}`,
-            productName: name,
-            quantity: stock,
-            purchasePrice: purchasePrice,
-            total: stock * purchasePrice,
-            isNew: true,
-        }],
-        totalAmount: stock * purchasePrice,
-        paymentDone: 0,
-        dueAmount: stock * purchasePrice,
-        status: 'Pending',
-        gst: 0,
-        deliveryCharges: 0,
-    });
+    try {
+      // Create a pending purchase order instead of adding directly to stock
+      await purchasesDAO.add({
+          vendorName: 'N/A (Manual Entry)',
+          vendorId: 'manual',
+          orderDate: format(new Date(), 'PPP'),
+          items: [{
+              productId: `new_${Date.now()}`,
+              productName: name,
+              quantity: stock,
+              purchasePrice: purchasePrice,
+              total: stock * purchasePrice,
+              isNew: true,
+          }],
+          totalAmount: stock * purchasePrice,
+          paymentDone: 0,
+          dueAmount: stock * purchasePrice,
+          status: 'Pending',
+          gst: 0,
+          deliveryCharges: 0,
+      });
 
-    toast({
-        title: 'Purchase Entry Created',
-        description: `A pending purchase for "${name}" has been created. Receive it in the "Purchases" tab to add it to stock.`,
-    });
-    router.push('/inventory?tab=purchases');
+      toast({
+          title: 'Purchase Entry Created',
+          description: `A pending purchase for "${name}" has been created. Receive it in the "Purchases" tab to add it to stock.`,
+      });
+      router.push('/inventory?tab=purchases');
+    } catch (error) {
+       toast({
+        variant: 'destructive',
+        title: 'Creation Failed',
+        description: 'Could not create purchase entry.',
+      });
+    }
   };
 
   return (

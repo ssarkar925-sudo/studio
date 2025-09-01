@@ -174,25 +174,32 @@ export default function NewPurchasePage() {
         return;
     }
 
-    await purchasesDAO.add({
-        vendorId: vendor.id,
-        vendorName: vendor.vendorName,
-        orderDate: format(orderDate, 'PPP'),
-        items: items.map(({id, ...rest}) => ({...rest})),
-        totalAmount,
-        paymentDone,
-        dueAmount,
-        status: 'Pending',
-        gst,
-        deliveryCharges,
-    });
+    try {
+      await purchasesDAO.add({
+          vendorId: vendor.id,
+          vendorName: vendor.vendorName,
+          orderDate: format(orderDate, 'PPP'),
+          items: items.map(({id, ...rest}) => ({...rest})),
+          totalAmount,
+          paymentDone,
+          dueAmount,
+          status: 'Pending',
+          gst,
+          deliveryCharges,
+      });
 
-    toast({
-        title: 'Purchase Order Created',
-        description: 'The purchase order has been saved with pending status.',
-    });
-    router.push('/inventory?tab=purchases');
-
+      toast({
+          title: 'Purchase Order Created',
+          description: 'The purchase order has been saved with pending status.',
+      });
+      router.push('/inventory?tab=purchases');
+    } catch(error) {
+        toast({
+          variant: 'destructive',
+          title: 'Creation Failed',
+          description: 'Could not create purchase order.',
+      });
+    }
   };
 
   return (

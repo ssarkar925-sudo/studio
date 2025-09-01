@@ -148,25 +148,32 @@ export default function EditPurchasePage() {
         return;
     }
 
-    await purchasesDAO.update(purchaseId, {
-        vendorId: vendor.id,
-        vendorName: vendor.vendorName,
-        orderDate: format(orderDate, 'PPP'),
-        items: items.map(({id, ...rest}) => ({...rest})),
-        totalAmount,
-        paymentDone,
-        dueAmount,
-        status: 'Pending',
-        gst,
-        deliveryCharges,
-    });
+    try {
+      await purchasesDAO.update(purchaseId, {
+          vendorId: vendor.id,
+          vendorName: vendor.vendorName,
+          orderDate: format(orderDate, 'PPP'),
+          items: items.map(({id, ...rest}) => ({...rest})),
+          totalAmount,
+          paymentDone,
+          dueAmount,
+          status: 'Pending',
+          gst,
+          deliveryCharges,
+      });
 
-    toast({
-        title: 'Purchase Order Updated',
-        description: 'The purchase order has been successfully updated.',
-    });
-    router.push('/inventory?tab=purchases');
-
+      toast({
+          title: 'Purchase Order Updated',
+          description: 'The purchase order has been successfully updated.',
+      });
+      router.push('/inventory?tab=purchases');
+    } catch (error) {
+       toast({
+          variant: 'destructive',
+          title: 'Update Failed',
+          description: 'Could not update purchase order.',
+      });
+    }
   };
 
   if (isLoading || !purchase) {

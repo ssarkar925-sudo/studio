@@ -72,19 +72,27 @@ export default function EditVendorPage() {
       return;
     }
 
-    await vendorsDAO.update(vendor.id, {
-      vendorName,
-      contactPerson,
-      contactNumber,
-      email,
-      gstn,
-    });
-    
-    toast({
-      title: 'Vendor Updated',
-      description: `Successfully updated vendor: ${vendorName}.`,
-    });
-    router.push('/vendors');
+    try {
+      await vendorsDAO.update(vendor.id, {
+        vendorName,
+        contactPerson,
+        contactNumber,
+        email,
+        gstn,
+      });
+      
+      toast({
+        title: 'Vendor Updated',
+        description: `Successfully updated vendor: ${vendorName}.`,
+      });
+      router.push('/vendors');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Update Failed',
+        description: 'Could not update vendor.',
+      });
+    }
   };
 
   if (isLoading || !vendor) {
