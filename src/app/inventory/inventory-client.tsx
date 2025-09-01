@@ -46,18 +46,27 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
     // Filter out items that have been out of stock for more than 30 days
     const now = new Date();
     const cleanupPromises: Promise<void>[] = [];
-
-    initialProducts.forEach(product => {
-      if (product.outOfStockDate) {
-        try {
-          const outOfStockDate = parse(product.outOfStockDate, 'dd/MM/yyyy', new Date());
-          if (differenceInDays(now, outOfStockDate) > 30) {
-            cleanupPromises.push(productsDAO.remove(product.id));
-          }
-        } catch (e) {
-            console.error("Error parsing outOfStockDate", product.outOfStockDate);
+    
+    const visibleProducts = initialProducts.filter(product => {
+        if (product.stock > 0) {
+            return true;
         }
-      }
+        if (product.outOfStockDate) {
+            try {
+                const outOfStockDate = parse(product.outOfStockDate, 'dd/MM/yyyy', new Date());
+                const daysSinceOutOfStock = differenceInDays(now, outOfStockDate);
+                
+                if (daysSinceOutOfStock > 30) {
+                    cleanupPromises.push(productsDAO.remove(product.id));
+                    return false; // Don't show it and schedule for deletion
+                }
+                return true; // Show it as it's within 30 days
+            } catch (e) {
+                console.error("Error parsing outOfStockDate", product.outOfStockDate);
+                return false; // Hide if date is invalid
+            }
+        }
+        return false; // Hide if out of stock and no date
     });
 
     if (cleanupPromises.length > 0) {
@@ -77,8 +86,7 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
       });
     }
 
-    // Only show items that are in stock
-    setProducts(initialProducts.filter(p => p.stock > 0));
+    setProducts(visibleProducts);
   }, [initialProducts, toast]);
 
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
