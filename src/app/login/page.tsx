@@ -28,7 +28,7 @@ export default function LoginPage() {
     const handleGoogleLogin = () => {
          toast({
             title: 'Login with Google',
-            description: "This feature is not yet implemented.",
+            description: "This feature is for demonstration and not yet implemented.",
         });
     }
 
@@ -66,7 +66,7 @@ export default function LoginPage() {
                             className="text-sm font-medium text-primary hover:underline"
                             onClick={(e) => {
                                 e.preventDefault();
-                                toast({ title: 'Forgot Password', description: 'This feature is not yet implemented.'});
+                                toast({ title: 'Forgot Password', description: 'A password reset link has been sent to your email (simulated).'});
                             }}
                         >
                             Forgot password?
@@ -90,7 +90,7 @@ export default function LoginPage() {
                         className="font-medium text-primary hover:underline"
                         onClick={(e) => {
                             e.preventDefault();
-                            toast({ title: 'Sign Up', description: 'This feature is not yet implemented.'});
+                            toast({ title: 'Sign Up', description: 'The sign-up feature is for demonstration purposes.'});
                         }}
                     >
                         Sign up
