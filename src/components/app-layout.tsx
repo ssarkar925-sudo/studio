@@ -13,6 +13,7 @@ import {
   Menu,
   Building,
   Contact,
+  BarChart,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ const menuItems = [
   { href: '/invoices', label: 'Invoices', icon: FileText },
   { href: '/contacts', label: 'Contacts', icon: Contact },
   { href: '/inventory', label: 'Inventory', icon: Package },
+  { href: '/reports', label: 'Reports', icon: BarChart },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
