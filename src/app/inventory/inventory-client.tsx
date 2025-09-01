@@ -398,8 +398,9 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
               <TableHead>Order ID</TableHead>
               <TableHead>Vendor</TableHead>
               <TableHead>Order Date</TableHead>
-              <TableHead>Received Date</TableHead>
-              <TableHead className="text-right">Total Amount</TableHead>
+              <TableHead className="text-right">Total</TableHead>
+              <TableHead className="text-right">Paid</TableHead>
+              <TableHead className="text-right">Due</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>
                 <span className="sr-only">Actions</span>
@@ -419,8 +420,9 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
                 <TableCell className="font-medium">{purchase.id.slice(0, 8)}...</TableCell>
                 <TableCell>{purchase.vendorName}</TableCell>
                 <TableCell>{purchase.orderDate}</TableCell>
-                <TableCell>{purchase.receivedDate || 'N/A'}</TableCell>
                 <TableCell className="text-right">₹{purchase.totalAmount.toFixed(2)}</TableCell>
+                <TableCell className="text-right">₹{purchase.paymentDone.toFixed(2)}</TableCell>
+                <TableCell className="text-right">₹{purchase.dueAmount.toFixed(2)}</TableCell>
                 <TableCell>
                   <Badge variant={purchase.status === 'Received' ? 'default' : 'secondary'}>{purchase.status}</Badge>
                 </TableCell>
