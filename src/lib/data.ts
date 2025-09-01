@@ -22,8 +22,15 @@ export type Invoice = {
   issueDate: string;
   dueDate: string;
   status: 'Paid' | 'Pending' | 'Overdue';
-  amount: number;
   items: InvoiceItem[];
+  subtotal: number;
+  gstPercentage?: number;
+  gstAmount?: number;
+  deliveryCharges?: number;
+  discount?: number;
+  amount: number; // This will now be the final total amount
+  paidAmount?: number;
+  dueAmount?: number;
 };
 
 export type Customer = {
@@ -178,12 +185,14 @@ const createInvoicesDAO = () => {
 
             const productDocs = new Map<string, any>();
             for (const item of invoiceData.items) {
-                const productRef = doc(db, 'products', item.productId);
-                const productDoc = await transaction.get(productRef);
-                if (!productDoc.exists() || productDoc.data().stock < item.quantity) {
-                    throw new Error(`Not enough stock for ${item.productName}.`);
+                if (item.productId) { // Only check stock for inventory items
+                    const productRef = doc(db, 'products', item.productId);
+                    const productDoc = await transaction.get(productRef);
+                    if (!productDoc.exists() || productDoc.data().stock < item.quantity) {
+                        throw new Error(`Not enough stock for ${item.productName}.`);
+                    }
+                    productDocs.set(item.productId, productDoc);
                 }
-                productDocs.set(item.productId, productDoc);
             }
 
             // --- WRITES AFTER ---
@@ -191,7 +200,7 @@ const createInvoicesDAO = () => {
             transaction.set(newInvoiceRef, invoiceData);
 
             const newTotalInvoiced = (customerData.totalInvoiced || 0) + invoiceData.amount;
-            const newTotalPaid = (customerData.totalPaid || 0) + (invoiceData.status === 'Paid' ? invoiceData.amount : 0);
+            const newTotalPaid = (customerData.totalPaid || 0) + (invoiceData.paidAmount || 0);
             const newInvoicesCount = (customerData.invoices || 0) + 1;
             
             transaction.update(customerRef, {
@@ -201,16 +210,18 @@ const createInvoicesDAO = () => {
             });
 
             for (const item of invoiceData.items) {
-                const productDoc = productDocs.get(item.productId);
-                if (productDoc) {
-                    const productRef = doc(db, 'products', item.productId);
-                    const newStock = productDoc.data().stock - item.quantity;
-                    
-                    const productUpdate: Partial<Product> = { stock: newStock };
-                    if (newStock === 0) {
-                        productUpdate.outOfStockDate = format(new Date(), 'PPP');
+                if(item.productId) {
+                    const productDoc = productDocs.get(item.productId);
+                    if (productDoc) {
+                        const productRef = doc(db, 'products', item.productId);
+                        const newStock = productDoc.data().stock - item.quantity;
+                        
+                        const productUpdate: Partial<Product> = { stock: newStock };
+                        if (newStock === 0) {
+                            productUpdate.outOfStockDate = format(new Date(), 'PPP');
+                        }
+                        transaction.update(productRef, productUpdate);
                     }
-                    transaction.update(productRef, productUpdate);
                 }
             }
 
@@ -234,6 +245,7 @@ const createInvoicesDAO = () => {
             const allProductIds = new Set([...originalInvoice.items.map(i => i.productId), ...newInvoiceData.items.map(i => i.productId)]);
             const productDocs = new Map<string, any>();
             for (const productId of allProductIds) {
+                if (!productId) continue;
                 const productRef = doc(db, 'products', productId);
                 const productDoc = await transaction.get(productRef);
                  if (productDoc.exists()) {
@@ -242,12 +254,10 @@ const createInvoicesDAO = () => {
             }
 
             // --- WRITES AFTER ---
-            transaction.update(invoiceRef, updatedData);
+            transaction.update(invoiceRef, updatedData as any);
 
             const amountDifference = newInvoiceData.amount - originalInvoice.amount;
-            const paidAmountDifference = 
-                (newInvoiceData.status === 'Paid' ? newInvoiceData.amount : 0) - 
-                (originalInvoice.status === 'Paid' ? originalInvoice.amount : 0);
+            const paidAmountDifference = (newInvoiceData.paidAmount || 0) - (originalInvoice.paidAmount || 0);
             
             transaction.update(customerRef, {
                 totalInvoiced: customerData.totalInvoiced + amountDifference,
@@ -258,6 +268,7 @@ const createInvoicesDAO = () => {
             const newItemsMap = new Map(newInvoiceData.items.map(item => [item.productId, item.quantity]));
             
             for(const productId of allProductIds) {
+                 if (!productId) continue;
                 const originalQty = originalItemsMap.get(productId) || 0;
                 const newQty = newItemsMap.get(productId) || 0;
                 const stockChange = originalQty - newQty;
@@ -299,10 +310,12 @@ const createInvoicesDAO = () => {
             
             const productDocs = new Map<string, any>();
             for (const item of invoiceData.items) {
-                const productRef = doc(db, 'products', item.productId);
-                const productDoc = await transaction.get(productRef);
-                if (productDoc.exists()) {
-                    productDocs.set(item.productId, productDoc);
+                 if (item.productId) {
+                    const productRef = doc(db, 'products', item.productId);
+                    const productDoc = await transaction.get(productRef);
+                    if (productDoc.exists()) {
+                        productDocs.set(item.productId, productDoc);
+                    }
                 }
             }
 
@@ -312,7 +325,7 @@ const createInvoicesDAO = () => {
             if (customerDoc.exists()) {
                 const customerData = customerDoc.data();
                 const newTotalInvoiced = customerData.totalInvoiced - invoiceData.amount;
-                const newTotalPaid = customerData.totalPaid - (invoiceData.status === 'Paid' ? invoiceData.amount : 0);
+                const newTotalPaid = customerData.totalPaid - (invoiceData.paidAmount || 0);
                 const newInvoicesCount = customerData.invoices - 1;
                 transaction.update(customerRef, {
                     totalInvoiced: newTotalInvoiced,
@@ -322,17 +335,19 @@ const createInvoicesDAO = () => {
             }
 
             for (const item of invoiceData.items) {
-                const productDoc = productDocs.get(item.productId);
-                if(productDoc) {
-                    const productRef = doc(db, 'products', item.productId);
-                    const currentStock = productDoc.data().stock;
-                    const newStock = currentStock + item.quantity;
-                     const productUpdate: Partial<Product> = { stock: newStock };
-                     if (currentStock === 0 && newStock > 0) {
-                        productUpdate.outOfStockDate = undefined; // Or delete the field
-                     }
-                    transaction.update(productRef, productUpdate as any);
-                }
+                 if(item.productId) {
+                    const productDoc = productDocs.get(item.productId);
+                    if(productDoc) {
+                        const productRef = doc(db, 'products', item.productId);
+                        const currentStock = productDoc.data().stock;
+                        const newStock = currentStock + item.quantity;
+                        const productUpdate: Partial<Product> = { stock: newStock };
+                        if (currentStock === 0 && newStock > 0) {
+                            productUpdate.outOfStockDate = undefined; // Or delete the field
+                        }
+                        transaction.update(productRef, productUpdate as any);
+                    }
+                 }
             }
         });
     };

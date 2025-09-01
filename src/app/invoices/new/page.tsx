@@ -27,7 +27,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 
@@ -52,19 +52,27 @@ export default function NewInvoicePage() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Summary state
+  const [gstPercentage, setGstPercentage] = useState(0);
+  const [deliveryCharges, setDeliveryCharges] = useState(0);
+  const [discount, setDiscount] = useState(0);
+  const [paidAmount, setPaidAmount] = useState(0);
+
   // Add one default item row when the component mounts
   useEffect(() => {
     if (items.length === 0) {
-      setItems([{ id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual: false }]);
+      handleAddItem(false, true);
     }
-     // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleAddItem = (isManual = false) => {
-    setItems([
-      ...items,
-      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual },
-    ]);
+  const handleAddItem = (isManual = false, isDefault = false) => {
+      const newItem = { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual };
+      if (isDefault) {
+          setItems([newItem]);
+      } else {
+        setItems([...items, newItem]);
+      }
   };
 
   const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
@@ -90,11 +98,15 @@ export default function NewInvoicePage() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const calculateTotal = () => {
-    return items.reduce((sum, item) => sum + item.total, 0);
-  };
+  const calculateSummary = useCallback(() => {
+    const subtotal = items.reduce((sum, item) => sum + item.total, 0);
+    const gstAmount = subtotal * (gstPercentage / 100);
+    const total = subtotal + gstAmount + deliveryCharges - discount;
+    const dueAmount = total - paidAmount;
+    return { subtotal, gstAmount, total, dueAmount };
+  }, [items, gstPercentage, deliveryCharges, discount, paidAmount]);
   
-  const totalAmount = calculateTotal();
+  const { subtotal, gstAmount, total, dueAmount } = calculateSummary();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -134,9 +146,16 @@ export default function NewInvoicePage() {
         },
         issueDate: format(new Date(), 'PPP'),
         dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
-        status: 'Pending', // Default status
-        amount: totalAmount,
-        items: finalItems.map(({id, isManual, ...rest}) => rest)
+        status: dueAmount <= 0 ? 'Paid' : 'Pending',
+        items: finalItems.map(({id, isManual, ...rest}) => rest),
+        subtotal,
+        gstPercentage,
+        gstAmount,
+        deliveryCharges,
+        discount,
+        amount: total,
+        paidAmount,
+        dueAmount,
       });
       
       toast({
@@ -262,7 +281,7 @@ export default function NewInvoicePage() {
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Price</Label>}
-                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01" />
+                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01"/>
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Total</Label>}
@@ -294,10 +313,36 @@ export default function NewInvoicePage() {
                         <CardTitle>Summary</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                            <div className='grid gap-3 col-span-2 sm:col-span-1'>
-                                <Label>Total Amount</Label>
-                                <Input value={`₹${calculateTotal().toFixed(2)}`} readOnly className='bg-muted text-lg font-bold' />
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                            <div className='grid gap-1'>
+                                <Label>Subtotal</Label>
+                                <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted' />
+                            </div>
+                            <div className='grid gap-1'>
+                                <Label>GST (%)</Label>
+                                <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} />
+                            </div>
+                             <div className='grid gap-1'>
+                                <Label>Delivery Charges</Label>
+                                <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} />
+                            </div>
+                             <div className='grid gap-1'>
+                                <Label>Discount</Label>
+                                <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} />
+                            </div>
+                             <div className='grid gap-1'>
+                                <Label>Paid Amount</Label>
+                                <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} />
+                            </div>
+                             <div className='grid gap-1'>
+                                <Label>Due Amount</Label>
+                                <Input value={`₹${dueAmount.toFixed(2)}`} readOnly className='bg-muted font-bold' />
+                            </div>
+                        </div>
+                         <div className="flex justify-end mt-4">
+                            <div className="grid gap-1 w-full max-w-xs">
+                                <Label className="text-right text-2xl font-bold">Total</Label>
+                                <Input value={`₹${total.toFixed(2)}`} readOnly className='bg-muted text-2xl font-bold text-right h-12' />
                             </div>
                         </div>
                     </CardContent>

@@ -8,6 +8,7 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
   const variant = {
@@ -97,14 +98,44 @@ export default function PrintInvoicePage() {
         </section>
         
         <section className='flex justify-end'>
-            <div className='w-full max-w-xs space-y-2'>
-                <div className='flex justify-between'>
-                    <span className='text-muted-foreground'>Subtotal</span>
-                    <span>₹{invoice.amount.toFixed(2)}</span>
+             <div className="grid gap-2 w-full max-w-sm">
+                <div className="flex justify-between">
+                    <span className="text-muted-foreground">Subtotal</span>
+                    <span>₹{invoice.subtotal.toFixed(2)}</span>
                 </div>
-                <div className='flex justify-between font-bold text-lg border-t pt-2'>
+                {invoice.gstAmount !== undefined && (
+                        <div className="flex justify-between">
+                        <span className="text-muted-foreground">GST ({invoice.gstPercentage || 0}%)</span>
+                        <span>₹{invoice.gstAmount.toFixed(2)}</span>
+                    </div>
+                )}
+                {invoice.deliveryCharges !== undefined && invoice.deliveryCharges > 0 && (
+                    <div className="flex justify-between">
+                        <span className="text-muted-foreground">Delivery</span>
+                        <span>₹{invoice.deliveryCharges.toFixed(2)}</span>
+                    </div>
+                )}
+                {invoice.discount !== undefined && invoice.discount > 0 && (
+                        <div className="flex justify-between">
+                        <span className="text-muted-foreground">Discount</span>
+                        <span className="text-red-500">- ₹{invoice.discount.toFixed(2)}</span>
+                    </div>
+                )}
+                <Separator />
+                <div className="flex justify-between font-bold text-lg">
                     <span>Total</span>
                     <span>₹{invoice.amount.toFixed(2)}</span>
+                </div>
+                <Separator />
+                {invoice.paidAmount !== undefined && (
+                        <div className="flex justify-between">
+                        <span className="text-muted-foreground">Paid</span>
+                        <span>₹{invoice.paidAmount.toFixed(2)}</span>
+                    </div>
+                )}
+                <div className="flex justify-between font-bold text-lg">
+                    <span>Due</span>
+                    <span>₹{(invoice.dueAmount || 0).toFixed(2)}</span>
                 </div>
             </div>
         </section>
