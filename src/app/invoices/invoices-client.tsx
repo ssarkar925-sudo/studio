@@ -164,9 +164,10 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
                   </TableHead>
                   <TableHead>Invoice #</TableHead>
                   <TableHead>Customer</TableHead>
-                  <TableHead className='text-right'>Amount</TableHead>
+                  <TableHead className='text-right'>Total Amount</TableHead>
+                  <TableHead className='text-right'>Amount Paid</TableHead>
+                  <TableHead className='text-right'>Amount Due</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Due Date</TableHead>
                   <TableHead>
                     <span className="sr-only">Actions</span>
                   </TableHead>
@@ -187,10 +188,11 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
                     </TableCell>
                     <TableCell>{invoice.customer.name}</TableCell>
                     <TableCell className='text-right'>₹{invoice.amount.toFixed(2)}</TableCell>
+                    <TableCell className='text-right'>₹{(invoice.paidAmount || 0).toFixed(2)}</TableCell>
+                    <TableCell className='text-right'>₹{(invoice.dueAmount || 0).toFixed(2)}</TableCell>
                     <TableCell>
                       <InvoiceStatusBadge status={invoice.status} />
                     </TableCell>
-                    <TableCell>{invoice.dueDate}</TableCell>
                     <TableCell>
                       <AlertDialog>
                         <DropdownMenu>
@@ -301,7 +303,12 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
     Paid: 'default',
     Pending: 'secondary',
     Overdue: 'destructive',
-  }[status] as 'default' | 'secondary' | 'destructive';
+    Partial: 'outline',
+  }[status] as 'default' | 'secondary' | 'destructive' | 'outline';
+
+  if (status === 'Partial') {
+    return <Badge variant={variant} className="capitalize border-accent text-accent">{status.toLowerCase()}</Badge>;
+  }
 
   return <Badge variant={variant} className="capitalize">{status.toLowerCase()}</Badge>;
 }

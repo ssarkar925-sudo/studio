@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { customersDAO, invoicesDAO, productsDAO, type Product } from '@/lib/data';
+import { customersDAO, invoicesDAO, productsDAO, type Product, type Invoice } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
@@ -145,7 +145,6 @@ export default function NewInvoicePage() {
         },
         issueDate: format(new Date(), 'PPP'),
         dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
-        status: dueAmount <= 0 ? 'Paid' : 'Pending',
         items: finalItems.map(({id, isManual, ...rest}) => rest),
         subtotal,
         gstPercentage,
@@ -272,57 +271,55 @@ export default function NewInvoicePage() {
                 </Card>
 
                 <div className="grid md:grid-cols-2 gap-6">
-                    <Card>
-                        <CardContent className="grid gap-4 pt-6">
-                           <div className="grid gap-3">
-                                <Label htmlFor="dueDate">Due Date (Optional)</Label>
-                                <div className="relative">
-                                    <Popover>
-                                        <PopoverTrigger asChild>
-                                            <Button
-                                            variant={'outline'}
-                                            className={cn(
-                                                'w-full justify-start text-left font-normal',
-                                                !dueDate && 'text-muted-foreground'
-                                            )}
-                                            >
-                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                            {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
-                                            </Button>
-                                        </PopoverTrigger>
-                                        <PopoverContent className="w-auto p-0">
-                                            <Calendar
-                                            mode="single"
-                                            selected={dueDate}
-                                            onSelect={setDueDate}
-                                            initialFocus
-                                            />
-                                        </PopoverContent>
-                                    </Popover>
-                                    {dueDate && (
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                                            onClick={() => setDueDate(undefined)}
+                    <div className='space-y-6'>
+                        <div className="grid gap-3">
+                            <Label htmlFor="dueDate">Due Date (Optional)</Label>
+                            <div className="relative">
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                        variant={'outline'}
+                                        className={cn(
+                                            'w-full justify-start text-left font-normal',
+                                            !dueDate && 'text-muted-foreground'
+                                        )}
                                         >
-                                            <XIcon className="h-4 w-4" />
+                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                        {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
                                         </Button>
-                                    )}
-                                </div>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0">
+                                        <Calendar
+                                        mode="single"
+                                        selected={dueDate}
+                                        onSelect={setDueDate}
+                                        initialFocus
+                                        />
+                                    </PopoverContent>
+                                </Popover>
+                                {dueDate && (
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                                        onClick={() => setDueDate(undefined)}
+                                    >
+                                        <XIcon className="h-4 w-4" />
+                                    </Button>
+                                )}
                             </div>
-                            <div className="grid gap-3">
-                                <Label htmlFor="orderNote">Order Note</Label>
-                                <Textarea 
-                                    id="orderNote"
-                                    placeholder="Add any notes for the order..."
-                                    value={orderNote}
-                                    onChange={(e) => setOrderNote(e.target.value)}
-                                    rows={5}
-                                />
-                            </div>
-                        </CardContent>
-                    </Card>
+                        </div>
+                        <div className="grid gap-3">
+                            <Label htmlFor="orderNote">Order Note</Label>
+                            <Textarea 
+                                id="orderNote"
+                                placeholder="Add any notes for the order..."
+                                value={orderNote}
+                                onChange={(e) => setOrderNote(e.target.value)}
+                                rows={5}
+                            />
+                        </div>
+                    </div>
 
                     <Card>
                         <CardHeader>
@@ -331,20 +328,23 @@ export default function NewInvoicePage() {
                         <CardContent>
                             <div className="grid gap-4">
                                 <div className="flex items-center justify-between">
-                                    <Label>Subtotal</Label>
-                                    <span className="text-muted-foreground">₹{subtotal.toFixed(2)}</span>
+                                    <Label className="text-muted-foreground">Subtotal</Label>
+                                    <span>₹{subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <Label>GST (%)</Label>
-                                    <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} className="max-w-24 text-right" />
+                                    <Label className="text-muted-foreground">GST</Label>
+                                    <div className='flex items-center gap-2'>
+                                        <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} className="w-20 h-8 text-right" />
+                                        <span>%</span>
+                                    </div>
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <Label>Delivery Charges</Label>
-                                    <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} className="max-w-24 text-right" />
+                                    <Label className="text-muted-foreground">Delivery</Label>
+                                    <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} className="w-24 h-8 text-right" />
                                 </div>
                                 <div className="flex items-center justify-between">
-                                    <Label>Discount</Label>
-                                    <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="max-w-24 text-right" />
+                                    <Label className="text-muted-foreground">Discount</Label>
+                                     <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="w-24 h-8 text-right" />
                                 </div>
                                 <Separator />
                                 <div className="flex items-center justify-between font-bold text-lg">
@@ -353,8 +353,8 @@ export default function NewInvoicePage() {
                                 </div>
                                 <Separator />
                                 <div className="flex items-center justify-between">
-                                    <Label>Paid Amount</Label>
-                                    <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} className="max-w-24 text-right" />
+                                    <Label className="text-muted-foreground">Paid Amount</Label>
+                                    <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} className="w-24 h-8 text-right" />
                                 </div>
                                  <div className="flex items-center justify-between font-semibold">
                                     <Label>Due Amount</Label>

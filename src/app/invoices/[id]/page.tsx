@@ -24,7 +24,12 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
     Paid: 'default',
     Pending: 'secondary',
     Overdue: 'destructive',
-  }[status] as 'default' | 'secondary' | 'destructive';
+    Partial: 'outline',
+  }[status] as 'default' | 'secondary' | 'destructive' | 'outline';
+  
+  if (status === 'Partial') {
+    return <Badge variant={variant} className="capitalize border-accent text-accent">{status.toLowerCase()}</Badge>;
+  }
 
   return <Badge variant={variant} className="capitalize">{status.toLowerCase()}</Badge>;
 }

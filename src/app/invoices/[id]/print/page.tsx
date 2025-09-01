@@ -10,12 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Separator } from '@/components/ui/separator';
 import { Icons } from '@/components/icons';
+import { cn } from '@/lib/utils';
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
     const variant = {
         Paid: 'bg-green-100 text-green-800 border-green-200',
         Pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
         Overdue: 'bg-red-100 text-red-800 border-red-200',
+        Partial: 'bg-blue-100 text-blue-800 border-blue-200',
     }[status];
 
     return <Badge className={cn('capitalize text-sm font-medium', variant)}>{status.toLowerCase()}</Badge>;

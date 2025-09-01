@@ -21,7 +21,7 @@ export type Invoice = {
   };
   issueDate: string;
   dueDate: string;
-  status: 'Paid' | 'Pending' | 'Overdue';
+  status: 'Paid' | 'Pending' | 'Overdue' | 'Partial';
   items: InvoiceItem[];
   subtotal: number;
   gstPercentage?: number;
@@ -171,10 +171,18 @@ function createFirestoreDAO<T extends {id: string}>(collectionName: string) {
 
 export const customersDAO = createFirestoreDAO<Customer>('customers');
 
+const getInvoiceStatus = (dueAmount: number, paidAmount: number): Invoice['status'] => {
+    if (dueAmount <= 0) return 'Paid';
+    if (paidAmount > 0 && dueAmount > 0) return 'Partial';
+    // Overdue logic can be added here based on dueDate
+    return 'Pending';
+}
+
+
 const createInvoicesDAO = () => {
     const baseDAO = createFirestoreDAO<Invoice>('invoices');
 
-    const addInvoice = async (invoiceData: Omit<Invoice, 'id'>) => {
+    const addInvoice = async (invoiceData: Omit<Invoice, 'id' | 'status'> & { status?: Invoice['status'] }) => {
         return runTransaction(db, async (transaction) => {
             // --- READS FIRST ---
             const customerRef = doc(db, 'customers', invoiceData.customer.id);
@@ -198,7 +206,13 @@ const createInvoicesDAO = () => {
 
             // --- WRITES AFTER ---
             const newInvoiceRef = doc(collection(db, 'invoices'));
-            transaction.set(newInvoiceRef, invoiceData);
+            
+            const finalInvoiceData = {
+                ...invoiceData,
+                status: getInvoiceStatus(invoiceData.dueAmount || 0, invoiceData.paidAmount || 0)
+            }
+            
+            transaction.set(newInvoiceRef, finalInvoiceData);
 
             const newTotalInvoiced = (customerData.totalInvoiced || 0) + invoiceData.amount;
             const newTotalPaid = (customerData.totalPaid || 0) + (invoiceData.paidAmount || 0);
@@ -226,7 +240,7 @@ const createInvoicesDAO = () => {
                 }
             }
 
-            return { ...invoiceData, id: newInvoiceRef.id };
+            return { ...finalInvoiceData, id: newInvoiceRef.id };
         });
     };
 
@@ -243,6 +257,13 @@ const createInvoicesDAO = () => {
             const customerData = customerDoc.data();
             
             const newInvoiceData = { ...currentInvoiceDoc.data(), ...updatedData } as Invoice;
+
+             // Recalculate status
+            if (updatedData.dueAmount !== undefined || updatedData.paidAmount !== undefined) {
+                newInvoiceData.status = getInvoiceStatus(newInvoiceData.dueAmount!, newInvoiceData.paidAmount!);
+            }
+
+
             const allProductIds = new Set([...originalInvoice.items.map(i => i.productId), ...newInvoiceData.items.map(i => i.productId)]);
             const productDocs = new Map<string, any>();
             for (const productId of allProductIds) {
@@ -255,7 +276,7 @@ const createInvoicesDAO = () => {
             }
 
             // --- WRITES AFTER ---
-            transaction.update(invoiceRef, updatedData as any);
+            transaction.update(invoiceRef, newInvoiceData as any);
 
             const amountDifference = newInvoiceData.amount - originalInvoice.amount;
             const paidAmountDifference = (newInvoiceData.paidAmount || 0) - (originalInvoice.paidAmount || 0);
