@@ -10,14 +10,15 @@ import Barcode from 'react-barcode';
 
 function BarcodeTag({ product }: { product: Product }) {
   return (
-    <div className="p-4 border border-dashed border-gray-400 break-inside-avoid-page flex flex-col items-center justify-center text-center">
-      <p className="font-semibold text-lg">{product.name}</p>
-      <p className="text-sm mb-2">SKU: {product.sku}</p>
+    <div className="p-2 border border-black break-inside-avoid-page flex flex-col items-center justify-center text-center w-[192px]">
+      <p className="font-bold text-sm truncate w-full">{product.name}</p>
+      <p className="text-xs mb-1">SKU: {product.sku}</p>
       <Barcode 
         value={product.sku} 
-        height={50}
-        width={2}
-        fontSize={16}
+        height={40}
+        width={1.5}
+        fontSize={12}
+        margin={2}
       />
     </div>
   );
@@ -53,7 +54,7 @@ export default function PrintBarcodeTagsPage() {
 
   return (
     <PrintLayout>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="flex flex-col items-center gap-4">
             {selectedProducts.map((product) => (
                 <BarcodeTag key={product.id} product={product} />
             ))}
