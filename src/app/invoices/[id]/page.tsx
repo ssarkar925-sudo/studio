@@ -40,6 +40,25 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
   return <Badge variant={variant} className="capitalize">{status.toLowerCase()}</Badge>;
 }
 
+function WhatsAppIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+    </svg>
+  );
+}
+
 export default function InvoiceDetailsPage() {
   const router = useRouter();
   const params = useParams();
@@ -57,8 +76,19 @@ export default function InvoiceDetailsPage() {
   }, [params.id, invoices, isLoading, invoiceId]);
 
   const handlePrint = (format: 'a4' | 'receipt') => {
-    const printWindow = window.open(`/invoices/${invoiceId}/print/${format}`, '_blank');
+    const url = `/invoices/${invoiceId}/print${format === 'receipt' ? '/receipt' : ''}`;
+    const printWindow = window.open(url, '_blank');
     printWindow?.focus();
+  };
+
+  const handleShareOnWhatsApp = () => {
+    if (!invoice) return;
+    const message = `Hello ${invoice.customer.name},\n\nHere are the details for your invoice ${invoice.invoiceNumber}:\n\nTotal Amount: ₹${invoice.amount.toFixed(2)}\nAmount Due: ₹${(invoice.dueAmount || 0).toFixed(2)}\n\nThank you!`;
+    const encodedMessage = encodeURIComponent(message);
+    // Note: This does not include the customer's phone number to protect privacy. 
+    // The user will have to select the contact in WhatsApp.
+    const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    window.open(whatsappUrl, '_blank');
   };
 
   if (isLoading || !invoice) {
@@ -86,6 +116,10 @@ export default function InvoiceDetailsPage() {
                 <Button variant="outline" onClick={() => router.push(`/invoices/${invoiceId}/edit`)}>
                     <Pencil className="mr-2" />
                     Edit
+                </Button>
+                 <Button variant="outline" onClick={handleShareOnWhatsApp}>
+                    <WhatsAppIcon className="mr-2" />
+                    Share
                 </Button>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
