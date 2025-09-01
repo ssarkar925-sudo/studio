@@ -64,7 +64,10 @@ export default function LoginPage() {
                         <Link
                             href="#"
                             className="text-sm font-medium text-primary hover:underline"
-                            onClick={() => toast({ title: 'Forgot Password', description: 'This feature is not yet implemented.'})}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                toast({ title: 'Forgot Password', description: 'This feature is not yet implemented.'});
+                            }}
                         >
                             Forgot password?
                         </Link>
@@ -85,7 +88,10 @@ export default function LoginPage() {
                     <Link 
                         href="#" 
                         className="font-medium text-primary hover:underline"
-                        onClick={() => toast({ title: 'Sign Up', description: 'This feature is not yet implemented.'})}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            toast({ title: 'Sign Up', description: 'This feature is not yet implemented.'});
+                        }}
                     >
                         Sign up
                     </Link>
