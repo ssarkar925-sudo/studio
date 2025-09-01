@@ -30,10 +30,10 @@ export function InventoryTabs({ activeTab, products, purchases }: InventoryTabsP
                 <TabsTrigger value="purchases">Purchases</TabsTrigger>
             </TabsList>
             <TabsContent value="stock">
-                <InventoryClient products={products} />
+                <InventoryClient activeTab="stock" products={products} />
             </TabsContent>
             <TabsContent value="purchases">
-                <InventoryClient purchases={purchases} />
+                <InventoryClient activeTab="purchases" purchases={purchases} />
             </TabsContent>
       </Tabs>
     )

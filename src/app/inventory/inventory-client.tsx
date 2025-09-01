@@ -23,16 +23,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { useState, useMemo, useEffect } from 'react';
 
 
 // This component will handle both tabs logic now
-export function InventoryClient({ products: initialProducts, purchases: initialPurchases }: { products?: Product[], purchases?: Purchase[] }) {
-    const pathname = usePathname();
-    const isPurchaseTab = pathname.includes('purchases') || (typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('tab') === 'purchases');
-
-    if (isPurchaseTab) {
+export function InventoryClient({ activeTab, products: initialProducts, purchases: initialPurchases }: { activeTab: string, products?: Product[], purchases?: Purchase[] }) {
+    if (activeTab === 'purchases') {
         return <PurchaseHistory initialPurchases={initialPurchases || []} />;
     }
     return <StockHistory initialProducts={initialProducts || []} />;
@@ -450,4 +447,3 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
     </Card>
   );
 }
-
