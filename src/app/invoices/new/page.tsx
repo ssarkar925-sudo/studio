@@ -22,10 +22,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { customersDAO, invoicesDAO, productsDAO, type Product, type Invoice } from '@/lib/data';
+import { customersDAO, invoicesDAO, productsDAO, type Product, type Invoice, type Customer } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon, ScanLine } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon, ScanLine, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
@@ -33,6 +33,16 @@ import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { TagScanner } from '@/components/tag-scanner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog"
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -55,6 +65,7 @@ export default function NewInvoicePage() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
+  const [isNewCustomerDialogOpen, setIsNewCustomerDialogOpen] = useState(false);
 
   // Summary state
   const [gstPercentage, setGstPercentage] = useState(0);
@@ -140,6 +151,44 @@ export default function NewInvoicePage() {
   }, [items, gstPercentage, deliveryCharges, discount, paidAmount]);
   
   const { subtotal, gstAmount, total, dueAmount } = calculateSummary();
+
+  const handleNewCustomerSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('name') as string;
+
+    if (!name) {
+      toast({
+        variant: 'destructive',
+        title: 'Name is required',
+      });
+      return;
+    }
+
+    try {
+      const newCustomer = await customersDAO.add({
+        name: name,
+        email: formData.get('email') as string,
+        phone: formData.get('phone') as string,
+        address: formData.get('address') as string,
+        totalInvoiced: 0,
+        totalPaid: 0,
+        invoices: 0,
+      });
+
+      toast({
+        title: 'Customer Created',
+        description: `Successfully created ${newCustomer.name}.`,
+      });
+      setCustomerId(newCustomer.id);
+      setIsNewCustomerDialogOpen(false);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to create customer',
+      });
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -228,16 +277,59 @@ export default function NewInvoicePage() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="grid gap-3">
                                 <Label htmlFor="customer">Customer</Label>
-                                <Select name="customer" required onValueChange={setCustomerId} value={customerId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a customer" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {customers.map((customer) => (
-                                    <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                                </Select>
+                                <div className="flex gap-2">
+                                  <Select name="customer" required onValueChange={setCustomerId} value={customerId}>
+                                      <SelectTrigger>
+                                          <SelectValue placeholder="Select a customer" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                          {customers.map((customer) => (
+                                          <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                  </Select>
+                                  <Dialog open={isNewCustomerDialogOpen} onOpenChange={setIsNewCustomerDialogOpen}>
+                                      <DialogTrigger asChild>
+                                          <Button variant="outline" size="icon">
+                                              <UserPlus />
+                                          </Button>
+                                      </DialogTrigger>
+                                      <DialogContent>
+                                          <form onSubmit={handleNewCustomerSubmit}>
+                                              <DialogHeader>
+                                                  <DialogTitle>Add New Customer</DialogTitle>
+                                                  <DialogDescription>
+                                                      Create a new customer profile. This will be saved to your contacts.
+                                                  </DialogDescription>
+                                              </DialogHeader>
+                                              <div className="grid gap-4 py-4">
+                                                  <div className="grid gap-2">
+                                                      <Label htmlFor="name">Name</Label>
+                                                      <Input id="name" name="name" placeholder="John Doe" required />
+                                                  </div>
+                                                  <div className="grid gap-2">
+                                                      <Label htmlFor="email">Email</Label>
+                                                      <Input id="email" name="email" type="email" placeholder="john.doe@example.com" />
+                                                  </div>
+                                                  <div className="grid gap-2">
+                                                      <Label htmlFor="phone">Phone</Label>
+                                                      <Input id="phone" name="phone" type="tel" placeholder="+91 98765 43210" />
+                                                  </div>
+                                                  <div className="grid gap-2">
+                                                      <Label htmlFor="address">Address</Label>
+                                                      <Textarea id="address" name="address" placeholder="Enter customer's address" />
+                                                  </div>
+                                              </div>
+                                              <DialogFooter>
+                                                  <DialogClose asChild>
+                                                    <Button type="button" variant="outline">Cancel</Button>
+                                                  </DialogClose>
+                                                  <Button type="submit">Save Customer</Button>
+                                              </DialogFooter>
+                                          </form>
+                                      </DialogContent>
+                                  </Dialog>
+                                </div>
                             </div>
                         </div>
                     </div>
