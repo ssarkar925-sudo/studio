@@ -10,7 +10,7 @@ import { MoreHorizontal, PlusCircle, Printer, Barcode, Trash2 } from 'lucide-rea
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { format, subDays, parse } from 'date-fns';
+import { format, subDays, parse, differenceInDays } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
@@ -43,7 +43,42 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   
   useEffect(() => {
-    setProducts(initialProducts);
+    // Filter out items that have been out of stock for more than 30 days
+    const now = new Date();
+    const cleanupPromises: Promise<void>[] = [];
+
+    initialProducts.forEach(product => {
+      if (product.outOfStockDate) {
+        try {
+          const outOfStockDate = parse(product.outOfStockDate, 'PPP', new Date());
+          if (differenceInDays(now, outOfStockDate) > 30) {
+            cleanupPromises.push(productsDAO.remove(product.id));
+          }
+        } catch (e) {
+            console.error("Error parsing outOfStockDate", product.outOfStockDate);
+        }
+      }
+    });
+
+    if (cleanupPromises.length > 0) {
+      Promise.all(cleanupPromises).then(() => {
+        toast({
+          title: 'Inventory Cleaned',
+          description: `${cleanupPromises.length} old out-of-stock item(s) automatically removed.`
+        });
+        // The real-time listener will update the UI, so no need to refresh state here
+      }).catch(err => {
+        console.error("Failed to cleanup old stock", err);
+        toast({
+            variant: 'destructive',
+            title: 'Cleanup Failed',
+            description: 'Could not remove old out-of-stock items.',
+        });
+      });
+    }
+
+    // Only show items that are in stock
+    setProducts(initialProducts.filter(p => p.stock > 0));
   }, [initialProducts, toast]);
 
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
@@ -64,40 +99,6 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
     }
   };
   
-  const handleDeleteSelected = async () => {
-    const deletionPromises = selectedProducts.map(id => productsDAO.remove(id));
-    try {
-        await Promise.all(deletionPromises);
-        toast({
-            title: 'Items Deleted',
-            description: `${selectedProducts.length} item(s) have been deleted.`,
-        });
-        setSelectedProducts([]);
-    } catch (error) {
-        toast({
-            variant: 'destructive',
-            title: 'Deletion Failed',
-            description: 'Could not delete selected items.',
-        });
-    }
-  };
-
-  const handleDelete = async (productId: string, productName: string) => {
-      try {
-        await productsDAO.remove(productId);
-        toast({
-            title: 'Item Deleted',
-            description: `Successfully deleted item: ${productName}.`,
-        });
-      } catch (error) {
-           toast({
-            variant: 'destructive',
-            title: 'Deletion Failed',
-            description: 'Could not delete item.',
-        });
-      }
-  };
-
   const handlePrintTags = () => {
     const query = new URLSearchParams({ ids: selectedProducts.join(',') });
     const url = `/inventory/tags/print?${query.toString()}`;
@@ -123,28 +124,11 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
           <div className='flex items-center gap-4'>
             <div>
               <CardTitle>Stock History</CardTitle>
-              <CardDescription>Manage your inventory, services, and their prices.</CardDescription>
+              <CardDescription>Manage your inventory, services, and their prices. Out-of-stock items are hidden automatically.</CardDescription>
             </div>
              {selectedProducts.length > 0 && (
               <div className='flex gap-2'>
                 <Button variant="outline" size="sm" onClick={handlePrintTags}><Barcode /> Print Tags ({selectedProducts.length})</Button>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedProducts.length})</Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete {selectedProducts.length} item(s).
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
               </div>
             )}
           </div>
@@ -216,23 +200,8 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                           <DropdownMenuItem onSelect={() => handleAction('View', product.id, product.name)}>View</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleAction('Edit', product.id, product.name)}>Edit</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleAction('Print', product.id, product.name)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                          </AlertDialogTrigger>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                       <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will permanently delete item "{product.name}".
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={() => handleDelete(product.id, product.name)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
                     </AlertDialog>
                   </TableCell>
                 </TableRow>

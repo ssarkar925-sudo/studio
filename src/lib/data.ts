@@ -1,6 +1,6 @@
 
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc, FieldValue, serverTimestamp } from 'firebase/firestore';
 import { format } from 'date-fns';
 
 export type InvoiceItem = {
@@ -45,6 +45,7 @@ export type Product = {
   stock: number;
   sku: string;
   batchCode: string;
+  outOfStockDate?: string;
 };
 
 export type Vendor = {
@@ -205,6 +206,9 @@ const createInvoicesDAO = () => {
                     const newStock = productDoc.data().stock - item.quantity;
                     
                     const productUpdate: Partial<Product> = { stock: newStock };
+                    if (newStock === 0) {
+                        productUpdate.outOfStockDate = format(new Date(), 'PPP');
+                    }
                     transaction.update(productRef, productUpdate);
                 }
             }
@@ -267,7 +271,12 @@ const createInvoicesDAO = () => {
                          }
                         const newStock = currentStock + stockChange;
                         const productUpdate: Partial<Product> = { stock: newStock };
-                        transaction.update(productRef, productUpdate);
+                        if (newStock === 0) {
+                           productUpdate.outOfStockDate = format(new Date(), 'PPP');
+                        } else if (newStock > 0 && productDoc.data().outOfStockDate) {
+                           productUpdate.outOfStockDate = undefined; // Or delete the field
+                        }
+                        transaction.update(productRef, productUpdate as any);
                     }
                 }
             }
@@ -315,9 +324,13 @@ const createInvoicesDAO = () => {
                 const productDoc = productDocs.get(item.productId);
                 if(productDoc) {
                     const productRef = doc(db, 'products', item.productId);
-                    const newStock = productDoc.data().stock + item.quantity;
+                    const currentStock = productDoc.data().stock;
+                    const newStock = currentStock + item.quantity;
                      const productUpdate: Partial<Product> = { stock: newStock };
-                    transaction.update(productRef, productUpdate);
+                     if (currentStock === 0 && newStock > 0) {
+                        productUpdate.outOfStockDate = undefined; // Or delete the field
+                     }
+                    transaction.update(productRef, productUpdate as any);
                 }
             }
         });
