@@ -42,6 +42,7 @@ const menuItems = [
   { href: '/contacts', label: 'Contacts', icon: Contact },
   { href: '/inventory', label: 'Inventory', icon: Package },
   { href: '/reports', label: 'Reports', icon: BarChart },
+  { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
