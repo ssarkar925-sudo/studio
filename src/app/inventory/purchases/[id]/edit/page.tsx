@@ -56,7 +56,6 @@ export default function EditPurchasePage() {
 
     const foundPurchase = purchases.find(p => p.id === purchaseId);
     if (foundPurchase) {
-      if (purchase) return; // Already loaded
       if (foundPurchase.status !== 'Pending') {
         toast({
             variant: 'destructive',
@@ -82,7 +81,7 @@ export default function EditPurchasePage() {
         });
         router.push('/inventory?tab=purchases');
     }
-  }, [purchaseId, purchases, router, toast, isLoading, purchase]);
+  }, [purchaseId, purchases, router, toast, isLoading]);
 
 
   const handleAddItem = () => {
@@ -168,6 +167,7 @@ export default function EditPurchasePage() {
       });
       router.push('/inventory?tab=purchases');
     } catch (error) {
+       console.error("Update failed", error);
        toast({
           variant: 'destructive',
           title: 'Update Failed',
@@ -332,7 +332,7 @@ export default function EditPurchasePage() {
                     </div>
                 </CardContent>
                  <CardFooter className="justify-end gap-2">
-                    <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                    <Button variant="outline" type="button" onClick={() => router.push('/inventory?tab=purchases')}>Cancel</Button>
                     <Button type="submit">Update Purchase</Button>
                 </CardFooter>
             </Card>

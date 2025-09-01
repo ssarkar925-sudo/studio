@@ -54,6 +54,7 @@ export default function NewVendorPage() {
       });
       router.push('/vendors');
     } catch (error) {
+       console.error("Creation failed:", error);
        toast({
         variant: 'destructive',
         title: 'Creation Failed',
@@ -101,7 +102,7 @@ export default function NewVendorPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/vendors')}>Cancel</Button>
                 <Button type="submit">Save Vendor</Button>
             </CardFooter>
           </Card>

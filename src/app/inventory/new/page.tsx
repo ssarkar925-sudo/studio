@@ -67,6 +67,7 @@ export default function NewInventoryItemPage() {
       });
       router.push('/inventory?tab=purchases');
     } catch (error) {
+       console.error("Creation failed", error);
        toast({
         variant: 'destructive',
         title: 'Creation Failed',
@@ -108,7 +109,7 @@ export default function NewInventoryItemPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/inventory')}>Cancel</Button>
                 <Button type="submit">Create Purchase Entry</Button>
             </CardFooter>
           </Card>

@@ -26,7 +26,7 @@ export default function EditCustomerPage() {
   const params = useParams();
   const customerId = Array.isArray(params.id) ? params.id[0] : params.id;
   
-  const { data: customers, isLoading } = useFirestoreData(customersDAO);
+  const { data: customers, isLoading, setData: setCustomers } = useFirestoreData(customersDAO);
   const [customer, setCustomer] = useState<Customer | null>(null);
 
   // State for form fields
@@ -40,13 +40,11 @@ export default function EditCustomerPage() {
     if (!isLoading && customers.length > 0) {
         const foundCustomer = customers.find((c) => c.id === customerId);
         if (foundCustomer) {
-            if (!customer) { // Only set state on initial load
-                setCustomer(foundCustomer);
-                setName(foundCustomer.name);
-                setEmail(foundCustomer.email);
-                setPhone(foundCustomer.phone || '');
-                setAddress(foundCustomer.address || '');
-            }
+            setCustomer(foundCustomer);
+            setName(foundCustomer.name);
+            setEmail(foundCustomer.email);
+            setPhone(foundCustomer.phone || '');
+            setAddress(foundCustomer.address || '');
         } else {
             toast({
                 variant: 'destructive',
@@ -55,7 +53,7 @@ export default function EditCustomerPage() {
             router.push('/customers');
         }
     }
-  }, [customerId, customers, isLoading, router, toast, customer]);
+  }, [customerId, customers, isLoading, router, toast]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -84,6 +82,7 @@ export default function EditCustomerPage() {
       });
       router.push('/customers');
     } catch (error) {
+      console.error("Update failed", error);
       toast({
         variant: 'destructive',
         title: 'Update Failed',
@@ -137,7 +136,7 @@ export default function EditCustomerPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/customers')}>Cancel</Button>
                 <Button type="submit">Save Changes</Button>
             </CardFooter>
           </Card>

@@ -293,7 +293,7 @@ export default function NewInvoicePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="justify-end gap-2">
-                        <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                        <Button variant="outline" type="button" onClick={() => router.push('/invoices')}>Cancel</Button>
                         <Button type="submit">Save Invoice</Button>
                     </CardFooter>
                 </Card>

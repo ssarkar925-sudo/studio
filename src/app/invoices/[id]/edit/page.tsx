@@ -47,9 +47,9 @@ export default function EditInvoicePage() {
   const params = useParams();
   const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
   
-  const { data: customers } = useFirestoreData(customersDAO);
-  const { data: products } = useFirestoreData(productsDAO);
-  const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
+  const { data: customers, isLoading: customersLoading } = useFirestoreData(customersDAO);
+  const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
+  const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
 
@@ -61,21 +61,21 @@ export default function EditInvoicePage() {
   const [customerId, setCustomerId] = useState<string>('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
   
+  const isLoading = customersLoading || productsLoading || invoicesLoading;
+
   useEffect(() => {
     if (!isLoading && invoices.length > 0) {
         const foundInvoice = invoices.find((i) => i.id === invoiceId);
         if (foundInvoice) {
-            if (!invoice) { // Only set state on initial load
-                setInvoice(foundInvoice);
-                setInvoiceNumber(foundInvoice.invoiceNumber);
-                setIssueDate(parse(foundInvoice.issueDate, 'PPP', new Date()));
-                if(foundInvoice.dueDate && foundInvoice.dueDate !== 'N/A') {
-                    setDueDate(parse(foundInvoice.dueDate, 'PPP', new Date()));
-                }
-                setStatus(foundInvoice.status);
-                setCustomerId(foundInvoice.customer.id);
-                setItems(foundInvoice.items.map(item => ({...item, id: `item-${Math.random()}`})));
+            setInvoice(foundInvoice);
+            setInvoiceNumber(foundInvoice.invoiceNumber);
+            setIssueDate(parse(foundInvoice.issueDate, 'PPP', new Date()));
+            if(foundInvoice.dueDate && foundInvoice.dueDate !== 'N/A') {
+                setDueDate(parse(foundInvoice.dueDate, 'PPP', new Date()));
             }
+            setStatus(foundInvoice.status);
+            setCustomerId(foundInvoice.customer.id);
+            setItems(foundInvoice.items.map(item => ({...item, id: `item-${Math.random()}`})));
         } else {
              toast({
                 variant: 'destructive',
@@ -84,7 +84,7 @@ export default function EditInvoicePage() {
             router.push('/invoices');
         }
     }
-  }, [invoiceId, invoices, isLoading, router, toast, invoice]);
+  }, [invoiceId, invoices, isLoading, router, toast]);
 
   const handleAddItem = () => {
     setItems([
@@ -358,7 +358,7 @@ export default function EditInvoicePage() {
                         </div>
                     </CardContent>
                     <CardFooter className="justify-end gap-2">
-                        <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                        <Button variant="outline" type="button" onClick={() => router.push('/invoices')}>Cancel</Button>
                         <Button type="submit">Save Changes</Button>
                     </CardFooter>
                 </Card>

@@ -56,6 +56,7 @@ export default function NewCustomerPage() {
       });
       router.push('/customers');
     } catch (error) {
+      console.error("Creation failed", error);
       toast({
         variant: 'destructive',
         title: 'Creation Failed',
@@ -99,7 +100,7 @@ export default function NewCustomerPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/customers')}>Cancel</Button>
                 <Button type="submit">Save Customer</Button>
             </CardFooter>
           </Card>

@@ -219,7 +219,7 @@ export default function NewPurchasePage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
-                            <Select name="vendor" onValueChange={setVendorId} required value={vendorId}>
+                            <Select name="vendor" required onValueChange={setVendorId} value={vendorId}>
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a vendor" />
                                 </SelectTrigger>
@@ -308,7 +308,7 @@ export default function NewPurchasePage() {
                             </div>
                              <div className="grid gap-3 col-span-2">
                                {index === 0 && <Label>Purchase Price</Label>}
-                                <Input type="number" value={item.purchasePrice} onChange={(e) => handleItemChange(index, 'purchasePrice', parseFloat(e.target.value) || 0)} placeholder="0.00" />
+                                <Input type="number" step="0.01" value={item.purchasePrice} onChange={(e) => handleItemChange(index, 'purchasePrice', parseFloat(e.target.value) || 0)} placeholder="0.00" />
                             </div>
                              <div className="grid gap-3 col-span-2">
                                {index === 0 && <Label>Total</Label>}
@@ -358,7 +358,7 @@ export default function NewPurchasePage() {
                     </div>
                 </CardContent>
                  <CardFooter className="justify-end gap-2">
-                    <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                    <Button variant="outline" type="button" onClick={() => router.push('/inventory?tab=purchases')}>Cancel</Button>
                     <Button type="submit">Save Purchase</Button>
                 </CardFooter>
             </Card>

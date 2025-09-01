@@ -40,14 +40,12 @@ export default function EditVendorPage() {
     if (!isLoading && vendors.length > 0) {
         const foundVendor = vendors.find((v) => v.id === vendorId);
         if (foundVendor) {
-            if(!vendor) {
-                setVendor(foundVendor);
-                setVendorName(foundVendor.vendorName);
-                setContactPerson(foundVendor.contactPerson || '');
-                setContactNumber(foundVendor.contactNumber || '');
-                setEmail(foundVendor.email || '');
-                setGstn(foundVendor.gstn || '');
-            }
+            setVendor(foundVendor);
+            setVendorName(foundVendor.vendorName);
+            setContactPerson(foundVendor.contactPerson || '');
+            setContactNumber(foundVendor.contactNumber || '');
+            setEmail(foundVendor.email || '');
+            setGstn(foundVendor.gstn || '');
         } else {
             toast({
                 variant: 'destructive',
@@ -56,7 +54,7 @@ export default function EditVendorPage() {
             router.push('/vendors');
         }
     }
-  }, [vendorId, vendors, isLoading, router, toast, vendor]);
+  }, [vendorId, vendors, isLoading, router, toast]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -87,6 +85,7 @@ export default function EditVendorPage() {
       });
       router.push('/vendors');
     } catch (error) {
+      console.error("Update failed:", error);
       toast({
         variant: 'destructive',
         title: 'Update Failed',
@@ -144,7 +143,7 @@ export default function EditVendorPage() {
               </div>
             </CardContent>
             <CardFooter className="justify-end gap-2">
-                <Button variant="outline" type="button" onClick={() => router.back()}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => router.push('/vendors')}>Cancel</Button>
                 <Button type="submit">Save Changes</Button>
             </CardFooter>
           </Card>
