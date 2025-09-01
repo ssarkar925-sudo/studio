@@ -3,7 +3,7 @@
 
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { invoicesDAO, Invoice, businessProfileDAO, customersDAO, vendorsDAO, purchasesDAO } from '@/lib/data';
+import { invoicesDAO, Invoice, businessProfileDAO, customersDAO, vendorsDAO, purchasesDAO, Purchase } from '@/lib/data';
 import { DollarSign, FileText, Clock, Bot, Send, Users, Store, Truck } from 'lucide-react';
 import { DashboardClient } from '@/app/dashboard-client';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
@@ -52,6 +52,51 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
                 <div className="ml-auto text-right font-medium">
                     <p>₹{invoice.amount.toFixed(2)}</p>
                     <InvoiceStatusBadge status={invoice.status} />
+                </div>
+            </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function UpcomingDeliveries({ purchases }: { purchases: Purchase[] }) {
+  const pendingPurchases = useMemo(() => {
+    return purchases
+        .filter(p => p.status === 'Pending')
+        .sort((a,b) => {
+            try {
+                return parse(a.orderDate, 'dd/MM/yyyy', new Date()).getTime() - parse(b.orderDate, 'dd/MM/yyyy', new Date()).getTime()
+            } catch {
+                return 0;
+            }
+        });
+  }, [purchases]);
+  
+  if (pendingPurchases.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        No upcoming deliveries.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {pendingPurchases.slice(0, 5).map((purchase) => (
+        <Link href={`/inventory/purchases/${purchase.id}`} key={purchase.id} className="block p-2 -mx-2 rounded-md hover:bg-muted">
+            <div className="flex items-center">
+                <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                    {purchase.vendorName}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                    Order Date: {purchase.orderDate}
+                    </p>
+                </div>
+                <div className="ml-auto text-right font-medium">
+                    <p>₹{purchase.totalAmount.toFixed(2)}</p>
+                    <Badge variant='secondary'>Pending</Badge>
                 </div>
             </div>
         </Link>
@@ -386,14 +431,24 @@ export default function DashboardPage() {
       </div>
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
         <DashboardClient invoices={invoices} />
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Recent Invoices</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RecentInvoices invoices={invoices} />
-          </CardContent>
-        </Card>
+        <div className="lg:col-span-2 grid grid-cols-1 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Invoices</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <RecentInvoices invoices={invoices} />
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Upcoming Deliveries</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UpcomingDeliveries purchases={purchases} />
+              </CardContent>
+            </Card>
+        </div>
         <AiAnalyzer invoices={invoices} isLoading={isLoading} />
       </div>
     </AppLayout>
