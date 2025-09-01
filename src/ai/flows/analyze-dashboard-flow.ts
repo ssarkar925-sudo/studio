@@ -15,18 +15,24 @@ const MonthlyProfitSchema = z.object({
   profit: z.number().describe('The total profit for that month.'),
 });
 
+const ChatMessageSchema = z.object({
+  role: z.enum(['user', 'model']),
+  content: z.string(),
+})
+export type ChatMessage = z.infer<typeof ChatMessageSchema>;
+
 const AnalyzeDashboardInputSchema = z.object({
   totalRevenue: z.number().describe('The total revenue in the selected period.'),
   outstandingAmount: z.number().describe('The total outstanding amount from pending invoices.'),
   overdueInvoices: z.number().describe('The number of overdue invoices.'),
   monthlyProfitData: z.array(MonthlyProfitSchema).describe('An array of profit data for recent months.'),
+  query: z.string().optional().describe('The user\'s follow-up question.'),
+  history: z.array(ChatMessageSchema).optional().describe('The previous conversation history.'),
 });
 export type AnalyzeDashboardInput = z.infer<typeof AnalyzeDashboardInputSchema>;
 
 const AnalyzeDashboardOutputSchema = z.object({
-  summary: z.string().describe('A concise, one or two-sentence summary of the overall financial health.'),
-  insights: z.array(z.string()).describe('A list of 2-3 key insights or trends discovered from the data.'),
-  suggestions: z.array(z.string()).describe('A list of 2-3 actionable suggestions for the user.'),
+  response: z.string().describe('A concise, one or two-sentence summary of the overall financial health.'),
 });
 export type AnalyzeDashboardOutput = z.infer<typeof AnalyzeDashboardOutputSchema>;
 
@@ -53,10 +59,29 @@ Analyze the following financial data:
   - {{name}}: {{profit}}
 {{/each}}
 
+{{#if query}}
+Based on this data and the conversation history, answer the user's question.
+{{else}}
 Based on this data, provide:
 1. A brief, encouraging summary of the business's current state.
 2. 2-3 bullet-point insights that highlight important trends or numbers.
-3. 2-3 actionable suggestions to help the user improve their business finances (e.g., follow up on overdue invoices, analyze top-selling products).`,
+3. 2-3 actionable suggestions to help the user improve their business finances (e.g., follow up on overdue invoices, analyze top-selling products).
+Your response should be formatted as markdown.
+{{/if}}
+
+{{#if history}}
+Conversation History:
+{{#each history}}
+  - {{role}}: {{content}}
+{{/each}}
+{{/if}}
+
+{{#if query}}
+User Question: {{{query}}}
+{{/if}}
+
+Your response:
+`,
 });
 
 const analyzeDashboardFlow = ai.defineFlow(
@@ -67,6 +92,6 @@ const analyzeDashboardFlow = ai.defineFlow(
   },
   async (input) => {
     const { output } = await prompt(input);
-    return output!;
+    return { response: output!.response };
   }
 );

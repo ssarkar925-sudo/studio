@@ -2,19 +2,28 @@
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { invoicesDAO, Invoice, businessProfileDAO } from '@/lib/data';
-import { DollarSign, FileText, Clock, Bot, Lightbulb, CheckCircle } from 'lucide-react';
+import { DollarSign, FileText, Clock, Bot, Lightbulb, CheckCircle, Send } from 'lucide-react';
 import { DashboardClient } from '@/app/dashboard-client';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
-import { useEffect, useState, useMemo } from 'react';
-import { analyzeDashboard, AnalyzeDashboardOutput } from '@/ai/flows/analyze-dashboard-flow';
+import { useEffect, useState, useMemo, useRef } from 'react';
+import { analyzeDashboard, AnalyzeDashboardOutput, ChatMessage } from '@/ai/flows/analyze-dashboard-flow';
 import { subMonths, format, parse, startOfMonth } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import Markdown from 'react-markdown';
+
 
 function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: boolean }) {
-  const [analysis, setAnalysis] = useState<AnalyzeDashboardOutput | null>(null);
+  const [history, setHistory] = useState<ChatMessage[]>([]);
+  const [query, setQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(true);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
 
    const chartData = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => {
@@ -53,78 +62,132 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
 
   const overdue = invoices.filter((i) => i.status === 'Overdue').length;
 
-
-  useEffect(() => {
-    if (!isLoading && invoices.length > 0) {
+  const initialAnalysis = async () => {
+     if (!isLoading && invoices.length > 0) {
       setIsAnalyzing(true);
-      analyzeDashboard({
-        totalRevenue: totalRevenue,
-        outstandingAmount: outstanding,
-        overdueInvoices: overdue,
-        monthlyProfitData: chartData,
-      }).then(result => {
-        setAnalysis(result);
-        setIsAnalyzing(false);
-      }).catch(err => {
+      setHistory([]);
+      try {
+        const result = await analyzeDashboard({
+            totalRevenue: totalRevenue,
+            outstandingAmount: outstanding,
+            overdueInvoices: overdue,
+            monthlyProfitData: chartData,
+        });
+        setHistory([{ role: 'model', content: result.response }]);
+      } catch (err) {
         console.error("AI analysis failed", err);
+        setHistory([{ role: 'model', content: 'Sorry, I was unable to provide an analysis. Please try again later.'}]);
+      } finally {
         setIsAnalyzing(false);
-      });
+      }
     } else if (!isLoading) {
         setIsAnalyzing(false);
     }
-  }, [invoices, isLoading, totalRevenue, outstanding, overdue, chartData]);
-
-  if (isAnalyzing) {
-     return (
-        <Card className="lg:col-span-2">
-            <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                    <Bot /> AI Analysis
-                </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-4/5" />
-                <div className="pt-4 space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-full" />
-                </div>
-            </CardContent>
-        </Card>
-     )
   }
 
-  if (!analysis) {
-    return null; // Don't show the card if there's no analysis
-  }
+  useEffect(() => {
+    initialAnalysis();
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [invoices, isLoading]);
+
+  useEffect(() => {
+    if(scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+            top: scrollAreaRef.current.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+  }, [history])
+
+  const handleQuerySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!query.trim() || isAnalyzing) return;
+
+    const newHistory: ChatMessage[] = [...history, { role: 'user', content: query }];
+    setHistory(newHistory);
+    setQuery('');
+    setIsAnalyzing(true);
+
+    try {
+        const result = await analyzeDashboard({
+            totalRevenue: totalRevenue,
+            outstandingAmount: outstanding,
+            overdueInvoices: overdue,
+            monthlyProfitData: chartData,
+            query: query,
+            history: newHistory,
+        });
+        setHistory([...newHistory, { role: 'model', content: result.response }]);
+    } catch (err) {
+        console.error("AI query failed", err);
+        setHistory([...newHistory, { role: 'model', content: 'Sorry, I encountered an error. Please try again.'}]);
+    } finally {
+        setIsAnalyzing(false);
+    }
+  };
+
 
   return (
-    <Card className="lg:col-span-2 bg-accent/20 border-accent/50">
+    <Card className="lg:col-span-2 flex flex-col h-[500px]">
         <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-accent-foreground/80">
+            <CardTitle className="flex items-center gap-2">
                 <Bot /> AI Analysis
             </CardTitle>
+            <CardDescription>Ask questions about your business finances.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-            <p className="text-sm text-foreground/90">{analysis.summary}</p>
-            
-            {analysis.insights.length > 0 && (
-                <div>
-                    <h4 className="font-semibold flex items-center gap-2 mb-2"><Lightbulb className="text-yellow-500" /> Insights</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-foreground/80">
-                        {analysis.insights.map((item, i) => <li key={i}>{item}</li>)}
-                    </ul>
-                </div>
-            )}
-            {analysis.suggestions.length > 0 && (
-                 <div>
-                    <h4 className="font-semibold flex items-center gap-2 mb-2"><CheckCircle className="text-green-500" /> Suggestions</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-foreground/80">
-                        {analysis.suggestions.map((item, i) => <li key={i}>{item}</li>)}
-                    </ul>
-                </div>
-            )}
+        <CardContent className='flex-grow overflow-hidden'>
+            <ScrollArea className="h-full" ref={scrollAreaRef}>
+                 <div className="space-y-4 pr-4">
+                     {history.map((message, index) => (
+                        <div key={index} className={`flex items-start gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
+                            {message.role === 'model' && (
+                                <Avatar className="h-8 w-8 border">
+                                    <AvatarFallback><Bot size={16}/></AvatarFallback>
+                                </Avatar>
+                            )}
+                             <div className={`rounded-lg p-3 max-w-sm text-sm ${message.role === 'model' ? 'bg-muted' : 'bg-primary text-primary-foreground'}`}>
+                                <Markdown>{message.content}</Markdown>
+                            </div>
+                              {message.role === 'user' && (
+                                <Avatar className="h-8 w-8 border">
+                                    <AvatarFallback>U</AvatarFallback>
+                                </Avatar>
+                            )}
+                        </div>
+                     ))}
+                      {isAnalyzing && history.length > 0 && (
+                        <div className="flex items-start gap-3">
+                           <Avatar className="h-8 w-8 border">
+                                <AvatarFallback><Bot size={16}/></AvatarFallback>
+                            </Avatar>
+                            <div className="rounded-lg p-3 bg-muted">
+                                <Skeleton className="h-4 w-4/5" />
+                            </div>
+                        </div>
+                     )}
+                     {history.length === 0 && isAnalyzing && (
+                        <div className="space-y-2">
+                           <Skeleton className="h-16 w-full" />
+                           <Skeleton className="h-24 w-4/5 ml-auto" />
+                           <Skeleton className="h-16 w-full" />
+                        </div>
+                     )}
+                 </div>
+            </ScrollArea>
         </CardContent>
+        <CardFooter>
+            <form onSubmit={handleQuerySubmit} className="flex w-full items-center space-x-2">
+                <Input 
+                    placeholder="e.g. Which month had the highest profit?" 
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    disabled={isAnalyzing}
+                />
+                <Button type="submit" disabled={!query.trim() || isAnalyzing}>
+                    <Send />
+                </Button>
+            </form>
+        </CardFooter>
     </Card>
   );
 }
@@ -217,3 +280,4 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
