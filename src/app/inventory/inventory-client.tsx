@@ -10,7 +10,7 @@ import { MoreHorizontal, PlusCircle, Printer, Barcode } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { format, subDays } from 'date-fns';
+import { format, subDays, parse } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
@@ -43,9 +43,39 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
   useEffect(() => {
-    // Filter out products with 0 stock
+    async function deleteOldOutOfStockItems() {
+        const oneMonthAgo = subDays(new Date(), 30);
+        const oldItemsToDelete = initialProducts.filter(p => {
+            if (p.stock > 0 || !p.outOfStockDate) {
+                return false;
+            }
+            try {
+                const outOfStockDate = parse(p.outOfStockDate, 'PPP', new Date());
+                return outOfStockDate < oneMonthAgo;
+            } catch (e) {
+                return false;
+            }
+        });
+
+        if (oldItemsToDelete.length > 0) {
+            const deletionPromises = oldItemsToDelete.map(p => productsDAO.remove(p.id));
+            try {
+                await Promise.all(deletionPromises);
+                toast({
+                    title: 'Auto-cleaned Inventory',
+                    description: `${oldItemsToDelete.length} item(s) out of stock for over a month were automatically deleted.`,
+                });
+            } catch (error) {
+                console.error("Failed to auto-delete old stock", error);
+            }
+        }
+    }
+
+    deleteOldOutOfStockItems();
+    // Only show items that are in stock
     setProducts(initialProducts.filter(p => p.stock > 0));
-  }, [initialProducts]);
+
+  }, [initialProducts, toast]);
   
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
 

@@ -1,6 +1,7 @@
 
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc } from 'firebase/firestore';
+import { format } from 'date-fns';
 
 export type InvoiceItem = {
     productId: string;
@@ -44,6 +45,7 @@ export type Product = {
   stock: number;
   sku: string;
   batchCode: string;
+  outOfStockDate?: string; // Date when stock became 0
 };
 
 export type Vendor = {
@@ -202,7 +204,12 @@ const createInvoicesDAO = () => {
                 if (productDoc) {
                     const productRef = doc(db, 'products', item.productId);
                     const newStock = productDoc.data().stock - item.quantity;
-                    transaction.update(productRef, { stock: newStock });
+                    
+                    const productUpdate: Partial<Product> = { stock: newStock };
+                    if (newStock <= 0) {
+                        productUpdate.outOfStockDate = format(new Date(), 'PPP');
+                    }
+                    transaction.update(productRef, productUpdate);
                 }
             }
 
@@ -262,7 +269,14 @@ const createInvoicesDAO = () => {
                          if (currentStock + stockChange < 0) {
                              throw new Error(`Not enough stock for product ID ${productId}.`);
                          }
-                        transaction.update(productRef, { stock: currentStock + stockChange });
+                        const newStock = currentStock + stockChange;
+                        const productUpdate: Partial<Product> = { stock: newStock };
+                        if (newStock <= 0) {
+                            productUpdate.outOfStockDate = format(new Date(), 'PPP');
+                        } else {
+                            productUpdate.outOfStockDate = ''; // Or delete the field
+                        }
+                        transaction.update(productRef, productUpdate);
                     }
                 }
             }
@@ -311,7 +325,11 @@ const createInvoicesDAO = () => {
                 if(productDoc) {
                     const productRef = doc(db, 'products', item.productId);
                     const newStock = productDoc.data().stock + item.quantity;
-                    transaction.update(productRef, { stock: newStock });
+                     const productUpdate: Partial<Product> = { stock: newStock };
+                    if (newStock > 0) {
+                       productUpdate.outOfStockDate = ''; // Or delete field
+                    }
+                    transaction.update(productRef, productUpdate);
                 }
             }
         });
