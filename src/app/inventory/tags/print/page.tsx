@@ -5,7 +5,6 @@ import { productsDAO, type Product } from '@/lib/data';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
-import Barcode from 'react-barcode';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -13,16 +12,12 @@ import html2canvas from 'html2canvas';
 
 function BarcodeTag({ product }: { product: Product }) {
   return (
-    <div className="p-2 border border-black break-inside-avoid-page flex flex-col items-center justify-center text-center w-[192px] bg-white">
-      <p className="font-bold text-sm truncate w-full">{product.name}</p>
-      <p className="text-xs mb-1">SKU: {product.sku}</p>
-      <Barcode 
-        value={product.sku} 
-        height={40}
-        width={1.5}
-        fontSize={12}
-        margin={2}
-      />
+    <div className="p-4 border border-black break-inside-avoid-page flex flex-col items-center justify-center text-center w-[220px] bg-white">
+      <p className="font-bold text-lg truncate w-full">{product.name}</p>
+      <p className="text-md mb-2">SKU: {product.sku}</p>
+      <div className="h-[50px] w-full flex items-center justify-center bg-gray-200 text-gray-500 rounded-md">
+        <p className="text-sm">Barcode Placeholder</p>
+      </div>
     </div>
   );
 }
