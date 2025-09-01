@@ -25,7 +25,7 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -39,13 +39,13 @@ type InvoiceItem = {
     quantity: number;
     sellingPrice: number;
     total: number;
+    isManual?: boolean;
 };
 
 
 export default function NewInvoicePage() {
   const { toast } = useToast();
   const router = useRouter();
-  const [issueDate, setIssueDate] = useState<Date | undefined>(new Date());
   const [dueDate, setDueDate] = useState<Date | undefined>();
   const { data: customers } = useFirestoreData(customersDAO);
   const { data: products } = useFirestoreData(productsDAO);
@@ -53,10 +53,10 @@ export default function NewInvoicePage() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleAddItem = () => {
+  const handleAddItem = (isManual = false) => {
     setItems([
       ...items,
-      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0 },
+      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual },
     ]);
   };
 
@@ -93,14 +93,20 @@ export default function NewInvoicePage() {
     e.preventDefault();
     if (isSaving) return;
 
-    const formData = new FormData(e.currentTarget);
-    const invoiceNumber = formData.get('invoiceNumber') as string;
-
-    if (!invoiceNumber || !customerId || !issueDate || items.length === 0) {
+    if (!customerId || items.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Missing Required Fields',
-        description: 'Please fill out all invoice details and add at least one item.',
+        description: 'Please select a customer and add at least one item.',
+      });
+      return;
+    }
+    
+    if (items.some(i => !i.productName || i.sellingPrice <= 0 || i.quantity <= 0)) {
+       toast({
+        variant: 'destructive',
+        title: 'Invalid Item Details',
+        description: 'Please ensure all items have a name, quantity, and a price greater than zero.',
       });
       return;
     }
@@ -117,6 +123,7 @@ export default function NewInvoicePage() {
 
     setIsSaving(true);
     try {
+      const invoiceNumber = `INV-${Date.now()}`;
       await invoicesDAO.add({
         invoiceNumber,
         customer: {
@@ -124,11 +131,11 @@ export default function NewInvoicePage() {
           name: customer.name,
           email: customer.email,
         },
-        issueDate: format(issueDate, 'PPP'),
+        issueDate: format(new Date(), 'PPP'),
         dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
         status: 'Pending', // Default status
         amount: totalAmount,
-        items: items.map(({id, ...rest}) => rest)
+        items: items.map(({id, isManual, ...rest}) => rest)
       });
       
       toast({
@@ -159,81 +166,62 @@ export default function NewInvoicePage() {
                     <CardHeader>
                     <CardTitle>Invoice Details</CardTitle>
                     <CardDescription>
-                        Fill out the form to create a new invoice.
+                        Fill out the form to create a new invoice. Invoice Number and Issue Date will be auto-generated.
                     </CardDescription>
                     </CardHeader>
                     <CardContent>
                     <div className="grid gap-6">
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="grid gap-3">
-                            <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                            <Input id="invoiceNumber" name="invoiceNumber" type="text" placeholder="INV-006" required />
-                        </div>
-                        <div className="grid gap-3">
-                            <Label htmlFor="customer">Customer</Label>
-                            <Select name="customer" required onValueChange={setCustomerId} value={customerId}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a customer" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {customers.map((customer) => (
-                                <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                            </Select>
-                        </div>
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div className="grid gap-3">
-                            <Label htmlFor="issueDate">Issue Date</Label>
-                            <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={'outline'}
-                                className={cn(
-                                    'justify-start text-left font-normal',
-                                    !issueDate && 'text-muted-foreground'
+                            <div className="grid gap-3">
+                                <Label htmlFor="customer">Customer</Label>
+                                <Select name="customer" required onValueChange={setCustomerId} value={customerId}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a customer" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {customers.map((customer) => (
+                                    <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="grid gap-3">
+                                <Label htmlFor="dueDate">Due Date (Optional)</Label>
+                                <div className="relative">
+                                <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                    variant={'outline'}
+                                    className={cn(
+                                        'w-full justify-start text-left font-normal',
+                                        !dueDate && 'text-muted-foreground'
+                                    )}
+                                    >
+                                    <CalendarIcon className="mr-2 h-4 w-4" />
+                                    {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0">
+                                    <Calendar
+                                    mode="single"
+                                    selected={dueDate}
+                                    onSelect={setDueDate}
+                                    initialFocus
+                                    />
+                                </PopoverContent>
+                                </Popover>
+                                {dueDate && (
+                                     <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                                        onClick={() => setDueDate(undefined)}
+                                    >
+                                        <XIcon className="h-4 w-4" />
+                                    </Button>
                                 )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {issueDate ? format(issueDate, 'PPP') : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                mode="single"
-                                selected={issueDate}
-                                onSelect={setIssueDate}
-                                initialFocus
-                                />
-                            </PopoverContent>
-                            </Popover>
-                        </div>
-                        <div className="grid gap-3">
-                            <Label htmlFor="dueDate">Due Date</Label>
-                            <Popover>
-                            <PopoverTrigger asChild>
-                                <Button
-                                variant={'outline'}
-                                className={cn(
-                                    'justify-start text-left font-normal',
-                                    !dueDate && 'text-muted-foreground'
-                                )}
-                                >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
-                                {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
-                                </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
-                                <Calendar
-                                mode="single"
-                                selected={dueDate}
-                                onSelect={setDueDate}
-                                initialFocus
-                                />
-                            </PopoverContent>
-                            </Popover>
-                        </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     </CardContent>
@@ -247,17 +235,32 @@ export default function NewInvoicePage() {
                         <div className="grid gap-4">
                             {items.map((item, index) => (
                             <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
-                                <div className="grid gap-3 col-span-12 sm:col-span-5">
-                                    {index === 0 && <Label className="hidden sm:block">Item</Label>}
-                                     <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select item" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {products.map((p) => <SelectItem key={p.id} value={p.id} disabled={p.stock <=0 }>{p.name} (Stock: {p.stock})</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                {item.isManual ? (
+                                    <>
+                                        <div className="grid gap-3 col-span-12 sm:col-span-5">
+                                            {index === 0 && <Label className="hidden sm:block">Item</Label>}
+                                            <Input 
+                                                type="text" 
+                                                placeholder="e.g., Service Fee" 
+                                                value={item.productName} 
+                                                onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
+                                            />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="grid gap-3 col-span-12 sm:col-span-5">
+                                        {index === 0 && <Label className="hidden sm:block">Item</Label>}
+                                        <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select item" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {products.map((p) => <SelectItem key={p.id} value={p.id} disabled={p.stock <=0 }>{p.name} (Stock: {p.stock})</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                )}
+
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Qty</Label>}
                                     <Input type="number" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)} placeholder="1" />
@@ -277,10 +280,16 @@ export default function NewInvoicePage() {
                                 </div>
                             </div>
                             ))}
-                            <Button type="button" variant="outline" onClick={handleAddItem} className="w-full sm:w-auto">
-                                <PlusCircle className="mr-2" />
-                                Add Item
-                            </Button>
+                            <div className="flex flex-col sm:flex-row gap-2">
+                                <Button type="button" variant="outline" onClick={() => handleAddItem(false)} className="w-full sm:w-auto">
+                                    <PlusCircle className="mr-2" />
+                                    Add Item from Inventory
+                                </Button>
+                                 <Button type="button" variant="outline" onClick={() => handleAddItem(true)} className="w-full sm:w-auto">
+                                    <PlusCircle className="mr-2" />
+                                    Add Item Manually
+                                </Button>
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
