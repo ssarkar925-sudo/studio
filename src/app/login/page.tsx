@@ -5,11 +5,33 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { ArrowRight, LogIn } from 'lucide-react';
+import { LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
+    const { toast } = useToast();
+    const router = useRouter();
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        toast({
+            title: 'Login Successful',
+            description: "Welcome back! Redirecting you to the dashboard...",
+        });
+        // Redirect to dashboard after a short delay
+        setTimeout(() => router.push('/'), 1500);
+    }
+    
+    const handleGoogleLogin = () => {
+         toast({
+            title: 'Login with Google',
+            description: "This feature is not yet implemented.",
+        });
+    }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="relative grid w-full max-w-4xl grid-cols-1 overflow-hidden rounded-lg border shadow-lg md:grid-cols-2">
@@ -31,22 +53,43 @@ export default function LoginPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" type="email" placeholder="m@example.com" required />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                    <div className="flex items-center justify-between">
+                        <Label htmlFor="password">Password</Label>
+                        <Link
+                            href="#"
+                            className="text-sm font-medium text-primary hover:underline"
+                            onClick={() => toast({ title: 'Forgot Password', description: 'This feature is not yet implemented.'})}
+                        >
+                            Forgot password?
+                        </Link>
+                    </div>
                   <Input id="password" type="password" required />
                 </div>
-                <Button type="submit" className="w-full">
-                  <LogIn className="mr-2" /> Login
-                </Button>
-                 <Button variant="outline" className="w-full">
-                  Login with Google
-                </Button>
+                <div className="space-y-2 pt-2">
+                    <Button type="submit" className="w-full">
+                        <LogIn className="mr-2" /> Login
+                    </Button>
+                    <Button variant="outline" className="w-full" type="button" onClick={handleGoogleLogin}>
+                        Login with Google
+                    </Button>
+                </div>
               </form>
+               <div className="mt-4 text-center text-sm">
+                    Don&apos;t have an account?{' '}
+                    <Link 
+                        href="#" 
+                        className="font-medium text-primary hover:underline"
+                        onClick={() => toast({ title: 'Sign Up', description: 'This feature is not yet implemented.'})}
+                    >
+                        Sign up
+                    </Link>
+                </div>
             </CardContent>
           </Card>
         </div>
