@@ -53,10 +53,10 @@ export default function NewInvoicePage() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleAddItem = (isManual = false) => {
+  const handleAddItem = () => {
     setItems([
       ...items,
-      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual },
+      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, sellingPrice: 0, total: 0, isManual: false },
     ]);
   };
 
@@ -66,10 +66,18 @@ export default function NewInvoicePage() {
     (item[field] as any) = value;
 
     if (field === 'productId') {
-        const product = products.find(p => p.id === value);
-        if (product) {
-          item.productName = product.name;
-          item.sellingPrice = product.sellingPrice;
+        if (value === 'add_new') {
+            item.isManual = true;
+            item.productId = `manual_${Date.now()}`;
+            item.productName = '';
+            item.sellingPrice = 0;
+        } else {
+            item.isManual = false;
+            const product = products.find(p => p.id === value);
+            if (product) {
+              item.productName = product.name;
+              item.sellingPrice = product.sellingPrice;
+            }
         }
     }
     
@@ -235,32 +243,31 @@ export default function NewInvoicePage() {
                         <div className="grid gap-4">
                             {items.map((item, index) => (
                             <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
-                                {item.isManual ? (
-                                    <>
-                                        <div className="grid gap-3 col-span-12 sm:col-span-5">
-                                            {index === 0 && <Label className="hidden sm:block">Item</Label>}
-                                            <Input 
-                                                type="text" 
-                                                placeholder="e.g., Service Fee" 
-                                                value={item.productName} 
-                                                onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
-                                            />
-                                        </div>
-                                    </>
-                                ) : (
-                                    <div className="grid gap-3 col-span-12 sm:col-span-5">
-                                        {index === 0 && <Label className="hidden sm:block">Item</Label>}
+                                <div className="grid gap-3 col-span-12 sm:col-span-5">
+                                    {index === 0 && <Label className="hidden sm:block">Item</Label>}
+                                    {item.isManual ? (
+                                        <Input 
+                                            type="text" 
+                                            placeholder="e.g., Service Fee" 
+                                            value={item.productName} 
+                                            onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
+                                        />
+                                    ) : (
                                         <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select item" />
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {products.map((p) => <SelectItem key={p.id} value={p.id} disabled={p.stock <=0 }>{p.name} (Stock: {p.stock})</SelectItem>)}
+                                                <SelectItem value="add_new">
+                                                    <div className="flex items-center">
+                                                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
+                                                    </div>
+                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
-                                    </div>
-                                )}
-
+                                    )}
+                                </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Qty</Label>}
                                     <Input type="number" value={item.quantity} onChange={(e) => handleItemChange(index, 'quantity', parseInt(e.target.value) || 0)} placeholder="1" />
@@ -281,13 +288,9 @@ export default function NewInvoicePage() {
                             </div>
                             ))}
                             <div className="flex flex-col sm:flex-row gap-2">
-                                <Button type="button" variant="outline" onClick={() => handleAddItem(false)} className="w-full sm:w-auto">
+                                <Button type="button" variant="outline" onClick={handleAddItem} className="w-full sm:w-auto">
                                     <PlusCircle className="mr-2" />
                                     Add Item
-                                </Button>
-                                 <Button type="button" variant="ghost" onClick={() => handleAddItem(true)} className="w-full sm:w-auto">
-                                    <PlusCircle className="mr-2" />
-                                    Add Manually
                                 </Button>
                             </div>
                         </div>
