@@ -100,21 +100,15 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
     }
   }
 
-  const handleAction = async (action: string, invoiceId: string, invoiceNumber: string) => {
+  const handleAction = async (action: string, invoiceId: string) => {
+    const url = `/invoices/${invoiceId}`;
     if (action === 'View') {
-        router.push(`/invoices/${invoiceId}`);
+        router.push(url);
     } else if (action === 'Edit') {
-        router.push(`/invoices/${invoiceId}/edit`);
+        router.push(`${url}/edit`);
     } else if (action === 'Print' || action === 'Download') {
-         toast({
-          title: 'Coming Soon!',
-          description: `The ${action.toLowerCase()} functionality is not yet implemented.`,
-        });
-    } else {
-        toast({
-          title: `${action} Invoice`,
-          description: `You have selected to ${action.toLowerCase()} invoice ${invoiceNumber}. This feature is not yet implemented.`,
-        });
+        const printWindow = window.open(`${url}/print`, '_blank');
+        printWindow?.focus();
     }
   };
 
@@ -205,10 +199,10 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleAction('View', invoice.id, invoice.invoiceNumber)}>View</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id, invoice.invoiceNumber)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Print', invoice.id, invoice.invoiceNumber)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Download', invoice.id, invoice.invoiceNumber)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('View', invoice.id)}>View</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Print', invoice.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Download', invoice.id)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
                            <AlertDialogTrigger asChild>
                             <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                           </AlertDialogTrigger>

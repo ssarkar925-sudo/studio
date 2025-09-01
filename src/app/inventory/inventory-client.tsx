@@ -98,19 +98,15 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
     }
   };
 
-  const handleAction = (action: string, productId: string, productName: string) => {
+  const handleAction = (action: string, productId: string) => {
+    const url = `/inventory/${productId}`;
     if (action === 'View') {
-      router.push(`/inventory/${productId}`);
+      router.push(url);
     } else if (action === 'Edit') {
-      toast({
-        title: `${action} Inventory Item`,
-        description: `You have selected to ${action.toLowerCase()} ${productName}. This feature is not yet implemented.`,
-      });
+      router.push(`${url}/edit`);
     } else if (action === 'Print' || action === 'Download') {
-        toast({
-            title: 'Coming Soon!',
-            description: `The ${action.toLowerCase()} functionality is not yet implemented.`,
-        });
+        const printWindow = window.open(`${url}/print`, '_blank');
+        printWindow?.focus();
     }
   };
 
@@ -205,10 +201,10 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleAction('View', product.id, product.name)}>View</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Edit', product.id, product.name)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Print', product.id, product.name)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Download', product.id, product.name)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('View', product.id)}>View</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Edit', product.id)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Print', product.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Download', product.id)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                           </AlertDialogTrigger>
@@ -374,22 +370,16 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
 
 
   const handleAction = (action: string, purchase: Purchase) => {
+    const url = `/inventory/purchases/${purchase.id}`;
     if (action === 'Mark as Received') {
         handleMarkAsReceived(purchase);
     } else if (action === 'Edit') {
-        router.push(`/inventory/purchases/${purchase.id}/edit`);
+        router.push(`${url}/edit`);
     } else if (action === 'View') {
-        router.push(`/inventory/purchases/${purchase.id}`);
+        router.push(url);
     } else if (action === 'Print' || action === 'Download') {
-        toast({
-            title: 'Coming Soon!',
-            description: `The ${action.toLowerCase()} functionality is not yet implemented.`,
-        });
-    } else {
-         toast({
-            title: `${action} Purchase`,
-            description: `You have selected to ${action.toLowerCase()} purchase. This feature is not yet implemented.`,
-        });
+        const printWindow = window.open(`${url}/print`, '_blank');
+        printWindow?.focus();
     }
   }
 

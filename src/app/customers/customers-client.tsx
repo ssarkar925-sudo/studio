@@ -88,15 +88,14 @@ export function CustomersClient({ customers: initialCustomers }: { customers: Cu
 
 
   const handleAction = (action: string, customerId: string) => {
+    const url = `/customers/${customerId}`;
     if (action === 'View') {
-      router.push(`/customers/${customerId}`);
+      router.push(url);
     } else if (action === 'Edit') {
-        router.push(`/customers/${customerId}/edit`);
+        router.push(`${url}/edit`);
     } else if (action === 'Print' || action === 'Download') {
-        toast({
-            title: 'Coming Soon!',
-            description: `The ${action.toLowerCase()} functionality is not yet implemented.`,
-        });
+        const printWindow = window.open(`${url}/print`, '_blank');
+        printWindow?.focus();
     }
   };
 

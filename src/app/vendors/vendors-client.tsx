@@ -77,10 +77,11 @@ export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }
 
 
   const handleAction = async (action: string, vendorId: string, vendorName: string) => {
+    const url = `/vendors/${vendorId}`;
     if (action === 'View') {
-      router.push(`/vendors/${vendorId}`);
+      router.push(url);
     } else if (action === 'Edit') {
-        router.push(`/vendors/${vendorId}/edit`);
+        router.push(`${url}/edit`);
     } else if (action === 'Delete') {
         await vendorsDAO.remove(vendorId);
         toast({
@@ -88,10 +89,8 @@ export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }
           description: `Vendor ${vendorName} has been deleted.`,
         });
     } else if (action === 'Print' || action === 'Download') {
-        toast({
-            title: 'Coming Soon!',
-            description: `The ${action.toLowerCase()} functionality is not yet implemented.`,
-        });
+        const printWindow = window.open(`${url}/print`, '_blank');
+        printWindow?.focus();
     }
   };
 
