@@ -6,11 +6,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { productsDAO, purchasesDAO, type Product, type Purchase } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Trash2, Printer, Barcode } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Printer, Barcode } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
@@ -43,7 +43,8 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
 
   useEffect(() => {
-    setProducts(initialProducts);
+    // Filter out products with 0 stock
+    setProducts(initialProducts.filter(p => p.stock > 0));
   }, [initialProducts]);
   
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
@@ -61,40 +62,6 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
       setSelectedProducts(prev => [...prev, productId]);
     } else {
       setSelectedProducts(prev => prev.filter(id => id !== productId));
-    }
-  };
-
-  const handleDelete = async (productId: string) => {
-    try {
-        await productsDAO.remove(productId);
-        toast({
-          title: 'Item Deleted',
-          description: 'The inventory item has been successfully deleted.',
-        });
-    } catch (error) {
-        toast({
-            variant: 'destructive',
-            title: 'Deletion Failed',
-            description: 'Could not delete the item.',
-        });
-    }
-  };
-
-  const handleDeleteSelected = async () => {
-    const promises = selectedProducts.map(id => productsDAO.remove(id));
-    try {
-        await Promise.all(promises);
-        toast({
-            title: 'Items Deleted',
-            description: `${selectedProducts.length} item(s) have been deleted.`,
-        });
-        setSelectedProducts([]);
-    } catch (error) {
-        toast({
-            variant: 'destructive',
-            title: 'Deletion Failed',
-            description: 'Could not delete the selected items.',
-        });
     }
   };
 
@@ -128,23 +95,6 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
              {selectedProducts.length > 0 && (
               <div className='flex gap-2'>
                 <Button variant="outline" size="sm" onClick={handlePrintTags}><Barcode /> Print Tags ({selectedProducts.length})</Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                      <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedProducts.length})</Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                      <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                          This action cannot be undone. This will permanently delete {selectedProducts.length} item(s).
-                      </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                      </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
               </div>
             )}
           </div>
@@ -202,36 +152,19 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                   <TableCell>{product.sku}</TableCell>
                   <TableCell>{product.batchCode}</TableCell>
                   <TableCell>
-                    <AlertDialog>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal />
-                            <span className="sr-only">Toggle menu</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onSelect={() => handleAction('View', product.id)}>View</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Edit', product.id)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem onSelect={() => handleAction('Print', product.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
-                          <AlertDialogTrigger asChild>
-                            <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
-                          </AlertDialogTrigger>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                       <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the item &quot;{product.name}&quot;.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={() => handleDelete(product.id)} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                          <MoreHorizontal />
+                          <span className="sr-only">Toggle menu</span>
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onSelect={() => handleAction('View', product.id)}>View</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Edit', product.id)}>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onSelect={() => handleAction('Print', product.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -250,14 +183,39 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
   const { data: allProducts, isLoading: productsLoading } = useFirestoreData(productsDAO);
 
   useEffect(() => {
+    async function deleteOldPendingPurchases() {
+        const oneMonthAgo = subDays(new Date(), 30);
+        const oldPendingPurchases = initialPurchases.filter(p => {
+            try {
+                const orderDate = new Date(p.orderDate);
+                return p.status === 'Pending' && orderDate < oneMonthAgo;
+            } catch (e) {
+                return false;
+            }
+        });
+        
+        if (oldPendingPurchases.length > 0) {
+            const deletionPromises = oldPendingPurchases.map(p => purchasesDAO.remove(p.id));
+            try {
+                await Promise.all(deletionPromises);
+                toast({
+                    title: 'Auto-cleaned Purchases',
+                    description: `${oldPendingPurchases.length} pending purchase(s) older than 1 month were automatically deleted.`,
+                });
+            } catch (error) {
+                 console.error("Failed to auto-delete old purchases", error);
+            }
+        }
+    }
+    
+    deleteOldPendingPurchases();
     setPurchases(initialPurchases);
-  }, [initialPurchases]);
+  }, [initialPurchases, toast]);
 
   const sortedPurchases = useMemo(() => {
     if (!purchases) return [];
     return [...purchases].sort((a, b) => {
         try {
-            // Handle cases where orderDate might not be a valid date string
             const dateA = new Date(a.orderDate).getTime();
             const dateB = new Date(b.orderDate).getTime();
             if (isNaN(dateA) || isNaN(dateB)) return 0;
@@ -405,7 +363,7 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
              {selectedPurchases.length > 0 && (
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedPurchases.length})</Button>
+                        <Button variant="destructive" size="sm">Delete ({selectedPurchases.length})</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
