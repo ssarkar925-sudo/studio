@@ -82,12 +82,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                    <Link
                       key={item.label}
                       href={item.href}
-                      className={`transition-colors hover:text-foreground ${
+                      className={`flex items-center gap-4 rounded-lg px-3 py-2 transition-all hover:text-primary ${
                         pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
-                          ? 'text-foreground'
+                          ? 'bg-muted text-primary'
                           : 'text-muted-foreground'
                       }`}
                     >
+                      <item.icon className="h-4 w-4" />
                       {item.label}
                     </Link>
                 ))}
@@ -99,13 +100,16 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <Link
                 key={item.label}
                 href={item.href}
-                className={`transition-colors hover:text-foreground ${
+                className={`relative px-2 py-1 transition-colors hover:text-primary ${
                     pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
-                    ? 'text-foreground font-semibold'
+                    ? 'text-primary'
                     : 'text-muted-foreground'
                 }`}
                 >
                 {item.label}
+                 {pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true) && (
+                    <span className="absolute bottom-[-2px] left-0 w-full h-0.5 bg-primary rounded-full" />
+                  )}
                 </Link>
             ))}
             </nav>
