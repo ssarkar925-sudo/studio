@@ -225,8 +225,8 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                             aria-label="Select row"
                         />
                          <div>
-                            <p className="font-medium">{product.name}</p>
-                            <p className="text-sm text-muted-foreground">{product.sku}</p>
+                            <div className="font-medium">{product.name}</div>
+                            <div className="text-sm text-muted-foreground">{product.sku}</div>
                         </div>
                     </div>
                      <DropdownMenu>
@@ -246,12 +246,12 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4 text-sm">
                 <div className="grid gap-1">
-                    <p className="text-muted-foreground">Stock</p>
-                    <p>{product.stock}</p>
+                    <div className="text-muted-foreground">Stock</div>
+                    <div>{product.stock}</div>
                 </div>
                 <div className="grid gap-1">
-                    <p className="text-muted-foreground">Status</p>
-                    <p>
+                    <div className="text-muted-foreground">Status</div>
+                    <div>
                         {product.stock <= 0 ? (
                             <Badge variant="destructive">Out of Stock</Badge>
                         ) : product.stock <= 10 ? (
@@ -259,19 +259,19 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
                         ) : (
                             <Badge variant="default">In Stock</Badge>
                         )}
-                    </p>
+                    </div>
                 </div>
                 <div className="grid gap-1">
-                    <p className="text-muted-foreground">Purchase Price</p>
-                    <p>₹{product.purchasePrice.toFixed(2)}</p>
+                    <div className="text-muted-foreground">Purchase Price</div>
+                    <div>₹{product.purchasePrice.toFixed(2)}</div>
                 </div>
                 <div className="grid gap-1">
-                    <p className="text-muted-foreground">Selling Price</p>
-                    <p>₹{product.sellingPrice.toFixed(2)}</p>
+                    <div className="text-muted-foreground">Selling Price</div>
+                    <div>₹{product.sellingPrice.toFixed(2)}</div>
                 </div>
                  <div className="grid gap-1 col-span-2">
-                    <p className="text-muted-foreground">Batch Code</p>
-                    <p>{product.batchCode}</p>
+                    <div className="text-muted-foreground">Batch Code</div>
+                    <div>{product.batchCode}</div>
                 </div>
             </CardContent>
           </Card>
@@ -547,8 +547,8 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
                             aria-label="Select row"
                         />
                         <div>
-                            <p className="font-medium">{purchase.vendorName}</p>
-                            <p className="text-sm text-muted-foreground">ID: {purchase.id.slice(0, 8)}...</p>
+                            <div className="font-medium">{purchase.vendorName}</div>
+                            <div className="text-sm text-muted-foreground">ID: {purchase.id.slice(0, 8)}...</div>
                         </div>
                     </div>
                      <DropdownMenu>
@@ -569,20 +569,20 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-4 text-sm">
                 <div className="grid gap-1">
-                    <p className="text-muted-foreground">Total</p>
-                    <p>₹{purchase.totalAmount.toFixed(2)}</p>
+                    <div className="text-muted-foreground">Total</div>
+                    <div>₹{purchase.totalAmount.toFixed(2)}</div>
                 </div>
                 <div className="grid gap-1">
-                    <p className="text-muted-foreground">Due</p>
-                    <p>₹{purchase.dueAmount.toFixed(2)}</p>
+                    <div className="text-muted-foreground">Due</div>
+                    <div>₹{purchase.dueAmount.toFixed(2)}</div>
                 </div>
                 <div className="grid gap-1">
-                    <p className="text-muted-foreground">Status</p>
-                    <p><Badge variant={purchase.status === 'Received' ? 'default' : 'secondary'}>{purchase.status}</Badge></p>
+                    <div className="text-muted-foreground">Status</div>
+                    <div><Badge variant={purchase.status === 'Received' ? 'default' : 'secondary'}>{purchase.status}</Badge></div>
                 </div>
                 <div className="grid gap-1">
-                    <p className="text-muted-foreground">Order Date</p>
-                    <p>{purchase.orderDate}</p>
+                    <div className="text-muted-foreground">Order Date</div>
+                    <div>{purchase.orderDate}</div>
                 </div>
             </CardContent>
           </Card>
@@ -591,3 +591,5 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
     </>
   );
 }
+
+    
