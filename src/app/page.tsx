@@ -164,7 +164,7 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
 
   const overdue = invoices.filter((i) => i.status === 'Overdue').length;
 
-  const initialAnalysis = async () => {
+  const handleInitialAnalysis = async () => {
      if (invoices.length > 0) {
       setIsAnalyzing(true);
       setHistory([]);
@@ -182,8 +182,8 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
       } finally {
         setIsAnalyzing(false);
       }
-    } else if (!isLoading) {
-        setIsAnalyzing(false);
+    } else {
+        setHistory([{ role: 'model', content: 'There is no data to analyze yet. Create some invoices to get started!'}]);
     }
   }
 
@@ -240,7 +240,7 @@ function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: b
                         <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
                             <Bot size={48} className="mb-4" />
                             <p className="mb-4">Get AI-powered insights on your business performance.</p>
-                            <Button onClick={initialAnalysis}>Analyze My Dashboard</Button>
+                            <Button onClick={handleInitialAnalysis} disabled={isLoading}>Analyze My Dashboard</Button>
                         </div>
                      )}
                      {history.map((message, index) => (
