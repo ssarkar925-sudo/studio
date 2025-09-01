@@ -25,9 +25,10 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger, DialogClose } from '@/components/ui/dialog';
 import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 
@@ -42,6 +43,58 @@ type InvoiceItem = {
     isManual?: boolean;
 };
 
+function ManualItemDialog({ onAddItem }: { onAddItem: (item: Omit<InvoiceItem, 'id' | 'productId' | 'total'>) => void }) {
+    const [name, setName] = useState('');
+    const [price, setPrice] = useState(0);
+    const [isOpen, setIsOpen] = useState(false);
+
+    const handleSave = () => {
+        if (name && price > 0) {
+            onAddItem({
+                productName: name,
+                sellingPrice: price,
+                quantity: 1,
+                isManual: true,
+            });
+            setName('');
+            setPrice(0);
+            setIsOpen(false);
+        }
+    }
+
+    return (
+        <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+                <Button type="button" variant="outline">
+                    <PlusCircle className="mr-2" />
+                    Add Manually
+                </Button>
+            </DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add Manual Item</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                        <Label htmlFor="manual-item-name">Item Name</Label>
+                        <Input id="manual-item-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g., Service Fee" />
+                    </div>
+                     <div className="grid gap-2">
+                        <Label htmlFor="manual-item-price">Price</Label>
+                        <Input id="manual-item-price" type="number" value={price} onChange={(e) => setPrice(parseFloat(e.target.value) || 0)} placeholder="0.00" />
+                    </div>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button type="button" variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button type="button" onClick={handleSave}>Add Item</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export default function NewInvoicePage() {
   const { toast } = useToast();
@@ -53,6 +106,14 @@ export default function NewInvoicePage() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
 
+  // Add one default item row when the component mounts
+  useEffect(() => {
+    if (items.length === 0) {
+      handleAddItem();
+    }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleAddItem = () => {
     setItems([
       ...items,
@@ -60,24 +121,26 @@ export default function NewInvoicePage() {
     ]);
   };
 
+  const handleAddManualItem = (manualItem: Omit<InvoiceItem, 'id' | 'productId' | 'total'>) => {
+    const newItem: InvoiceItem = {
+        ...manualItem,
+        id: `item-${Date.now()}`,
+        productId: `manual_${Date.now()}`,
+        total: manualItem.quantity * manualItem.sellingPrice,
+    };
+    setItems([...items, newItem]);
+  }
+
   const handleItemChange = (index: number, field: keyof InvoiceItem, value: any) => {
     const newItems = [...items];
     const item = newItems[index];
     (item[field] as any) = value;
 
     if (field === 'productId') {
-        if (value === 'add_new') {
-            item.isManual = true;
-            item.productId = `manual_${Date.now()}`;
-            item.productName = '';
-            item.sellingPrice = 0;
-        } else {
-            item.isManual = false;
-            const product = products.find(p => p.id === value);
-            if (product) {
-              item.productName = product.name;
-              item.sellingPrice = product.sellingPrice;
-            }
+        const product = products.find(p => p.id === value);
+        if (product) {
+          item.productName = product.name;
+          item.sellingPrice = product.sellingPrice;
         }
     }
     
@@ -101,24 +164,18 @@ export default function NewInvoicePage() {
     e.preventDefault();
     if (isSaving) return;
 
-    if (!customerId || items.length === 0) {
+    // Filter out empty rows before saving
+    const finalItems = items.filter(i => i.productName && i.sellingPrice > 0 && i.quantity > 0);
+
+    if (!customerId || finalItems.length === 0) {
       toast({
         variant: 'destructive',
         title: 'Missing Required Fields',
-        description: 'Please select a customer and add at least one item.',
+        description: 'Please select a customer and add at least one valid item.',
       });
       return;
     }
     
-    if (items.some(i => !i.productName || i.sellingPrice <= 0 || i.quantity <= 0)) {
-       toast({
-        variant: 'destructive',
-        title: 'Invalid Item Details',
-        description: 'Please ensure all items have a name, quantity, and a price greater than zero.',
-      });
-      return;
-    }
-
     const customer = customers.find(c => c.id === customerId);
     if (!customer) {
        toast({
@@ -143,7 +200,7 @@ export default function NewInvoicePage() {
         dueDate: dueDate ? format(dueDate, 'PPP') : 'N/A',
         status: 'Pending', // Default status
         amount: totalAmount,
-        items: items.map(({id, isManual, ...rest}) => rest)
+        items: finalItems.map(({id, isManual, ...rest}) => rest)
       });
       
       toast({
@@ -251,6 +308,8 @@ export default function NewInvoicePage() {
                                             placeholder="e.g., Service Fee" 
                                             value={item.productName} 
                                             onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
+                                            readOnly // Manual items are added via dialog
+                                            className="bg-muted"
                                         />
                                     ) : (
                                         <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
@@ -259,11 +318,6 @@ export default function NewInvoicePage() {
                                             </SelectTrigger>
                                             <SelectContent>
                                                 {products.map((p) => <SelectItem key={p.id} value={p.id} disabled={p.stock <=0 }>{p.name} (Stock: {p.stock})</SelectItem>)}
-                                                <SelectItem value="add_new">
-                                                    <div className="flex items-center">
-                                                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
-                                                    </div>
-                                                </SelectItem>
                                             </SelectContent>
                                         </Select>
                                     )}
@@ -274,7 +328,7 @@ export default function NewInvoicePage() {
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Price</Label>}
-                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" />
+                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" readOnly={item.isManual} className={item.isManual ? 'bg-muted': ''} />
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Total</Label>}
@@ -288,10 +342,11 @@ export default function NewInvoicePage() {
                             </div>
                             ))}
                             <div className="flex flex-col sm:flex-row gap-2">
-                                <Button type="button" variant="outline" onClick={handleAddItem} className="w-full sm:w-auto">
+                                <Button type="button" variant="outline" onClick={handleAddItem}>
                                     <PlusCircle className="mr-2" />
-                                    Add Item
+                                    Add Item from Inventory
                                 </Button>
+                                <ManualItemDialog onAddItem={handleAddManualItem} />
                             </div>
                         </div>
                     </CardContent>
@@ -305,7 +360,7 @@ export default function NewInvoicePage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <div className='grid gap-3 col-span-2 sm:col-span-1'>
                                 <Label>Total Amount</Label>
-                                <Input value={`₹${totalAmount.toFixed(2)}`} readOnly className='bg-muted text-lg font-bold' />
+                                <Input value={`₹${calculateTotal().toFixed(2)}`} readOnly className='bg-muted text-lg font-bold' />
                             </div>
                         </div>
                     </CardContent>
