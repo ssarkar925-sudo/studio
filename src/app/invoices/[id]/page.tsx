@@ -13,7 +13,7 @@ import {
 import { invoicesDAO, type Invoice } from '@/lib/data';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Printer, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -39,16 +39,21 @@ export default function InvoiceDetailsPage() {
   const params = useParams();
   const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   useEffect(() => {
     if (!isLoading) {
-      const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
       const foundInvoice = invoices.find((i) => i.id === invoiceId);
       if (foundInvoice) {
         setInvoice(foundInvoice);
       }
     }
-  }, [params.id, invoices, isLoading]);
+  }, [params.id, invoices, isLoading, invoiceId]);
+
+  const handlePrint = () => {
+    const printWindow = window.open(`/invoices/${invoiceId}/print`, '_blank');
+    printWindow?.focus();
+  };
 
   if (isLoading || !invoice) {
     return (
@@ -63,12 +68,24 @@ export default function InvoiceDetailsPage() {
   return (
     <AppLayout>
       <div className="mx-auto grid w-full max-w-4xl gap-2">
-        <div className="flex items-center gap-4">
-             <Button variant="outline" size="icon" onClick={() => router.back()}>
-                <ArrowLeft />
-                <span className="sr-only">Back</span>
-            </Button>
-            <h1 className="text-xl md:text-2xl font-semibold">Invoice Details</h1>
+        <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+                <Button variant="outline" size="icon" onClick={() => router.back()}>
+                    <ArrowLeft />
+                    <span className="sr-only">Back</span>
+                </Button>
+                <h1 className="text-xl md:text-2xl font-semibold">Invoice Details</h1>
+            </div>
+             <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={() => router.push(`/invoices/${invoiceId}/edit`)}>
+                    <Pencil className="mr-2" />
+                    Edit
+                </Button>
+                <Button onClick={handlePrint}>
+                    <Printer className="mr-2" />
+                    Print
+                </Button>
+            </div>
         </div>
       </div>
       <div className="mx-auto grid w-full max-w-4xl items-start gap-6">
