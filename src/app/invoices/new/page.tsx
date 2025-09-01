@@ -262,7 +262,7 @@ export default function NewInvoicePage() {
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Price</Label>}
-                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01" readOnly={!item.isManual} className={!item.isManual ? 'bg-muted' : ''} />
+                                    <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01" />
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
                                 {index === 0 && <Label className="hidden sm:block">Total</Label>}
@@ -276,6 +276,10 @@ export default function NewInvoicePage() {
                             </div>
                             ))}
                             <div className="flex flex-col sm:flex-row gap-2">
+                                <Button type="button" variant="outline" onClick={() => handleAddItem(false)}>
+                                    <PlusCircle className="mr-2" />
+                                    Add Item
+                                </Button>
                                 <Button type="button" variant="outline" onClick={() => handleAddItem(true)}>
                                     <PlusCircle className="mr-2" />
                                     Add Manually
