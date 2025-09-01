@@ -93,32 +93,31 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               </nav>
             </SheetContent>
           </Sheet>
-           <Link
-            href="/"
-            className="flex items-center gap-2 text-lg font-semibold md:text-base"
-          >
-            <Icons.logo className="h-6 w-6 text-primary" />
-            <span className="sr-only">{companyName}</span>
-          </Link>
+           <nav className="hidden flex-1 justify-center flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
+            {menuItems.map((item) => (
+                <Link
+                key={item.label}
+                href={item.href}
+                className={`transition-colors hover:text-foreground ${
+                    pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
+                    ? 'text-foreground font-semibold'
+                    : 'text-muted-foreground'
+                }`}
+                >
+                {item.label}
+                </Link>
+            ))}
+            </nav>
         </div>
 
-        <nav className="hidden flex-1 justify-center flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-          {menuItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`transition-colors hover:text-foreground ${
-                pathname.startsWith(item.href) && (item.href === '/' ? pathname === '/' : true)
-                  ? 'text-foreground font-semibold'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        
         <div className="flex items-center justify-end gap-4 md:flex-1 md:gap-2 lg:gap-4">
+             <Link
+                href="/"
+                className="flex items-center gap-2 text-lg font-semibold md:text-base"
+            >
+                <Icons.logo className="h-6 w-6 text-primary" />
+                <span className="">{companyName}</span>
+            </Link>
            <UserMenu />
         </div>
       </header>
