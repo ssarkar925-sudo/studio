@@ -4,7 +4,7 @@
 import { productsDAO, type Product } from '@/lib/data';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import jsPDF from 'jspdf';
@@ -22,7 +22,8 @@ function BarcodeTag({ product }: { product: Product }) {
   );
 }
 
-export default function DownloadBarcodeTagsPage() {
+
+function PrintPageContent() {
   const searchParams = useSearchParams();
   const { data: allProducts, isLoading } = useFirestoreData(productsDAO);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
@@ -88,4 +89,13 @@ export default function DownloadBarcodeTagsPage() {
         </div>
     </div>
   );
+}
+
+
+export default function DownloadBarcodeTagsPage() {
+    return (
+        <Suspense fallback={<div className="p-8">Loading Tags...</div>}>
+            <PrintPageContent />
+        </Suspense>
+    )
 }
