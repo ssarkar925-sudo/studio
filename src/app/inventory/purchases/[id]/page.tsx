@@ -62,7 +62,7 @@ export default function PurchaseDetailsPage() {
           <CardHeader>
             <div className="flex justify-between items-start">
                 <div>
-                    <CardTitle>Purchase Order #{purchase.id.slice(0, 8)}...</CardTitle>
+                    <CardTitle>Purchase Order #{purchase.id.slice(0, 8)}</CardTitle>
                     <CardDescription>
                       From {purchase.vendorName}
                     </CardDescription>

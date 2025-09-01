@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { customersDAO, type Customer } from '@/lib/data';
-import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Printer, Download } from 'lucide-react';
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
@@ -92,6 +92,11 @@ export function CustomersClient({ customers: initialCustomers }: { customers: Cu
       router.push(`/customers/${customerId}`);
     } else if (action === 'Edit') {
         router.push(`/customers/${customerId}/edit`);
+    } else if (action === 'Print' || action === 'Download') {
+        toast({
+            title: 'Coming Soon!',
+            description: `The ${action.toLowerCase()} functionality is not yet implemented.`,
+        });
     }
   };
 
@@ -199,6 +204,8 @@ export function CustomersClient({ customers: initialCustomers }: { customers: Cu
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onSelect={() => handleAction('View', customer.id)}>View</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleAction('Edit', customer.id)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Print', customer.id)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Download', customer.id)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
                           <AlertDialogTrigger asChild>
                             <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                           </AlertDialogTrigger>

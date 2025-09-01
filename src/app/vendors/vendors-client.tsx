@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { vendorsDAO, Vendor } from '@/lib/data';
-import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Printer, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useState, useMemo, useEffect } from 'react';
@@ -86,6 +86,11 @@ export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }
         toast({
           title: `Vendor Deleted`,
           description: `Vendor ${vendorName} has been deleted.`,
+        });
+    } else if (action === 'Print' || action === 'Download') {
+        toast({
+            title: 'Coming Soon!',
+            description: `The ${action.toLowerCase()} functionality is not yet implemented.`,
         });
     }
   };
@@ -175,6 +180,8 @@ export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem onSelect={() => handleAction('View', vendor.id, vendor.vendorName)}>View</DropdownMenuItem>
                             <DropdownMenuItem onSelect={() => handleAction('Edit', vendor.id, vendor.vendorName)}>Edit</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Print', vendor.id, vendor.vendorName)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => handleAction('Download', vendor.id, vendor.vendorName)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
                             <AlertDialogTrigger asChild>
                                 <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                             </AlertDialogTrigger>

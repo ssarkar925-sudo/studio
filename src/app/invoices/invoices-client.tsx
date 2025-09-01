@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { invoicesDAO, Invoice } from '@/lib/data';
-import { MoreHorizontal, PlusCircle, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Printer, Download } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -105,6 +105,11 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
         router.push(`/invoices/${invoiceId}`);
     } else if (action === 'Edit') {
         router.push(`/invoices/${invoiceId}/edit`);
+    } else if (action === 'Print' || action === 'Download') {
+         toast({
+          title: 'Coming Soon!',
+          description: `The ${action.toLowerCase()} functionality is not yet implemented.`,
+        });
     } else {
         toast({
           title: `${action} Invoice`,
@@ -202,6 +207,8 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onSelect={() => handleAction('View', invoice.id, invoice.invoiceNumber)}>View</DropdownMenuItem>
                           <DropdownMenuItem onSelect={() => handleAction('Edit', invoice.id, invoice.invoiceNumber)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Print', invoice.id, invoice.invoiceNumber)}><Printer className="mr-2 h-4 w-4" />Print</DropdownMenuItem>
+                          <DropdownMenuItem onSelect={() => handleAction('Download', invoice.id, invoice.invoiceNumber)}><Download className="mr-2 h-4 w-4" />Download</DropdownMenuItem>
                            <AlertDialogTrigger asChild>
                             <DropdownMenuItem className="text-red-600">Delete</DropdownMenuItem>
                           </AlertDialogTrigger>
