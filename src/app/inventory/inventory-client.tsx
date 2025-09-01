@@ -6,7 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { productsDAO, purchasesDAO, type Product, type Purchase } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Trash2, Printer } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Trash2, Printer, Barcode } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -98,6 +98,13 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
     }
   };
 
+  const handlePrintTags = () => {
+    const query = new URLSearchParams({ ids: selectedProducts.join(',') });
+    const url = `/inventory/tags/print?${query.toString()}`;
+    const printWindow = window.open(url, '_blank');
+    printWindow?.focus();
+  };
+
   const handleAction = (action: string, productId: string) => {
     const url = `/inventory/${productId}`;
     if (action === 'View') {
@@ -119,23 +126,26 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
               <CardDescription>Manage your inventory, services, and their prices.</CardDescription>
             </div>
              {selectedProducts.length > 0 && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                    <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedProducts.length})</Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete {selectedProducts.length} item(s).
-                    </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+              <div className='flex gap-2'>
+                <Button variant="outline" size="sm" onClick={handlePrintTags}><Barcode /> Print Tags ({selectedProducts.length})</Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedProducts.length})</Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                      <AlertDialogHeader>
+                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                          This action cannot be undone. This will permanently delete {selectedProducts.length} item(s).
+                      </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteSelected} className="bg-red-600 hover:bg-red-700">Delete</AlertDialogAction>
+                      </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             )}
           </div>
            <Button asChild>
