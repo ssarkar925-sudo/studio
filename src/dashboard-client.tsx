@@ -1,0 +1,162 @@
+
+'use client';
+
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { type Invoice } from '@/lib/data';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+} from '@/components/ui/chart';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import Link from 'next/link';
+import { subMonths, format, parse, startOfMonth } from 'date-fns';
+import { useMemo } from 'react';
+
+
+const chartConfig = {
+  total: {
+    label: 'Total',
+    color: 'hsl(var(--accent))',
+  },
+  paid: {
+    label: 'Paid',
+    color: 'hsl(var(--primary))',
+  },
+} satisfies import('@/components/ui/chart').ChartConfig;
+
+export function DashboardClient({ invoices }: { invoices: Invoice[] }) {
+    const chartData = useMemo(() => {
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const date = subMonths(new Date(), 5 - i);
+      return {
+        month: format(date, 'MMMM'),
+        total: 0,
+        paid: 0,
+        start: startOfMonth(date),
+      };
+    });
+
+    invoices.forEach(invoice => {
+      try {
+        const issueDate = parse(invoice.issueDate, 'PPP', new Date());
+        const monthData = months.find(m => 
+            issueDate.getMonth() === m.start.getMonth() && 
+            issueDate.getFullYear() === m.start.getFullYear()
+        );
+
+        if (monthData) {
+          monthData.total += invoice.amount;
+          if (invoice.status === 'Paid') {
+            monthData.paid += invoice.amount;
+          }
+        }
+      } catch (e) {
+        console.error("Error parsing invoice date", invoice.issueDate);
+      }
+    });
+
+    return months.map(({ month, total, paid }) => ({ month, total, paid }));
+  }, [invoices]);
+
+  return (
+    <>
+        <Card className="lg:col-span-3">
+          <CardHeader>
+            <CardTitle>Overview</CardTitle>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <ChartContainer config={chartConfig} className="h-[300px] w-full">
+              <BarChart accessibilityLayer data={chartData}>
+                <CartesianGrid vertical={false} />
+                <XAxis
+                  dataKey="month"
+                  tickLine={false}
+                  tickMargin={10}
+                  axisLine={false}
+                  tickFormatter={(value) => value.slice(0, 3)}
+                />
+                <YAxis
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value) => `₹${value / 1000}K`}
+                />
+                <ChartTooltip
+                  cursor={false}
+                  content={<ChartTooltipContent indicator="dot" />}
+                />
+                <Bar
+                  dataKey="total"
+                  fill="var(--color-total)"
+                  radius={4}
+                />
+                <Bar dataKey="paid" fill="var(--color-paid)" radius={4} />
+              </BarChart>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+        
+    </>
+  )
+}
+
+
+function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
+    if (invoices.length === 0) {
+    return (
+      <div className="text-center text-muted-foreground py-8">
+        No recent invoices to display.
+      </div>
+    );
+  }
+  const sortedInvoices = [...invoices].sort((a,b) => {
+      try {
+        return parse(b.issueDate, 'PPP', new Date()).getTime() - parse(a.issueDate, 'PPP', new Date()).getTime()
+      } catch {
+        return 0;
+      }
+  });
+
+  return (
+    <div className="space-y-2">
+      {sortedInvoices.slice(0, 5).map((invoice) => (
+        <Link href={`/invoices/${invoice.id}`} key={invoice.id} className="block p-2 -mx-2 rounded-md hover:bg-muted">
+            <div className="flex items-center">
+                <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                    {invoice.customer.name}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                    {invoice.customer.email}
+                    </p>
+                </div>
+                <div className="ml-auto text-right font-medium">
+                    <p>₹{invoice.amount.toFixed(2)}</p>
+                    <InvoiceStatusBadge status={invoice.status} />
+                </div>
+            </div>
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
+  const variant = {
+    Paid: 'default',
+    Pending: 'secondary',
+    Overdue: 'destructive',
+    Partial: 'outline',
+  }[status] as 'default' | 'secondary' | 'destructive' | 'outline';
+
+  if (status === 'Partial') {
+    return <Badge variant={variant} className="capitalize mt-1 border-accent text-accent">{status.toLowerCase()}</Badge>;
+  }
+
+  return (
+    <Badge variant={variant} className="mt-1 capitalize">
+      {status.toLowerCase()}
+    </Badge>
+  );
+}

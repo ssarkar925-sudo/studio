@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   FileText,
-  Users,
   Package,
   Settings,
   UserCircle,
@@ -147,12 +146,6 @@ function UserMenu() {
             <UserCircle />
             <span>Profile</span>
           </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-            <Link href="/settings">
-                <Settings />
-                <span>Settings</span>
-            </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem>
