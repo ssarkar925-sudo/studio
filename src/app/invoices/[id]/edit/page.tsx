@@ -26,7 +26,7 @@ import { customersDAO, invoicesDAO, productsDAO, type Invoice, type Product } fr
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
-import { format, parse } from 'date-fns';
+import { format, parse, isValid } from 'date-fns';
 import { useEffect, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
@@ -81,9 +81,21 @@ export default function EditInvoicePage() {
         if (foundInvoice) {
             setInvoice(foundInvoice);
             setInvoiceNumber(foundInvoice.invoiceNumber);
-            setIssueDate(parse(foundInvoice.issueDate, 'dd/MM/yyyy', new Date()));
+
+            const parsedIssueDate = parse(foundInvoice.issueDate, 'dd/MM/yyyy', new Date());
+            if (isValid(parsedIssueDate)) {
+                setIssueDate(parsedIssueDate);
+            } else {
+                setIssueDate(undefined);
+            }
+
             if(foundInvoice.dueDate && foundInvoice.dueDate !== 'N/A') {
-                setDueDate(parse(foundInvoice.dueDate, 'dd/MM/yyyy', new Date()));
+                const parsedDueDate = parse(foundInvoice.dueDate, 'dd/MM/yyyy', new Date());
+                 if (isValid(parsedDueDate)) {
+                    setDueDate(parsedDueDate);
+                } else {
+                    setDueDate(undefined);
+                }
             }
             setStatus(foundInvoice.status);
             setCustomerId(foundInvoice.customer.id);
