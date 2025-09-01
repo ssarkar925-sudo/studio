@@ -268,14 +268,14 @@ export function UserProfileClient() {
                         <AlertDialogHeader>
                             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                             <AlertDialogDescription>
-                                This action cannot be undone. This will permanently delete your account and remove your data from our servers. To confirm, please type "delete total delete this account" in the box below.
+                                This action cannot be undone. This will permanently delete your account and remove your data from our servers. To confirm, please type "delete my account" in the box below.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <div className="grid gap-2">
                             <Label htmlFor="delete-confirm" className="sr-only">Confirmation</Label>
                             <Input 
                                 id="delete-confirm" 
-                                placeholder='delete total delete this account'
+                                placeholder='delete my account'
                                 value={deleteConfirmation}
                                 onChange={(e) => setDeleteConfirmation(e.target.value)}
                             />
@@ -285,7 +285,7 @@ export function UserProfileClient() {
                             <AlertDialogAction 
                                 onClick={handleDeleteAccount} 
                                 className="bg-red-600 hover:bg-red-700"
-                                disabled={deleteConfirmation !== 'delete total delete this account'}
+                                disabled={deleteConfirmation !== 'delete my account'}
                             >
                                 Delete Account
                             </AlertDialogAction>
