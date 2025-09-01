@@ -25,12 +25,13 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Invoice, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
 import { format, parse } from 'date-fns';
 import { useEffect, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
+import { Separator } from '@/components/ui/separator';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -237,25 +238,50 @@ export default function EditInvoicePage() {
                 <CardContent>
                 <div className="grid gap-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="grid gap-3">
-                        <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                        <Input id="invoiceNumber" name="invoiceNumber" type="text" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} required />
+                        <div className="grid gap-3">
+                            <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                            <Input id="invoiceNumber" name="invoiceNumber" type="text" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} required />
+                        </div>
+                        <div className="grid gap-3">
+                            <Label htmlFor="customer">Customer</Label>
+                            <Select name="customer" required onValueChange={setCustomerId} value={customerId} disabled>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a customer" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {customers.map((customer) => (
+                                <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                            </Select>
+                        </div>
                     </div>
-                    <div className="grid gap-3">
-                        <Label htmlFor="customer">Customer</Label>
-                        <Select name="customer" required onValueChange={setCustomerId} value={customerId} disabled>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Select a customer" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {customers.map((customer) => (
-                            <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
-                            ))}
-                        </SelectContent>
-                        </Select>
-                    </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="grid gap-3">
+                            <Label htmlFor="issueDate">Issue Date</Label>
+                            <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                variant={'outline'}
+                                className={cn(
+                                    'justify-start text-left font-normal',
+                                    !issueDate && 'text-muted-foreground'
+                                )}
+                                >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {issueDate ? format(issueDate, 'PPP') : <span>Pick a date</span>}
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0">
+                                <Calendar
+                                mode="single"
+                                selected={issueDate}
+                                onSelect={setIssueDate}
+                                initialFocus
+                                />
+                            </PopoverContent>
+                            </Popover>
+                        </div>
                         <div className="grid gap-3">
                             <Label htmlFor="status">Status</Label>
                             <Select name="status" required onValueChange={(value) => setStatus(value as Invoice['status'])} value={status}>
@@ -269,58 +295,6 @@ export default function EditInvoicePage() {
                             </SelectContent>
                             </Select>
                         </div>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="grid gap-3">
-                        <Label htmlFor="issueDate">Issue Date</Label>
-                        <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'justify-start text-left font-normal',
-                                !issueDate && 'text-muted-foreground'
-                            )}
-                            >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {issueDate ? format(issueDate, 'PPP') : <span>Pick a date</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <Calendar
-                            mode="single"
-                            selected={issueDate}
-                            onSelect={setIssueDate}
-                            initialFocus
-                            />
-                        </PopoverContent>
-                        </Popover>
-                    </div>
-                    <div className="grid gap-3">
-                        <Label htmlFor="dueDate">Due Date</Label>
-                        <Popover>
-                        <PopoverTrigger asChild>
-                            <Button
-                            variant={'outline'}
-                            className={cn(
-                                'justify-start text-left font-normal',
-                                !dueDate && 'text-muted-foreground'
-                            )}
-                            >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0">
-                            <Calendar
-                            mode="single"
-                            selected={dueDate}
-                            onSelect={setDueDate}
-                            initialFocus
-                            />
-                        </PopoverContent>
-                        </Popover>
-                    </div>
                     </div>
                 </div>
                 </CardContent>
@@ -379,16 +353,54 @@ export default function EditInvoicePage() {
 
                 <div className="grid md:grid-cols-2 gap-6">
                     <Card>
-                        <CardHeader>
-                            <CardTitle>Order Note</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                             <Textarea 
-                                placeholder="Add any notes for the order..."
-                                value={orderNote}
-                                onChange={(e) => setOrderNote(e.target.value)}
-                                rows={5}
-                            />
+                        <CardContent className="grid gap-4 pt-6">
+                             <div className="grid gap-3">
+                                <Label htmlFor="dueDate">Due Date</Label>
+                                <div className="relative">
+                                    <Popover>
+                                        <PopoverTrigger asChild>
+                                            <Button
+                                            variant={'outline'}
+                                            className={cn(
+                                                'w-full justify-start text-left font-normal',
+                                                !dueDate && 'text-muted-foreground'
+                                            )}
+                                            >
+                                            <CalendarIcon className="mr-2 h-4 w-4" />
+                                            {dueDate ? format(dueDate, 'PPP') : <span>Pick a date</span>}
+                                            </Button>
+                                        </PopoverTrigger>
+                                        <PopoverContent className="w-auto p-0">
+                                            <Calendar
+                                            mode="single"
+                                            selected={dueDate}
+                                            onSelect={setDueDate}
+                                            initialFocus
+                                            />
+                                        </PopoverContent>
+                                    </Popover>
+                                     {dueDate && (
+                                        <Button 
+                                            variant="ghost" 
+                                            size="icon" 
+                                            className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                                            onClick={() => setDueDate(undefined)}
+                                        >
+                                            <XIcon className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                             <div className="grid gap-3">
+                                <Label htmlFor="orderNote">Order Note</Label>
+                                <Textarea 
+                                    id="orderNote"
+                                    placeholder="Add any notes for the order..."
+                                    value={orderNote}
+                                    onChange={(e) => setOrderNote(e.target.value)}
+                                    rows={5}
+                                />
+                            </div>
                         </CardContent>
                     </Card>
                     <Card>
@@ -396,34 +408,36 @@ export default function EditInvoicePage() {
                             <CardTitle>Summary</CardTitle>
                         </CardHeader>
                         <CardContent>
-                        <div className="grid gap-4">
-                                <div className="grid grid-cols-2 items-center">
-                                    <Label className='text-right pr-4'>Subtotal</Label>
-                                    <Input value={`₹${subtotal.toFixed(2)}`} readOnly className='bg-muted text-right' />
+                            <div className="grid gap-4">
+                                <div className="flex items-center justify-between">
+                                    <Label>Subtotal</Label>
+                                    <span className="text-muted-foreground">₹{subtotal.toFixed(2)}</span>
                                 </div>
-                                <div className="grid grid-cols-2 items-center">
-                                    <Label className='text-right pr-4'>GST (%)</Label>
-                                    <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} className="text-right" />
+                                <div className="flex items-center justify-between">
+                                    <Label>GST (%)</Label>
+                                    <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} className="max-w-24 text-right" />
                                 </div>
-                                <div className="grid grid-cols-2 items-center">
-                                    <Label className='text-right pr-4'>Delivery Charges</Label>
-                                    <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} className="text-right" />
+                                <div className="flex items-center justify-between">
+                                    <Label>Delivery Charges</Label>
+                                    <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} className="max-w-24 text-right" />
                                 </div>
-                                <div className="grid grid-cols-2 items-center">
-                                    <Label className='text-right pr-4'>Discount</Label>
-                                    <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="text-right" />
+                                <div className="flex items-center justify-between">
+                                    <Label>Discount</Label>
+                                    <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="max-w-24 text-right" />
                                 </div>
-                                <div className="grid grid-cols-2 items-center">
-                                    <Label className="font-bold text-lg text-right pr-4">Total</Label>
-                                    <Input value={`₹${total.toFixed(2)}`} readOnly className='bg-muted text-right font-bold text-lg h-12' />
+                                <Separator />
+                                <div className="flex items-center justify-between font-bold text-lg">
+                                    <Label>Total</Label>
+                                    <span>₹{total.toFixed(2)}</span>
                                 </div>
-                                <div className="grid grid-cols-2 items-center">
-                                    <Label className='text-right pr-4'>Paid Amount</Label>
-                                    <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} className="text-right" />
+                                <Separator />
+                                <div className="flex items-center justify-between">
+                                    <Label>Paid Amount</Label>
+                                    <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} className="max-w-24 text-right" />
                                 </div>
-                                <div className="grid grid-cols-2 items-center">
-                                    <Label className='text-right pr-4'>Due Amount</Label>
-                                    <Input value={`₹${dueAmount.toFixed(2)}`} readOnly className='bg-muted font-bold text-right' />
+                                 <div className="flex items-center justify-between font-semibold">
+                                    <Label>Due Amount</Label>
+                                    <span>₹{dueAmount.toFixed(2)}</span>
                                 </div>
                             </div>
                         </CardContent>
