@@ -106,16 +106,12 @@ function UpcomingDeliveries({ purchases }: { purchases: Purchase[] }) {
 }
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
-  const variant = {
-    Paid: 'default',
+    const variant = {
+    Paid: 'success',
     Pending: 'secondary',
     Overdue: 'destructive',
-    Partial: 'outline',
-  }[status] as 'default' | 'secondary' | 'destructive' | 'outline';
-
-  if (status === 'Partial') {
-    return <Badge variant={variant} className="capitalize mt-1 border-accent text-accent">{status.toLowerCase()}</Badge>;
-  }
+    Partial: 'warning',
+  }[status] as 'success' | 'secondary' | 'destructive' | 'warning';
 
   return (
     <Badge variant={variant} className="mt-1 capitalize">
