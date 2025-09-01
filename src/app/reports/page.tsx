@@ -55,6 +55,7 @@ export default function ReportsPage() {
   const {
     totalRevenue,
     totalProfit,
+    totalCogs,
     totalSales,
     monthlyProfitData,
     productPerformance
@@ -62,6 +63,7 @@ export default function ReportsPage() {
     const productsMap = new Map<string, Product>(products.map(p => [p.id, p]));
     let totalRevenue = 0;
     let totalProfit = 0;
+    let totalCogs = 0;
     const salesByMonth: {[key: string]: number} = {};
     const productSales: {[key: string]: { name: string, quantitySold: number }} = {};
 
@@ -74,13 +76,17 @@ export default function ReportsPage() {
       invoice.items.forEach(item => {
         const product = productsMap.get(item.productId);
         if (product) {
-          totalProfit += (item.sellingPrice - product.purchasePrice) * item.quantity;
+          const itemCost = product.purchasePrice * item.quantity;
+          totalCogs += itemCost;
+          totalProfit += (item.sellingPrice * item.quantity) - itemCost;
           if (productSales[item.productId]) {
             productSales[item.productId].quantitySold += item.quantity;
           }
         } else {
             // For manual items, assume cost is 70% of selling price for profit calc
-            totalProfit += (item.sellingPrice * 0.3) * item.quantity;
+            const itemCost = (item.sellingPrice * 0.7) * item.quantity;
+            totalCogs += itemCost;
+            totalProfit += (item.sellingPrice * item.quantity) - itemCost;
         }
       });
 
@@ -111,6 +117,7 @@ export default function ReportsPage() {
     return {
       totalRevenue,
       totalProfit,
+      totalCogs,
       totalSales: filteredInvoices.length,
       monthlyProfitData,
       productPerformance
@@ -139,7 +146,7 @@ export default function ReportsPage() {
         <DateRangePicker dateRange={dateRange} onUpdate={setDateRange} />
       </div>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
@@ -152,7 +159,17 @@ export default function ReportsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Net Profit</CardTitle>
+            <CardTitle className="text-sm font-medium">Cost of Goods Sold</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{totalCogs.toFixed(2)}</div>
+            <p className="text-xs text-muted-foreground">Total cost of items sold</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Gross Profit</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
