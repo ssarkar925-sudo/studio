@@ -17,6 +17,8 @@ import Link from 'next/link';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { subMonths, format, parse, startOfMonth } from 'date-fns';
 import { useMemo } from 'react';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 const chartConfig = {
   total: {
@@ -30,7 +32,7 @@ const chartConfig = {
 } satisfies import('@/components/ui/chart').ChartConfig;
 
 export default function DashboardPage() {
-  const { data: invoices } = useFirestoreData(invoicesDAO);
+  const { data: invoices, isLoading } = useFirestoreData(invoicesDAO);
 
   const totalRevenue = invoices
     .filter((i) => i.status === 'Paid')
@@ -72,6 +74,76 @@ export default function DashboardPage() {
 
     return months.map(({ month, total, paid }) => ({ month, total, paid }));
   }, [invoices]);
+  
+  if (isLoading) {
+    return (
+        <AppLayout>
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                        <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-8 w-3/4" />
+                        <Skeleton className="h-4 w-1/2 mt-1" />
+                    </CardContent>
+                </Card>
+                 <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
+                        <FileText className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                       <Skeleton className="h-8 w-3/4" />
+                       <Skeleton className="h-4 w-1/2 mt-1" />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Overdue Invoices</CardTitle>
+                        <Clock className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                       <Skeleton className="h-8 w-1/4" />
+                       <Skeleton className="h-4 w-1/2 mt-1" />
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
+                <Card className="lg:col-span-3 h-[380px]">
+                    <CardHeader>
+                        <CardTitle>Overview</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-[300px] w-full" />
+                    </CardContent>
+                </Card>
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle>Recent Invoices</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                       <div className="space-y-4">
+                            {[...Array(5)].map((_, i) => (
+                               <div key={i} className="flex items-center">
+                                   <div className="space-y-2">
+                                       <Skeleton className="h-4 w-32" />
+                                       <Skeleton className="h-4 w-48" />
+                                   </div>
+                                   <div className="ml-auto text-right">
+                                       <Skeleton className="h-5 w-20" />
+                                       <Skeleton className="h-5 w-16 mt-1" />
+                                   </div>
+                               </div>
+                            ))}
+                       </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </AppLayout>
+    )
+  }
 
   return (
     <AppLayout>
