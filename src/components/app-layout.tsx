@@ -68,10 +68,10 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 <SheetHeader>
                     <SheetTitle asChild>
                         <Link
-                        href="#"
+                        href="/"
                         className="flex items-center gap-2 text-lg font-semibold"
                         >
-                        {logoUrl ? <AvatarImage src={logoUrl} alt={companyName} className="h-6 w-6" /> : <Icons.logo className="h-6 w-6 text-primary" />}
+                        {logoUrl ? <Avatar className="h-6 w-6"><AvatarImage src={logoUrl} alt={companyName} /></Avatar> : <Icons.logo className="h-6 w-6 text-primary" />}
                         <span >{companyName}</span>
                         </Link>
                     </SheetTitle>
@@ -115,7 +115,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 href="/"
                 className="flex items-center gap-2 text-lg font-semibold md:text-base"
             >
-                {logoUrl ? <AvatarImage src={logoUrl} alt={companyName} className="h-6 w-6 rounded-sm" /> : <Icons.logo className="h-6 w-6 text-primary" />}
+                {logoUrl ? <Avatar className="h-6 w-6"><AvatarImage src={logoUrl} alt={companyName} /></Avatar> : <Icons.logo className="h-6 w-6 text-primary" />}
                 <span className="">{companyName}</span>
             </Link>
            <UserMenu />
