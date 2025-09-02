@@ -29,66 +29,76 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const { toast } = useToast();
   const [scannedSku, setScannedSku] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const codeReader = useRef(new BrowserMultiFormatReader());
+  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    const reader = codeReader.current;
-
-    const startCamera = async () => {
-      if (!open || !videoRef.current) return;
-
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment' },
-        });
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-
-        setHasCameraPermission(true);
-
-        await reader.decodeFromVideoElement(videoRef.current, (result, err) => {
-          if (result) {
-            const sku = result.getText();
-            const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
-
-            if (foundProduct) {
-              toast({
-                title: 'Item Found',
-                description: `${foundProduct.name} added.`,
-              });
-              onScan(foundProduct);
-            } else {
-              toast({
-                variant: 'destructive',
-                title: 'Product Not Found',
-                description: `No product found with SKU: ${sku}`,
-              });
-            }
-          } else if (err && !(err instanceof NotFoundException)) {
-            console.error('Scan Error:', err);
-          }
-        });
-      } catch (error) {
-        console.error('Error accessing camera:', error);
-        setHasCameraPermission(false);
-      }
-    };
-
     if (open) {
-      startCamera();
+      codeReaderRef.current = new BrowserMultiFormatReader();
+      const codeReader = codeReaderRef.current;
+      
+      const startScan = async () => {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment' },
+          });
+          setHasCameraPermission(true);
+
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            
+            await codeReader.decodeFromStream(stream, videoRef.current, (result, error) => {
+              if (result) {
+                const sku = result.getText();
+                const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+
+                if (foundProduct) {
+                  toast({
+                    title: 'Item Found',
+                    description: `${foundProduct.name} added.`,
+                  });
+                  onScan(foundProduct);
+                } else {
+                  toast({
+                    variant: 'destructive',
+                    title: 'Product Not Found',
+                    description: `No product found with SKU: ${sku}`,
+                  });
+                }
+              }
+              if (error && !(error instanceof NotFoundException)) {
+                console.error('Scan Error:', error);
+              }
+            });
+          }
+        } catch (err) {
+          console.error('Camera access error:', err);
+          setHasCameraPermission(false);
+        }
+      };
+      
+      startScan();
+
+    } else {
+      // Cleanup when the dialog is closed
+      if (codeReaderRef.current) {
+        codeReaderRef.current.reset();
+      }
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
     }
 
+    // This is the main cleanup function for when the component unmounts
     return () => {
-      // This is the cleanup function
-      reader.reset();
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
+      if (codeReaderRef.current) {
+        codeReaderRef.current.reset();
       }
-      if (videoRef.current) {
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
         videoRef.current.srcObject = null;
       }
     };
