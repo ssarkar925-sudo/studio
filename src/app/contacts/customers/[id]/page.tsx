@@ -1,4 +1,6 @@
 
+'use client';
+
 import { AppLayout } from '@/components/app-layout';
 import { Button } from '@/components/ui/button';
 import {
@@ -8,35 +10,32 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { customersDAO } from '@/lib/data';
+import { customersDAO, type Customer } from '@/lib/data';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useFirestoreData } from '@/hooks/use-firestore-data';
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 
-async function getCustomer(id: string) {
-    // We will add a `get` method to the DAO for fetching a single document
-    if (customersDAO.get) {
-        return await customersDAO.get(id);
-    }
-    // Fallback for safety
-    const customers = await customersDAO.load();
-    const customer = customers.find(c => c.id === id);
-    if (!customer) {
-        throw new Error("Customer not found");
-    }
-    return customer;
-}
+export default function CustomerDetailsPage() {
+  const params = useParams();
+  const customerId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const { data: customers, isLoading } = useFirestoreData(customersDAO);
+  const [customer, setCustomer] = useState<Customer | null>(null);
 
-export default async function CustomerDetailsPage({ params }: { params: { id: string }}) {
-  const customer = await getCustomer(params.id);
+  useEffect(() => {
+      if (!isLoading && customers) {
+          const found = customers.find(c => c.id === customerId);
+          setCustomer(found || null);
+      }
+  }, [customers, isLoading, customerId]);
 
-  if (!customer) {
+
+  if (isLoading || !customer) {
     return (
         <AppLayout>
             <div className="mx-auto grid w-full max-w-2xl gap-2">
-                <h1 className="text-2xl font-semibold">Customer not found</h1>
-                 <Button variant="outline" asChild>
-                    <Link href="/contacts?tab=customers">Back to Customers</Link>
-                </Button>
+                <h1 className="text-2xl font-semibold">Loading...</h1>
             </div>
         </AppLayout>
     );

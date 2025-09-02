@@ -224,7 +224,22 @@ const adminUsersDAO = {
 };
 
 
-export const customersDAO = createFirestoreDAO<Customer>('customers');
+const createCustomersDAO = () => {
+    const baseDAO = createFirestoreDAO<Customer>('customers');
+
+    const get = async (id: string): Promise<Customer | null> => {
+        const docRef = doc(db, 'customers', id);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as Customer : null;
+    }
+
+    return {
+        ...baseDAO,
+        get,
+    };
+};
+
+export const customersDAO = createCustomersDAO();
 export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
 
 const getInvoiceStatus = (dueAmount: number, paidAmount: number): Invoice['status'] => {

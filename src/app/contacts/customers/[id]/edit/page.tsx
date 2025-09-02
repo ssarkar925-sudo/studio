@@ -19,23 +19,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { customersDAO, type Customer } from '@/lib/data';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-
-// This page now needs to fetch its own data since it's a client component.
-async function getCustomer(id: string): Promise<Customer | null> {
-    try {
-        // We'll add a direct `get` method to the DAO for this
-        if (customersDAO.get) {
-            return await customersDAO.get(id);
-        }
-        // Fallback to loading all and filtering, though less efficient
-        const customers = await customersDAO.load();
-        return customers.find(c => c.id === id) || null;
-    } catch (error) {
-        console.error("Failed to fetch customer", error);
-        return null;
-    }
-}
-
+import { useFirestoreData } from '@/hooks/use-firestore-data';
 
 export default function EditCustomerPage() {
   const { toast } = useToast();
@@ -43,8 +27,8 @@ export default function EditCustomerPage() {
   const params = useParams();
   const customerId = Array.isArray(params.id) ? params.id[0] : params.id;
   
+  const { data: customers, isLoading: customersLoading } = useFirestoreData(customersDAO);
   const [customer, setCustomer] = useState<Customer | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   // State for form fields
   const [name, setName] = useState('');
@@ -54,14 +38,14 @@ export default function EditCustomerPage() {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (customerId) {
-      getCustomer(customerId).then(data => {
-        if (data) {
-          setCustomer(data);
-          setName(data.name);
-          setEmail(data.email);
-          setPhone(data.phone || '');
-          setAddress(data.address || '');
+    if (!customersLoading && customers.length > 0) {
+      const foundCustomer = customers.find((c) => c.id === customerId);
+       if (foundCustomer) {
+          setCustomer(foundCustomer);
+          setName(foundCustomer.name);
+          setEmail(foundCustomer.email);
+          setPhone(foundCustomer.phone || '');
+          setAddress(foundCustomer.address || '');
         } else {
           toast({
             variant: 'destructive',
@@ -69,10 +53,8 @@ export default function EditCustomerPage() {
           });
           router.push('/contacts?tab=customers');
         }
-        setIsLoading(false);
-      });
     }
-  }, [customerId, router, toast]);
+  }, [customerId, customers, customersLoading, router, toast]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -113,7 +95,7 @@ export default function EditCustomerPage() {
     }
   };
   
-  if (isLoading || !customer) {
+  if (customersLoading || !customer) {
     return (
         <AppLayout>
             <div className="mx-auto grid w-full max-w-2xl gap-2">
