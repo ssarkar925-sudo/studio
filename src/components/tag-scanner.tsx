@@ -31,40 +31,44 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const codeReader = useRef(new BrowserMultiFormatReader());
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
+   const startScan = useCallback((reader: BrowserMultiFormatReader, videoElement: HTMLVideoElement) => {
+    reader.decodeFromVideoElement(videoElement, (result, err) => {
+      if (result) {
+        const sku = result.getText();
+        const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+
+        if (foundProduct) {
+          toast({
+            title: 'Item Found',
+            description: `${foundProduct.name} added.`,
+          });
+          onScan(foundProduct);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Product Not Found',
+            description: `No product found with SKU: ${sku}`,
+          });
+        }
+      } else if (err && !(err instanceof NotFoundException)) {
+        console.error('Scan Error:', err);
+      }
+    }).catch(err => console.error(err));
+  }, [products, onScan, toast]);
+
   useEffect(() => {
-    const reader = codeReader.current;
     let stream: MediaStream | null = null;
+    const reader = codeReader.current;
     
     const getCameraPermission = async () => {
+      if (!videoRef.current) return;
+
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         setHasCameraPermission(true);
+        videoRef.current.srcObject = stream;
+        startScan(reader, videoRef.current);
 
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-           reader.decodeFromVideoElement(videoRef.current, (result, err) => {
-              if (result) {
-                const sku = result.getText();
-                const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
-
-                if (foundProduct) {
-                  toast({
-                    title: 'Item Found',
-                    description: `${foundProduct.name} added.`,
-                  });
-                  onScan(foundProduct);
-                } else {
-                  toast({
-                    variant: 'destructive',
-                    title: 'Product Not Found',
-                    description: `No product found with SKU: ${sku}`,
-                  });
-                }
-              } else if (err && !(err instanceof NotFoundException)) {
-                console.error('Scan Error:', err);
-              }
-            });
-        }
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
@@ -77,14 +81,15 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
 
     return () => {
       reader.reset();
-       if (stream) {
+      if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
     };
-  }, [open, onScan, products, toast]);
+  }, [open, startScan]);
+
 
   const handleManualScan = () => {
     if (!scannedSku) {
