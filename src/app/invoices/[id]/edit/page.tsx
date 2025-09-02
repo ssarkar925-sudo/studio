@@ -127,6 +127,9 @@ export default function EditInvoicePage() {
 
   const productOptions = useMemo(() => {
     if (!invoice) return [];
+    // Get a set of product IDs that are already in the items list
+    const addedProductIds = new Set(items.map(item => item.productId));
+
     return products.map((p: Product) => {
       const originalItem = invoice.items.find(i => i.productId === p.id);
       const originalQuantity = originalItem ? originalItem.quantity : 0;
@@ -134,10 +137,12 @@ export default function EditInvoicePage() {
       return {
           value: p.id,
           label: `${p.name} (Stock: ${availableStock})`,
-          disabled: availableStock <= 0 && !originalItem
+          // Disable if stock is zero (and not the original item) OR if it's already in the list
+          disabled: (availableStock <= 0 && !originalItem) || (addedProductIds.has(p.id) && !originalItem)
       }
     })
-  }, [products, invoice]);
+  }, [products, invoice, items]);
+
 
   const handleAddItem = (isManual = false) => {
     setItems([

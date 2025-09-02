@@ -71,6 +71,18 @@ export default function NewInvoicePage() {
   const [paidAmount, setPaidAmount] = useState(0);
   const [orderNote, setOrderNote] = useState('');
 
+  const productOptions = useMemo(() => {
+    // Get a set of product IDs that are already in the items list
+    const addedProductIds = new Set(items.map(item => item.productId));
+
+    return products.map(p => ({
+        value: p.id,
+        label: `${p.name} (Stock: ${p.stock})`,
+        // Disable if stock is zero OR if it's already in the list
+        disabled: p.stock <= 0 || addedProductIds.has(p.id)
+    }));
+  }, [products, items]);
+
   // Add one default item row when the component mounts
   useEffect(() => {
     if (items.length === 0) {
@@ -365,9 +377,9 @@ export default function NewInvoicePage() {
                                           <SelectValue placeholder="Select an item" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                          {products.map(p => (
-                                            <SelectItem key={p.id} value={p.id} disabled={p.stock <= 0}>
-                                              {p.name} (Stock: {p.stock})
+                                          {productOptions.map(p => (
+                                            <SelectItem key={p.value} value={p.value} disabled={p.disabled}>
+                                              {p.label}
                                             </SelectItem>
                                           ))}
                                         </SelectContent>
