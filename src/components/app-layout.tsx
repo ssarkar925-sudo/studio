@@ -14,6 +14,7 @@ import {
   Contact,
   BarChart,
   LogOut,
+  Shield,
 } from 'lucide-react';
 import { Icons } from '@/components/icons';
 import { Button } from '@/components/ui/button';
@@ -45,6 +46,7 @@ const menuItems = [
   { href: '/contacts', label: 'Contacts', icon: Contact },
   { href: '/inventory', label: 'Inventory', icon: Package },
   { href: '/reports', label: 'Reports', icon: BarChart },
+  { href: '/admin', label: 'Admin', icon: Shield },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
