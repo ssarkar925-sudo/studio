@@ -396,13 +396,13 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
             } else {
                 const existingProduct = allProducts.find(p => p.id === item.productId);
                 if(existingProduct) {
-                    await productsDAO.add({
-                        userId: user.uid,
-                        name: existingProduct.name,
-                        purchasePrice: purchasePriceWithCharges,
-                        sellingPrice: purchasePriceWithCharges * 1.5,
-                        stock: item.quantity,
-                        sku: existingProduct.sku,
+                    const newStock = existingProduct.stock + item.quantity;
+                    const newPurchasePrice = ((existingProduct.purchasePrice * existingProduct.stock) + (purchasePriceWithCharges * item.quantity)) / newStock;
+                    
+                    await productsDAO.update(existingProduct.id, {
+                        stock: newStock,
+                        purchasePrice: newPurchasePrice,
+                        sellingPrice: newPurchasePrice * 1.5, // Update selling price based on new average cost
                         batchCode: batchCode,
                     });
                 }
