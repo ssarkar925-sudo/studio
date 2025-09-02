@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { parse } from 'date-fns';
 
 
 export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice[]}) {
@@ -43,6 +44,18 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
   const router = useRouter();
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
   const [invoices, setInvoices] = useState(initialInvoices);
+
+  const sortedInvoices = useMemo(() => {
+    return [...invoices].sort((a, b) => {
+        try {
+            const dateA = parse(a.issueDate, 'dd/MM/yyyy', new Date()).getTime();
+            const dateB = parse(b.issueDate, 'dd/MM/yyyy', new Date()).getTime();
+            return dateB - dateA;
+        } catch (e) {
+            return 0;
+        }
+    });
+  }, [invoices]);
 
   useEffect(() => {
     setInvoices(initialInvoices);
@@ -174,7 +187,7 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoices.map((invoice) => (
+                {sortedInvoices.map((invoice) => (
                   <TableRow key={invoice.id} data-state={selectedInvoices.includes(invoice.id) && "selected"}>
                     <TableCell>
                       <Checkbox
@@ -234,7 +247,7 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
       </div>
 
        <div className="md:hidden mt-4 space-y-4">
-        {invoices.map((invoice) => (
+        {sortedInvoices.map((invoice) => (
           <Card key={invoice.id}>
             <CardHeader>
               <div className="flex items-start justify-between">

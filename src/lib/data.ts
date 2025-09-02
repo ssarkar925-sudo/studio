@@ -168,11 +168,7 @@ function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: 
       callback: (data: T[]) => void,
       onError?: (error: Error) => void
     ): Unsubscribe => {
-        let q = query(collectionRef, where("userId", "==", userId));
-        
-        if (collectionName === 'invoices') {
-          q = query(q, orderBy('issueDate', 'desc'));
-        }
+        const q = query(collectionRef, where("userId", "==", userId));
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));

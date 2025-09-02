@@ -25,51 +25,59 @@ export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
   const { user, isLoading: isAuthLoading } = useAuth();
 
   useEffect(() => {
+    // Don't do anything until auth state is resolved.
     if (isAuthLoading) {
-      return; // Wait for authentication to resolve
+      return;
     }
 
     const isUserRequired = !ADMIN_DAOS.includes((dao as AdminDao).id);
 
+    // If there's no user for a user-specific DAO, clear data and stop.
     if (isUserRequired && !user) {
       setData([]);
       setIsLoading(false);
-      return; // No user, so no data to fetch for user-specific DAOs
+      return;
     }
     
     setIsLoading(true);
     
-    let unsubscribe;
+    let unsubscribe: (() => void) | undefined;
 
-    if (!isUserRequired) {
-      unsubscribe = (dao as AdminDao).subscribe(
-          (newData) => {
-              setData(newData as T[]);
-              setIsLoading(false);
-              setError(null);
-          },
-          (err: Error) => {
-              console.error("Error fetching admin data:", err);
-              setError(err);
-              setIsLoading(false);
-          }
-      );
-    } else if (user) {
-        unsubscribe = (dao as Dao<T>).subscribe(
-            user.uid,
-            (newData) => {
-                setData(newData);
-                setIsLoading(false);
-                setError(null);
-            },
-            (err: Error) => {
-                console.error("Error fetching Firestore data:", err);
-                setError(err);
-                setIsLoading(false);
-            }
-        );
-    }
+    const setupSubscription = () => {
+        if (!isUserRequired) {
+            return (dao as AdminDao).subscribe(
+                (newData) => {
+                    setData(newData as T[]);
+                    setIsLoading(false);
+                    setError(null);
+                },
+                (err: Error) => {
+                    console.error("Error fetching admin data:", err);
+                    setError(err);
+                    setIsLoading(false);
+                }
+            );
+        } else if (user) {
+            return (dao as Dao<T>).subscribe(
+                user.uid,
+                (newData) => {
+                    setData(newData);
+                    setIsLoading(false);
+                    setError(null);
+                },
+                (err: Error) => {
+                    console.error("Error fetching Firestore data:", err);
+                    setError(err);
+                    setIsLoading(false);
+                }
+            );
+        }
+    };
+    
+    unsubscribe = setupSubscription();
 
+    // The cleanup function will be called when the component unmounts
+    // or when the dependencies (dao, user, isAuthLoading) change.
     return () => {
       if (unsubscribe) {
         unsubscribe();
