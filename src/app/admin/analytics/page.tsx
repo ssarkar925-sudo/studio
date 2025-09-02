@@ -4,29 +4,31 @@
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
-import { invoicesDAO, userProfileDAO, type Invoice, type UserProfile } from '@/lib/data';
+import { invoicesDAO, adminUsersDAO, type Invoice, type UserProfile } from '@/lib/data';
 import { Users, FileText, IndianRupee, Loader2 } from 'lucide-react';
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { subDays, format, startOfMonth } from 'date-fns';
 
 export default function AdminAnalyticsPage() {
-  const { data: users, isLoading: usersLoading } = useFirestoreData(userProfileDAO as any); // Note: admin DAO doesn't fit standard hook, casting for demo
+  const { data: users, isLoading: usersLoading } = useFirestoreData(adminUsersDAO);
   const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
 
   const { totalUsers, newSignups, totalInvoices, totalRevenue, monthlySignups } = useMemo(() => {
-    const totalUsers = users.length;
+    const allUsers = users as UserProfile[];
+    const totalUsers = allUsers.length;
     
     const oneMonthAgo = subDays(new Date(), 30);
-    const newSignups = users.filter((u: any) => u.createdAt && u.createdAt.toDate() > oneMonthAgo).length; // Assumes `createdAt` field
+    // Note: UserProfile doesn't have a createdAt field, so this is a mock.
+    // In a real app, you would add a timestamp on user creation.
+    const newSignups = Math.floor(totalUsers * 0.1); // Mock: 10% of users are new
     
     const totalInvoices = invoices.length;
     const totalRevenue = invoices.reduce((sum, inv) => sum + inv.amount, 0);
 
     const signupsByMonth: {[key: string]: number} = {};
-     users.forEach((u: any) => {
+     allUsers.forEach((u: any) => {
         // This is a mock-up since we don't store user creation date.
-        // In a real app, you would have a timestamp.
         const monthKey = format(subDays(new Date(), Math.random() * 365), 'yyyy-MM');
         if(!signupsByMonth[monthKey]) signupsByMonth[monthKey] = 0;
         signupsByMonth[monthKey]++;
@@ -74,7 +76,7 @@ export default function AdminAnalyticsPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="text-2xl font-bold">+{newSignups}</div>
-                            <p className="text-xs text-muted-foreground">New users in the last 30 days</p>
+                            <p className="text-xs text-muted-foreground">New users in the last 30 days (mock)</p>
                         </CardContent>
                     </Card>
                      <Card>
@@ -101,7 +103,7 @@ export default function AdminAnalyticsPage() {
                  <Card>
                     <CardHeader>
                         <CardTitle>New User Sign-ups</CardTitle>
-                        <CardDescription>Number of new users joining per month.</CardDescription>
+                        <CardDescription>Number of new users joining per month (mock data).</CardDescription>
                     </CardHeader>
                     <CardContent className="pl-2">
                         <ResponsiveContainer width="100%" height={350}>
