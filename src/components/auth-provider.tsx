@@ -69,9 +69,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   
   const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route) && (route !== '/' || pathname === '/'));
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
   const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route));
-  if ((!user && isProtectedRoute) || (!user && isAdminRoute)) {
+  
+  if (!user && (isProtectedRoute || isAdminRoute)) {
+     // While redirecting, show a loading screen.
      return <div className="flex h-screen items-center justify-center">Loading...</div>;
+  }
+  
+  if (user && isPublicRoute) {
+      // While redirecting, show a loading screen.
+      return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 
 

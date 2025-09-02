@@ -18,14 +18,20 @@ export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
   const [data, setData] = useState<T[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
-  const { user } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
 
   useEffect(() => {
-    if (!user && dao !== adminUsersDAO) { // adminUsersDAO doesn't need a user
+    if (isAuthLoading) {
+      // Don't do anything while auth is still loading.
+      return;
+    }
+
+    if (!user && dao !== adminUsersDAO) {
+      // If auth is done and there's no user, clear data and stop loading.
       setData([]);
       setIsLoading(false);
       return;
-    };
+    }
     
     setIsLoading(true);
     setError(null);
@@ -33,7 +39,7 @@ export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
     let unsubscribe;
 
     if (dao === adminUsersDAO) {
-      // Special handling for adminUsersDAO which has a different signature
+      // Special handling for adminUsersDAO which has a different signature and doesn't need userId
       unsubscribe = (dao as AdminDao).subscribe(
           (newData) => {
               setData(newData as T[]);
@@ -47,6 +53,7 @@ export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
       );
     } else {
         if (user) {
+            // Standard DAOs that require a userId
             unsubscribe = (dao as Dao<T>).subscribe(
                 user.uid,
                 (newData) => {
@@ -60,7 +67,8 @@ export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
                 }
             );
         } else {
-            // This case handles when user is null for a non-admin DAO
+            // This case should theoretically not be hit due to the check at the top,
+            // but it's good for safety.
             setIsLoading(false);
             setData([]);
         }
@@ -72,7 +80,7 @@ export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
         unsubscribe();
       }
     };
-  }, [dao, user]);
+  }, [dao, user, isAuthLoading]); // Re-run effect when user or auth loading state changes.
 
   return { data, isLoading, error };
 }

@@ -55,8 +55,8 @@ export default function NewInvoicePage() {
   const router = useRouter();
   const { user } = useAuth();
   const [dueDate, setDueDate] = useState<Date | undefined>();
-  const { data: customers } = useFirestoreData(customersDAO);
-  const { data: products } = useFirestoreData(productsDAO);
+  const { data: customers, isLoading: customersLoading } = useFirestoreData(customersDAO);
+  const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
   const [customerId, setCustomerId] = useState<string>('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -253,6 +253,8 @@ export default function NewInvoicePage() {
         setIsSaving(false);
     }
   };
+  
+  const isLoading = customersLoading || productsLoading;
 
   return (
     <>
@@ -260,6 +262,9 @@ export default function NewInvoicePage() {
       <div className="mx-auto grid w-full max-w-4xl gap-2">
         <h1 className="text-2xl font-semibold">New Invoice</h1>
       </div>
+      {isLoading ? (
+        <div className="text-center text-muted-foreground">Loading form...</div>
+      ) : (
       <div className="mx-auto grid w-full max-w-4xl items-start gap-6">
         <form onSubmit={handleSubmit}>
             <div className="grid gap-6">
@@ -509,6 +514,7 @@ export default function NewInvoicePage() {
             </div>
         </form>
       </div>
+      )}
     </AppLayout>
     <TagScanner
         open={isScannerOpen}

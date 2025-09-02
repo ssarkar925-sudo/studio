@@ -164,8 +164,8 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
                   </TableHead>
                   <TableHead>Invoice #</TableHead>
                   <TableHead>Customer</TableHead>
+                  <TableHead>Issue Date</TableHead>
                   <TableHead className='text-right'>Total Amount</TableHead>
-                  <TableHead className='text-right'>Amount Paid</TableHead>
                   <TableHead className='text-right'>Amount Due</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>
@@ -187,8 +187,8 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
                       {invoice.invoiceNumber}
                     </TableCell>
                     <TableCell>{invoice.customer.name}</TableCell>
+                    <TableCell>{invoice.issueDate}</TableCell>
                     <TableCell className='text-right'>₹{invoice.amount.toFixed(2)}</TableCell>
-                    <TableCell className='text-right'>₹{(invoice.paidAmount || 0).toFixed(2)}</TableCell>
                     <TableCell className='text-right'>₹{(invoice.dueAmount || 0).toFixed(2)}</TableCell>
                     <TableCell>
                       <InvoiceStatusBadge status={invoice.status} />

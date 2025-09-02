@@ -36,6 +36,7 @@ export type Invoice = BaseDocument & {
   paidAmount?: number;
   dueAmount?: number;
   orderNote?: string;
+  createdAt: FieldValue;
 };
 
 export type Customer = BaseDocument & {
@@ -113,13 +114,17 @@ export type FeatureFlag = {
     enabled: boolean;
 };
 
-function createFirestoreDAO<T extends {id: string, userId?: string}>(collectionName: string) {
+function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: FieldValue}>(collectionName: string) {
     const collectionRef = collection(db, collectionName);
 
-    const add = async (item: Omit<T, 'id' | 'userId'> & { userId: string }) => {
+    const add = async (item: Omit<T, 'id' | 'userId' | 'createdAt'> & { userId: string }) => {
         try {
-            const docRef = await addDoc(collectionRef, item);
-            return { ...item, id: docRef.id } as T;
+            const newItem = {
+                ...item,
+                createdAt: serverTimestamp(),
+            }
+            const docRef = await addDoc(collectionRef, newItem);
+            return { ...item, id: docRef.id, createdAt: new Date() } as T;
         } catch (error) {
              console.error(`Error writing to Firestore collection “${collectionName}”:`, error);
              throw error;
@@ -157,13 +162,18 @@ function createFirestoreDAO<T extends {id: string, userId?: string}>(collectionN
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
     };
 
-
     const subscribe = (
       userId: string,
       callback: (data: T[]) => void,
       onError?: (error: Error) => void
     ): Unsubscribe => {
-        const q = query(collectionRef, where("userId", "==", userId));
+        // Use a more generic query first, and allow specific DAOs to override it.
+        let q = query(collectionRef, where("userId", "==", userId));
+        
+        if (collectionName === 'invoices') {
+          q = query(q, orderBy('createdAt', 'desc'));
+        }
+
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
             const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
             callback(data);
@@ -229,7 +239,7 @@ const getInvoiceStatus = (dueAmount: number, paidAmount: number): Invoice['statu
 const createInvoicesDAO = () => {
     const baseDAO = createFirestoreDAO<Invoice>('invoices');
 
-    const addInvoice = async (invoiceData: Omit<Invoice, 'id' | 'status'> & { status?: Invoice['status'], userId: string }) => {
+    const addInvoice = async (invoiceData: Omit<Invoice, 'id' | 'status' | 'createdAt'> & { status?: Invoice['status'], userId: string }) => {
         return runTransaction(db, async (transaction) => {
             const customerRef = doc(db, 'customers', invoiceData.customer.id);
             const customerDoc = await transaction.get(customerRef);
@@ -254,6 +264,7 @@ const createInvoicesDAO = () => {
             
             const finalInvoiceData = {
                 ...invoiceData,
+                createdAt: serverTimestamp(),
                 status: getInvoiceStatus(invoiceData.dueAmount || 0, invoiceData.paidAmount || 0)
             }
             
@@ -285,7 +296,7 @@ const createInvoicesDAO = () => {
                 }
             }
 
-            return { ...finalInvoiceData, id: newInvoiceRef.id };
+            return { ...finalInvoiceData, id: newInvoiceRef.id, createdAt: new Date() };
         });
     };
 
