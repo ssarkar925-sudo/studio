@@ -30,51 +30,53 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const [scannedSku, setScannedSku] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReader = useRef(new BrowserMultiFormatReader());
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const startScanner = useCallback(() => {
+    if (!videoRef.current || !streamRef.current) return;
+
+    codeReader.current.decodeFromStream(videoRef.current, streamRef.current, (result, err) => {
+      if (result) {
+        const sku = result.getText();
+        const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+        if (foundProduct) {
+          toast({
+            title: 'Item Scanned',
+            description: `${foundProduct.name} found.`,
+          });
+          onScan(foundProduct);
+        }
+      }
+      if (err && !(err instanceof NotFoundException) && !(err instanceof ChecksumException) && !(err instanceof FormatException)) {
+        console.error("Decoding error:", err);
+      }
+    }).catch(err => {
+      console.error("Error starting the decoder from stream", err);
+    });
+  }, [onScan, products, toast]);
+
+  const stopScanner = useCallback(() => {
+    codeReader.current.reset();
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  }, []);
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
-    
-    const cleanup = () => {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-        }
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
-        }
-        codeReader.current.reset();
-    };
-
     if (open) {
       const getCameraPermission = async () => {
         try {
-          setHasCameraPermission(null); 
-          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-          
+          setHasCameraPermission(null);
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          streamRef.current = stream;
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
             setHasCameraPermission(true);
-
-             try {
-                // Pass undefined for the video element and let the library handle it with the stream.
-                await codeReader.current.decodeFromStream(undefined, stream, (result, err) => {
-                    if (result) {
-                        const sku = result.getText();
-                        const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
-                        if (foundProduct) {
-                            toast({
-                                title: 'Item Scanned',
-                                description: `${foundProduct.name} found.`,
-                            });
-                            onScan(foundProduct);
-                        }
-                    }
-                    if (err && !(err instanceof NotFoundException) && !(err instanceof ChecksumException) && !(err instanceof FormatException)) {
-                        console.error("Decoding error:", err);
-                    }
-                });
-            } catch (decodeError) {
-                console.error("Error starting the decoder", decodeError);
-            }
+            // The scanner will be started by the `onCanPlay` event on the video element
           }
         } catch (error) {
           console.error('Error accessing camera:', error);
@@ -86,16 +88,16 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
           });
         }
       };
-
       getCameraPermission();
     } else {
-        cleanup();
+      stopScanner();
     }
-    
-    return cleanup;
-  }, [open, onScan, products, toast]);
 
-  
+    return () => {
+      stopScanner();
+    };
+  }, [open, stopScanner, toast]);
+
   const handleManualScan = () => {
     if (!scannedSku) {
       toast({
@@ -138,7 +140,7 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
           <DialogTitle>Scan Item Tag</DialogTitle>
         </DialogHeader>
         <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
-          <video ref={videoRef} className="h-full w-full object-cover" autoPlay playsInline muted/>
+          <video ref={videoRef} className="h-full w-full object-cover" autoPlay playsInline muted onCanPlay={startScanner} />
            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-3/4 h-1/2 border-4 border-dashed border-white/50 rounded-lg" />
             </div>
