@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useAuth } from '@/components/auth-provider';
 
@@ -32,25 +32,24 @@ import { useAuth } from '@/components/auth-provider';
 // This component will handle both tabs logic now
 export function InventoryClient({ activeTab, products: initialProducts, purchases: initialPurchases }: { activeTab: string, products?: Product[], purchases?: Purchase[] }) {
     if (activeTab === 'purchases') {
-        return <PurchaseHistory initialPurchases={initialPurchases || []} />;
+        return <PurchaseHistory purchases={initialPurchases || []} />;
     }
-    return <StockHistory initialProducts={initialProducts || []} />;
+    return <StockHistory products={initialProducts || []} />;
 }
 
-function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
+function StockHistory({ products }: { products: Product[]}) {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
-  const [products, setProducts] = useState(initialProducts);
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   
-  useEffect(() => {
+  const visibleProducts = useMemo(() => {
     // Filter out items that have been out of stock for more than 30 days
-    if (!user) return;
+    if (!user) return [];
     const now = new Date();
     const cleanupPromises: Promise<void>[] = [];
     
-    const visibleProducts = initialProducts.filter(product => {
+    const filtered = products.filter(product => {
         if (product.stock > 0) {
             return true;
         }
@@ -87,15 +86,14 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
         });
       });
     }
+    return filtered;
+  }, [products, toast, user]);
 
-    setProducts(visibleProducts);
-  }, [initialProducts, toast, user]);
-
-  const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === products.length, [selectedProducts, products]);
+  const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === visibleProducts.length, [selectedProducts, visibleProducts]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedProducts(products.map(p => p.id));
+      setSelectedProducts(visibleProducts.map(p => p.id));
     } else {
       setSelectedProducts([]);
     }
@@ -174,7 +172,7 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {products.map((product) => (
+              {visibleProducts.map((product) => (
                 <TableRow key={product.id} data-state={selectedProducts.includes(product.id) && "selected"}>
                   <TableCell>
                     <Checkbox
@@ -223,7 +221,7 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
       </div>
 
        <div className="md:hidden p-4 space-y-4">
-        {products.map((product) => (
+        {visibleProducts.map((product) => (
           <Card key={product.id}>
             <CardHeader>
                 <div className="flex items-start justify-between">
@@ -291,17 +289,12 @@ function StockHistory({ initialProducts }: { initialProducts: Product[]}) {
   );
 }
 
-function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] }) {
-  const [purchases, setPurchases] = useState(initialPurchases);
+function PurchaseHistory({ purchases }: { purchases: Purchase[] }) {
   const [selectedPurchases, setSelectedPurchases] = useState<string[]>([]);
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
   const { data: allProducts, isLoading: productsLoading } = useFirestoreData(productsDAO);
-
-  useEffect(() => {
-    setPurchases(initialPurchases);
-  }, [initialPurchases]);
 
   const sortedPurchases = useMemo(() => {
     if (!purchases) return [];

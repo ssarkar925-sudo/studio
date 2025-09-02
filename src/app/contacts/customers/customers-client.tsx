@@ -21,7 +21,7 @@ import { customersDAO, type Customer } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Trash2, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -37,15 +37,10 @@ import {
 } from '@/components/ui/alert-dialog';
 
 
-export function CustomersClient({ customers: initialCustomers }: { customers: Customer[] }) {
+export function CustomersClient({ customers }: { customers: Customer[] }) {
   const { toast } = useToast();
   const router = useRouter();
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
-  const [customers, setCustomers] = useState(initialCustomers);
-
-  useEffect(() => {
-    setCustomers(initialCustomers);
-  }, [initialCustomers]);
   
   const allCustomersSelected = useMemo(() => selectedCustomers.length > 0 && selectedCustomers.length === customers.length, [selectedCustomers, customers]);
 

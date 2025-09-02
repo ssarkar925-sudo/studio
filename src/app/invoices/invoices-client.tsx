@@ -23,7 +23,7 @@ import { MoreHorizontal, PlusCircle, Trash2, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertDialog,
@@ -39,11 +39,10 @@ import {
 import { parse } from 'date-fns';
 
 
-export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice[]}) {
+export function InvoicesClient({ invoices }: {invoices: Invoice[]}) {
   const { toast } = useToast();
   const router = useRouter();
   const [selectedInvoices, setSelectedInvoices] = useState<string[]>([]);
-  const [invoices, setInvoices] = useState(initialInvoices);
 
   const sortedInvoices = useMemo(() => {
     return [...invoices].sort((a, b) => {
@@ -56,10 +55,6 @@ export function InvoicesClient({ invoices: initialInvoices }: {invoices: Invoice
         }
     });
   }, [invoices]);
-
-  useEffect(() => {
-    setInvoices(initialInvoices);
-  }, [initialInvoices]);
   
   const allInvoicesSelected = useMemo(() => selectedInvoices.length > 0 && selectedInvoices.length === invoices.length, [selectedInvoices, invoices]);
 

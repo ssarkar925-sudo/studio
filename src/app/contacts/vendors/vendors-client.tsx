@@ -21,7 +21,7 @@ import { vendorsDAO, Vendor } from '@/lib/data';
 import { MoreHorizontal, PlusCircle, Trash2, Printer } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -37,15 +37,10 @@ import {
 } from '@/components/ui/alert-dialog';
 
 
-export function VendorsClient({ vendors: initialVendors }: { vendors: Vendor[] }) {
+export function VendorsClient({ vendors }: { vendors: Vendor[] }) {
   const { toast } = useToast();
   const router = useRouter();
   const [selectedVendors, setSelectedVendors] = useState<string[]>([]);
-  const [vendors, setVendors] = useState(initialVendors);
-
-  useEffect(() => {
-    setVendors(initialVendors);
-  }, [initialVendors]);
   
   const allVendorsSelected = useMemo(() => selectedVendors.length > 0 && selectedVendors.length === vendors.length, [selectedVendors, vendors]);
 
