@@ -26,13 +26,14 @@ function QRCodeTag({ product, size }: { product: Product; size: 'a4' | 'thermal'
       <div className="text-center">
         <p className={cn("font-bold break-words", size === 'a4' ? 'text-sm' : 'text-xs')}>{product.name}</p>
         <p className={cn("break-all", size === 'a4' ? 'text-xs' : 'text-[10px]')}>SKU: {product.sku}</p>
+         <p className={cn("break-all", size === 'a4' ? 'text-xs' : 'text-[10px]')}>{product.batchCode}</p>
       </div>
       <div className='w-full p-1 mt-1 bg-white flex justify-center'>
         <QRCode 
           value={product.sku} 
-          size={size === 'a4' ? 70 : 64}
-          viewBox={`0 0 ${size === 'a4' ? 70 : 64} ${size === 'a4' ? 70 : 64}`}
-          className="w-full h-auto max-w-[70px] max-h-[70px]"
+          size={size === 'a4' ? 64 : 64}
+          viewBox={`0 0 ${size === 'a4' ? 64 : 64} ${size === 'a4' ? 64 : 64}`}
+          className="w-full h-auto max-w-[64px] max-h-[64px]"
         />
       </div>
     </div>
