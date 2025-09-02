@@ -176,6 +176,26 @@ const userProfileDAO = {
     }
 };
 
+// Admin DAO to get all user profiles regardless of userId
+const adminUsersDAO = {
+    subscribe: (
+        callback: (data: UserProfile[]) => void,
+        onError?: (error: Error) => void
+    ): Unsubscribe => {
+        const collectionRef = collection(db, 'userProfile');
+        const unsubscribe = onSnapshot(collectionRef, (querySnapshot) => {
+            const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
+            callback(data);
+        }, (error) => {
+            console.error(`Error subscribing to userProfile collection for admin:`, error);
+            if (onError) {
+                onError(error);
+            }
+        });
+        return unsubscribe;
+    }
+};
+
 
 export const customersDAO = createFirestoreDAO<Customer>('customers');
 
@@ -397,7 +417,7 @@ export const productsDAO = createFirestoreDAO<Product>('products');
 export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
 export const purchasesDAO = createFirestoreDAO<Purchase>('purchases');
 export const businessProfileDAO = createFirestoreDAO<BusinessProfile>('businessProfile');
-export { userProfileDAO };
+export { userProfileDAO, adminUsersDAO };
 
 export const deleteAllUserData = async (userId: string) => {
     console.log(`Deleting all data for user ${userId}`);

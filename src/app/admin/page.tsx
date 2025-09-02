@@ -2,16 +2,18 @@
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Users, SlidersHorizontal, Settings, BarChart3 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { CheckCircle, Users, SlidersHorizontal, Settings, BarChart3, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export default function AdminRoadmapPage() {
   return (
     <AppLayout>
       <div className="mx-auto grid w-full max-w-4xl gap-6">
         <div className="text-center">
-            <h1 className="text-3xl font-bold">Admin Control Panel Roadmap</h1>
-            <p className="text-muted-foreground mt-2">A proposed plan for managing your application and users.</p>
+            <h1 className="text-3xl font-bold">Admin Control Panel</h1>
+            <p className="text-muted-foreground mt-2">Manage your application, users, and services.</p>
         </div>
 
         <Card>
@@ -27,24 +29,17 @@ export default function AdminRoadmapPage() {
                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 shrink-0" />
                     <div>
                         <h4 className="font-semibold">User Dashboard</h4>
-                        <p className="text-sm text-muted-foreground">A central table showing all users, their email, sign-up date, and last activity.</p>
-                    </div>
-                </div>
-                <div className="flex items-start gap-4">
-                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 shrink-0" />
-                    <div>
-                        <h4 className="font-semibold">User Actions</h4>
-                        <p className="text-sm text-muted-foreground">Ability to manually approve new sign-ups, suspend a user's access, or permanently delete a user account.</p>
-                    </div>
-                </div>
-                 <div className="flex items-start gap-4">
-                     <CheckCircle className="h-5 w-5 mt-1 text-green-500 shrink-0" />
-                    <div>
-                        <h4 className="font-semibold">Impersonation</h4>
-                        <p className="text-sm text-muted-foreground">Log in as a specific user to provide support or troubleshoot issues from their perspective.</p>
+                        <p className="text-sm text-muted-foreground">A central table showing all users, their email, and sign-up date.</p>
                     </div>
                 </div>
             </CardContent>
+            <CardFooter>
+                <Button asChild variant="outline">
+                    <Link href="/admin/users">
+                        Go to User Management <ArrowRight className="ml-2" />
+                    </Link>
+                </Button>
+            </CardFooter>
         </Card>
 
          <Card>
