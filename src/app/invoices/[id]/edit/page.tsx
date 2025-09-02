@@ -25,13 +25,14 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Invoice, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon, ScanLine } from 'lucide-react';
 import { format, parse, isValid } from 'date-fns';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { TagScanner } from '@/components/tag-scanner';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -64,6 +65,7 @@ export default function EditInvoicePage() {
   const [customerId, setCustomerId] = useState<string>('');
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [isScannerOpen, setIsScannerOpen] = useState(false);
   
   // Summary state
   const [gstPercentage, setGstPercentage] = useState(0);
@@ -122,6 +124,20 @@ export default function EditInvoicePage() {
     }
   }, [invoiceId, invoices, products, isLoading, router, toast]);
 
+  const productOptions = useMemo(() => {
+    if (!invoice) return [];
+    return products.map((p: Product) => {
+      const originalItem = invoice.items.find(i => i.productId === p.id);
+      const originalQuantity = originalItem ? originalItem.quantity : 0;
+      const availableStock = p.stock + originalQuantity;
+      return {
+          value: p.id,
+          label: `${p.name} (Stock: ${availableStock})`,
+          disabled: availableStock <= 0 && !originalItem
+      }
+    })
+  }, [products, invoice]);
+
   const handleAddItem = (isManual = false) => {
     setItems([
       ...items,
@@ -152,6 +168,39 @@ export default function EditInvoicePage() {
     setItems(items.filter((_, i) => i !== index));
   };
   
+   const handleScan = (product: Product) => {
+    const existingItemIndex = items.findIndex(item => item.productId === product.id && !item.isManual);
+
+    if (existingItemIndex !== -1) {
+      // If item already exists, increase its quantity
+      const newItems = [...items];
+      newItems[existingItemIndex].quantity += 1;
+      newItems[existingItemIndex].total = newItems[existingItemIndex].quantity * newItems[existingItemIndex].sellingPrice;
+      setItems(newItems);
+    } else {
+      // If item doesn't exist, add it as a new line
+      const newItem: InvoiceItem = {
+        id: `item-${Date.now()}`,
+        productId: product.id,
+        productName: product.name,
+        quantity: 1,
+        sellingPrice: product.sellingPrice,
+        total: product.sellingPrice,
+        isManual: false
+      };
+      
+      const firstEmptyItemIndex = items.findIndex(i => !i.productId && !i.isManual);
+      if (firstEmptyItemIndex !== -1) {
+         const newItems = [...items];
+         newItems[firstEmptyItemIndex] = newItem;
+         setItems(newItems);
+      } else {
+         setItems([...items, newItem]);
+      }
+    }
+    setIsScannerOpen(false);
+  };
+
   const calculateSummary = useCallback(() => {
     const subtotal = items.reduce((sum, item) => sum + item.total, 0);
     const gstAmount = subtotal * (gstPercentage / 100);
@@ -237,19 +286,6 @@ export default function EditInvoicePage() {
         setIsSaving(false);
     }
   };
-  
-  const productOptions = useMemo(() => {
-    return products.map((p: Product) => {
-      const originalItem = invoice?.items.find(i => i.productId === p.id);
-      const originalQuantity = originalItem ? originalItem.quantity : 0;
-      const availableStock = p.stock + originalQuantity;
-      return {
-          value: p.id,
-          label: `${p.name} (Stock: ${availableStock})`,
-          disabled: availableStock <= 0 && !originalItem
-      }
-    })
-  }, [products, invoice]);
 
   if (isLoading || !invoice) {
     return (
@@ -281,7 +317,7 @@ export default function EditInvoicePage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="invoiceNumber">Invoice Number</Label>
-                            <Input id="invoiceNumber" name="invoiceNumber" type="text" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} required />
+                            <p className="text-sm font-mono p-2 bg-muted rounded-md">{invoiceNumber}</p>
                         </div>
                         <div className="grid gap-3">
                             <Label htmlFor="customer">Customer</Label>
@@ -404,6 +440,10 @@ export default function EditInvoicePage() {
                                 <PlusCircle className="mr-2" />
                                 Add Manually
                             </Button>
+                            <Button type="button" variant="outline" onClick={() => setIsScannerOpen(true)}>
+                                <ScanLine className="mr-2" />
+                                Scan Item
+                            </Button>
                         </div>
                     </div>
                 </CardContent>
@@ -513,8 +553,12 @@ export default function EditInvoicePage() {
           </div>
         </form>
       </div>
+      <TagScanner
+        open={isScannerOpen}
+        onOpenChange={setIsScannerOpen}
+        onScan={handleScan}
+        products={products}
+      />
     </AppLayout>
   );
 }
-
-    
