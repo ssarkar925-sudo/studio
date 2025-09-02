@@ -66,7 +66,7 @@ export default function PrintInvoicePage() {
   return (
     <PrintLayout>
       <div className="p-10 bg-background text-foreground font-sans">
-        <header className="flex justify-between items-start mb-10">
+        <header className="flex flex-col items-center text-center mb-10">
           <div className="flex items-center gap-4">
              <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
                 {businessProfile.logoUrl ? <img src={businessProfile.logoUrl} alt={businessProfile.companyName} className="h-full w-full object-contain" /> : <Icons.logo className="h-6 w-6" />}
@@ -76,7 +76,7 @@ export default function PrintInvoicePage() {
                 <p className="text-muted-foreground">{businessProfile.address}</p>
             </div>
           </div>
-          <div className="text-right">
+          <div className="text-center mt-4">
             <h2 className="text-4xl font-bold uppercase text-primary tracking-widest">Invoice</h2>
             <p className="text-muted-foreground mt-2">Invoice #: {invoice.invoiceNumber}</p>
             <p className="text-muted-foreground">Issued: {invoice.issueDate}</p>
@@ -172,6 +172,7 @@ export default function PrintInvoicePage() {
             <div className="inline-block text-left">
                 <div className="border-t-2 border-black w-48 pt-2">
                     <p className="text-sm font-semibold">Authorised Signatory</p>
+                    <p className="text-sm text-muted-foreground">{businessProfile.companyName}</p>
                 </div>
             </div>
         </section>
