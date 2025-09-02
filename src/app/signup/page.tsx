@@ -24,6 +24,7 @@ export default function SignupPage() {
     const [name, setName] = useState('');
     const [companyName, setCompanyName] = useState('');
     const [email, setEmail] = useState('');
+    const [phone, setPhone] = useState('');
     const [password, setPassword] = useState('');
     const [isSigningUp, setIsSigningUp] = useState(false);
     
@@ -56,6 +57,7 @@ export default function SignupPage() {
             await setDoc(doc(db, "userProfile", firebaseUser.uid), {
                 name: name,
                 email: email,
+                phone: phone,
                 isAdmin: isFirstUser,
             });
 
@@ -115,6 +117,10 @@ export default function SignupPage() {
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
+                 <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input id="phone" type="tel" placeholder="+91 12345 67890" value={phone} onChange={e => setPhone(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password</Label>
