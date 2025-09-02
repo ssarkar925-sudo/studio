@@ -70,9 +70,9 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label} // Use label for filtering
-                  onSelect={() => {
-                    onSelect(option.value === value ? "" : option.value)
+                  value={option.value}
+                  onSelect={(currentValue) => {
+                    onSelect(currentValue === value ? "" : currentValue)
                     setOpen(false)
                   }}
                 >
