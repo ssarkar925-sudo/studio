@@ -44,7 +44,6 @@ import {
   DialogClose
 } from "@/components/ui/dialog"
 import { useAuth } from '@/components/auth-provider';
-import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -76,12 +75,6 @@ export default function NewInvoicePage() {
   const [discount, setDiscount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
   const [orderNote, setOrderNote] = useState('');
-
-  const customerOptions: ComboboxOption[] = useMemo(() => 
-    customers.map(c => ({
-        value: c.id,
-        label: `${c.name} ${c.phone ? `(${c.phone})` : ''}`
-    })), [customers]);
 
   // Add one default item row when the component mounts
   useEffect(() => {
@@ -289,14 +282,14 @@ export default function NewInvoicePage() {
                             <div className="grid gap-3">
                                 <Label htmlFor="customer">Customer</Label>
                                 <div className="flex gap-2">
-                                  <Combobox
-                                    options={customerOptions}
-                                    value={customerId}
-                                    onSelect={setCustomerId}
-                                    placeholder="Select a customer"
-                                    searchPlaceholder="Search customers..."
-                                    emptyText="No customers found."
-                                  />
+                                  <Select onValueChange={setCustomerId} value={customerId}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a customer" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                                    </SelectContent>
+                                  </Select>
                                   <Dialog open={isNewCustomerDialogOpen} onOpenChange={setIsNewCustomerDialogOpen}>
                                       <DialogTrigger asChild>
                                           <Button variant="outline" size="icon">
@@ -524,3 +517,5 @@ export default function NewInvoicePage() {
     </>
   );
 }
+
+    

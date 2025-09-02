@@ -29,7 +29,6 @@ import {
   DialogTrigger,
   DialogClose
 } from "@/components/ui/dialog";
-import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import {
   Select,
   SelectContent,
@@ -67,13 +66,6 @@ export default function NewPurchasePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isNewVendorDialogOpen, setIsNewVendorDialogOpen] = useState(false);
   
-  const vendorOptions: ComboboxOption[] = useMemo(() =>
-    vendors.map(v => ({
-      value: v.id,
-      label: v.vendorName
-    })), [vendors]);
-
-
   const handleAddItem = () => {
     setItems([
       ...items,
@@ -290,14 +282,14 @@ export default function NewPurchasePage() {
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
                             <div className="flex gap-2">
-                                <Combobox
-                                    options={vendorOptions}
-                                    value={vendorId}
-                                    onSelect={setVendorId}
-                                    placeholder="Select a vendor"
-                                    searchPlaceholder="Search vendors..."
-                                    emptyText="No vendors found."
-                                />
+                                <Select onValueChange={setVendorId} value={vendorId}>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select a vendor" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {vendors.map((v) => <SelectItem key={v.id} value={v.id}>{v.vendorName}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
                                 <Dialog open={isNewVendorDialogOpen} onOpenChange={setIsNewVendorDialogOpen}>
                                     <DialogTrigger asChild>
                                         <Button variant="outline" size="icon">
@@ -490,3 +482,5 @@ export default function NewPurchasePage() {
     </AppLayout>
   );
 }
+
+    

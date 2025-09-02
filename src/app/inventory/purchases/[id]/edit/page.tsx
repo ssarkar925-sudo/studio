@@ -16,7 +16,6 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
-import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 import {
   Select,
   SelectContent,
@@ -58,12 +57,6 @@ export default function EditPurchasePage() {
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const isLoading = vendorsLoading || productsLoading || purchasesLoading;
-
-  const vendorOptions: ComboboxOption[] = useMemo(() =>
-    vendors.map(v => ({
-      value: v.id,
-      label: v.vendorName
-    })), [vendors]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -220,14 +213,14 @@ export default function EditPurchasePage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
-                            <Combobox
-                                options={vendorOptions}
-                                value={vendorId}
-                                onSelect={setVendorId}
-                                placeholder="Select a vendor"
-                                searchPlaceholder="Search vendors..."
-                                emptyText="No vendors found."
-                            />
+                            <Select onValueChange={setVendorId} value={vendorId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a vendor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {vendors.map((v) => <SelectItem key={v.id} value={v.id}>{v.vendorName}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
                         </div>
                         <div className="grid gap-3">
                             <Label htmlFor="orderDate">Order Date</Label>
@@ -360,3 +353,5 @@ export default function EditPurchasePage() {
     </AppLayout>
   );
 }
+
+    
