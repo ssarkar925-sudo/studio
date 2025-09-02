@@ -116,7 +116,7 @@ export type FeatureFlag = {
 function createFirestoreDAO<T extends {id: string, userId?: string}>(collectionName: string) {
     const collectionRef = collection(db, collectionName);
 
-    const add = async (item: Omit<T, 'id' | 'userId'> & { userId: string }) => {
+    const add = async (item: Omit<T, 'id'>) => {
         try {
             const docRef = await addDoc(collectionRef, item);
             return { ...item, id: docRef.id } as T;
