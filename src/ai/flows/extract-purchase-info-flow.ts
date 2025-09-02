@@ -66,7 +66,7 @@ const extractPurchaseInfoFlow = ai.defineFlow(
     outputSchema: ExtractedPurchaseInfoSchema,
   },
   async (input) => {
-    const { output } = await prompt(input, { model: 'googleai/gemini-1.5-pro' });
+    const { output } = await prompt(input);
     return output!;
   }
 );
