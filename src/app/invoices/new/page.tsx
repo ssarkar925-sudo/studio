@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -467,38 +468,38 @@ export default function NewInvoicePage() {
                         </CardHeader>
                         <CardContent>
                             <div className="grid gap-4">
-                                <div className="flex items-center justify-between">
+                                <div className="grid grid-cols-2 items-center">
                                     <Label className="text-muted-foreground">Subtotal</Label>
-                                    <span>₹{subtotal.toFixed(2)}</span>
+                                    <span className='text-right'>₹{subtotal.toFixed(2)}</span>
                                 </div>
-                                <div className="flex items-center justify-between">
+                                <div className="grid grid-cols-2 items-center">
                                     <Label className="text-muted-foreground">GST</Label>
-                                    <div className='flex items-center gap-2'>
+                                    <div className='flex items-center gap-2 justify-end'>
                                         <Input type="number" placeholder="0" value={gstPercentage} onChange={(e) => setGstPercentage(parseFloat(e.target.value) || 0)} className="w-20 h-8 text-right" />
                                         <span>%</span>
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-between">
+                                <div className="grid grid-cols-2 items-center">
                                     <Label className="text-muted-foreground">Delivery</Label>
                                     <Input type="number" placeholder="0.00" value={deliveryCharges} onChange={(e) => setDeliveryCharges(parseFloat(e.target.value) || 0)} className="w-24 h-8 text-right" />
                                 </div>
-                                <div className="flex items-center justify-between">
+                                <div className="grid grid-cols-2 items-center">
                                     <Label className="text-muted-foreground">Discount</Label>
                                      <Input type="number" placeholder="0.00" value={discount} onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)} className="w-24 h-8 text-right" />
                                 </div>
                                 <Separator />
-                                <div className="flex items-center justify-between font-bold text-lg">
+                                <div className="grid grid-cols-2 items-center font-bold text-lg">
                                     <Label>Total</Label>
-                                    <span>₹{total.toFixed(2)}</span>
+                                    <span className='text-right'>₹{total.toFixed(2)}</span>
                                 </div>
                                 <Separator />
-                                <div className="flex items-center justify-between">
+                                <div className="grid grid-cols-2 items-center">
                                     <Label className="text-muted-foreground">Paid Amount</Label>
                                     <Input type="number" placeholder="0.00" value={paidAmount} onChange={(e) => setPaidAmount(parseFloat(e.target.value) || 0)} className="w-24 h-8 text-right" />
                                 </div>
-                                 <div className="flex items-center justify-between font-semibold">
+                                 <div className="grid grid-cols-2 items-center font-semibold">
                                     <Label>Due Amount</Label>
-                                    <span>₹{dueAmount.toFixed(2)}</span>
+                                    <span className='text-right'>₹{dueAmount.toFixed(2)}</span>
                                 </div>
                             </div>
                         </CardContent>

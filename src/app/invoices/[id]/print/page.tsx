@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { PrintLayout } from '@/app/print-layout';
@@ -120,42 +121,42 @@ export default function PrintInvoicePage() {
 
         <section className="flex justify-end mb-10">
           <div className="w-full max-w-sm space-y-2">
-            <div className="flex justify-between">
+             <div className="grid grid-cols-2 items-center">
               <span className="text-muted-foreground">Subtotal</span>
-              <span>₹{invoice.subtotal.toFixed(2)}</span>
+              <span className='text-right'>₹{invoice.subtotal.toFixed(2)}</span>
             </div>
             {invoice.gstAmount !== undefined && (
-              <div className="flex justify-between">
+              <div className="grid grid-cols-2 items-center">
                 <span className="text-muted-foreground">GST ({invoice.gstPercentage || 0}%)</span>
-                <span>₹{invoice.gstAmount.toFixed(2)}</span>
+                <span className='text-right'>₹{invoice.gstAmount.toFixed(2)}</span>
               </div>
             )}
             {invoice.deliveryCharges !== undefined && invoice.deliveryCharges > 0 && (
-              <div className="flex justify-between">
+              <div className="grid grid-cols-2 items-center">
                 <span className="text-muted-foreground">Delivery</span>
-                <span>₹{invoice.deliveryCharges.toFixed(2)}</span>
+                <span className='text-right'>₹{invoice.deliveryCharges.toFixed(2)}</span>
               </div>
             )}
             {invoice.discount !== undefined && invoice.discount > 0 && (
-              <div className="flex justify-between">
+              <div className="grid grid-cols-2 items-center">
                 <span className="text-muted-foreground">Discount</span>
-                <span className="text-destructive">- ₹{invoice.discount.toFixed(2)}</span>
+                <span className='text-right text-destructive'>- ₹{invoice.discount.toFixed(2)}</span>
               </div>
             )}
             <Separator />
-            <div className="flex justify-between font-bold text-lg">
+            <div className="grid grid-cols-2 items-center font-bold text-lg">
               <span>Total</span>
-              <span>₹{invoice.amount.toFixed(2)}</span>
+              <span className='text-right'>₹{invoice.amount.toFixed(2)}</span>
             </div>
             {invoice.paidAmount !== undefined && (
-              <div className="flex justify-between">
+              <div className="grid grid-cols-2 items-center">
                 <span className="text-muted-foreground">Amount Paid</span>
-                <span>₹{invoice.paidAmount.toFixed(2)}</span>
+                <span className='text-right'>₹{invoice.paidAmount.toFixed(2)}</span>
               </div>
             )}
-             <div className="flex justify-between font-bold text-lg p-2 bg-muted/50 rounded-md">
+             <div className="grid grid-cols-2 items-center font-bold text-lg p-2 bg-muted/50 rounded-md">
               <span>Amount Due</span>
-              <span>₹{(invoice.dueAmount || 0).toFixed(2)}</span>
+              <span className='text-right'>₹{(invoice.dueAmount || 0).toFixed(2)}</span>
             </div>
           </div>
         </section>
