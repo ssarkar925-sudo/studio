@@ -288,7 +288,7 @@ export default function NewInvoicePage() {
                                     <SelectContent>
                                       {customers.map(customer => (
                                         <SelectItem key={customer.id} value={customer.id}>
-                                          {customer.name}
+                                          {customer.name}{customer.phone ? ` (${customer.phone})` : ''}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
@@ -525,3 +525,5 @@ export default function NewInvoicePage() {
     </>
   );
 }
+
+    

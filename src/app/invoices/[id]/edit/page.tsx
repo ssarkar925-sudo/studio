@@ -69,7 +69,7 @@ export default function EditInvoicePage() {
   const [gstPercentage, setGstPercentage] = useState(0);
   const [deliveryCharges, setDeliveryCharges] = useState(0);
   const [discount, setDiscount] = useState(0);
-  const [paidAmount, setPaidAmount] = useState(0);
+  const [paidAmount, setPaidAmount = useState(0);
   const [orderNote, setOrderNote] = useState('');
 
 
@@ -292,7 +292,7 @@ export default function EditInvoicePage() {
                               <SelectContent>
                                 {customers.map(customer => (
                                   <SelectItem key={customer.id} value={customer.id}>
-                                    {customer.name}
+                                    {customer.name}{customer.phone ? ` (${customer.phone})` : ''}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -516,3 +516,5 @@ export default function EditInvoicePage() {
     </AppLayout>
   );
 }
+
+    
