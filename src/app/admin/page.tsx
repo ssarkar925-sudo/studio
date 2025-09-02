@@ -3,7 +3,7 @@
 
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Users, Toggles, Settings, BarChart3 } from 'lucide-react';
+import { CheckCircle, Users, SlidersHorizontal, Settings, BarChart3 } from 'lucide-react';
 
 export default function AdminRoadmapPage() {
   return (
@@ -50,7 +50,7 @@ export default function AdminRoadmapPage() {
          <Card>
             <CardHeader>
                 <div className='flex items-center gap-3'>
-                    <Toggles className="h-6 w-6 text-primary" />
+                    <SlidersHorizontal className="h-6 w-6 text-primary" />
                     <CardTitle>2. Service Tiers & Feature Control</CardTitle>
                 </div>
                 <CardDescription>Define what services and features are available to different users or subscription levels.</CardDescription>
