@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -9,6 +10,9 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   experimental: {
+    serverActions: {
+        allowedOrigins: ["*.cloudworkstations.dev", "*.firebaseapp.com", "*.web.app"],
+    },
     allowedDevOrigins: ['http://*.cloudworkstations.dev'],
   },
   images: {
