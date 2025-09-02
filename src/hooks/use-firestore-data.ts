@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/components/auth-provider';
-import { adminUsersDAO } from '@/lib/data';
+import type { UserProfile } from '@/lib/data';
 
 type Dao<T> = {
   subscribe: (userId: string, callback: (data: T[]) => void, onError: (error: Error) => void) => () => void;
@@ -12,7 +12,11 @@ type Dao<T> = {
 // Admin DAO has a different subscribe signature
 type AdminDao = {
     subscribe: (callback: (data: any[]) => void, onError: (error: Error) => void) => () => void;
+    id: 'adminUsersDAO';
 }
+
+const ADMIN_DAOS = ['adminUsersDAO'];
+
 
 export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
   const [data, setData] = useState<T[]>([]);
@@ -22,65 +26,56 @@ export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
 
   useEffect(() => {
     if (isAuthLoading) {
-      // Don't do anything while auth is still loading.
-      return;
+      return; // Wait for authentication to resolve
     }
 
-    if (!user && dao !== adminUsersDAO) {
-      // If auth is done and there's no user, clear data and stop loading.
+    const isUserRequired = !ADMIN_DAOS.includes((dao as AdminDao).id);
+
+    if (isUserRequired && !user) {
       setData([]);
       setIsLoading(false);
-      return;
+      return; // No user, so no data to fetch for user-specific DAOs
     }
     
     setIsLoading(true);
-    setError(null);
     
     let unsubscribe;
 
-    if (dao === adminUsersDAO) {
-      // Special handling for adminUsersDAO which has a different signature and doesn't need userId
+    if (!isUserRequired) {
       unsubscribe = (dao as AdminDao).subscribe(
           (newData) => {
               setData(newData as T[]);
               setIsLoading(false);
+              setError(null);
           },
           (err: Error) => {
-              console.error("Error fetching Firestore data for admin:", err);
+              console.error("Error fetching admin data:", err);
               setError(err);
               setIsLoading(false);
           }
       );
-    } else {
-        if (user) {
-            // Standard DAOs that require a userId
-            unsubscribe = (dao as Dao<T>).subscribe(
-                user.uid,
-                (newData) => {
-                    setData(newData);
-                    setIsLoading(false);
-                },
-                (err: Error) => {
-                    console.error("Error fetching Firestore data:", err);
-                    setError(err);
-                    setIsLoading(false);
-                }
-            );
-        } else {
-            // This case should theoretically not be hit due to the check at the top,
-            // but it's good for safety.
-            setIsLoading(false);
-            setData([]);
-        }
+    } else if (user) {
+        unsubscribe = (dao as Dao<T>).subscribe(
+            user.uid,
+            (newData) => {
+                setData(newData);
+                setIsLoading(false);
+                setError(null);
+            },
+            (err: Error) => {
+                console.error("Error fetching Firestore data:", err);
+                setError(err);
+                setIsLoading(false);
+            }
+        );
     }
-
 
     return () => {
       if (unsubscribe) {
         unsubscribe();
       }
     };
-  }, [dao, user, isAuthLoading]); // Re-run effect when user or auth loading state changes.
+  }, [dao, user, isAuthLoading]);
 
   return { data, isLoading, error };
 }

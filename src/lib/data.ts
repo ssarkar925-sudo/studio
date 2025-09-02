@@ -1,4 +1,5 @@
 
+
 import { db, auth } from '@/lib/firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc, FieldValue, serverTimestamp, deleteField, where, writeBatch, limit, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
@@ -117,7 +118,7 @@ export type FeatureFlag = {
 function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: FieldValue}>(collectionName: string) {
     const collectionRef = collection(db, collectionName);
 
-    const add = async (item: Omit<T, 'id' | 'userId' | 'createdAt'> & { userId: string }) => {
+    const add = async (item: Omit<T, 'id' | 'createdAt'> & { userId: string }) => {
         try {
             const newItem = {
                 ...item,
@@ -167,11 +168,10 @@ function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: 
       callback: (data: T[]) => void,
       onError?: (error: Error) => void
     ): Unsubscribe => {
-        // Use a more generic query first, and allow specific DAOs to override it.
         let q = query(collectionRef, where("userId", "==", userId));
         
         if (collectionName === 'invoices') {
-          q = query(q, orderBy('createdAt', 'desc'));
+          q = query(q, orderBy('issueDate', 'desc'));
         }
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -208,6 +208,7 @@ const userProfileDAO = {
 
 // Admin DAO to get all user profiles regardless of userId
 const adminUsersDAO = {
+    id: 'adminUsersDAO',
     subscribe: (
         callback: (data: UserProfile[]) => void,
         onError?: (error: Error) => void
@@ -228,6 +229,7 @@ const adminUsersDAO = {
 
 
 export const customersDAO = createFirestoreDAO<Customer>('customers');
+export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
 
 const getInvoiceStatus = (dueAmount: number, paidAmount: number): Invoice['status'] => {
     if (dueAmount <= 0) return 'Paid';
@@ -445,6 +447,7 @@ const createInvoicesDAO = () => {
 
 // DAO for feature flags, which are not user-specific.
 const featureFlagsDAO = {
+    id: 'featureFlagsDAO',
     subscribe: (
         callback: (data: FeatureFlag[]) => void,
         onError?: (error: Error) => void
@@ -486,7 +489,6 @@ const featureFlagsDAO = {
 
 export const invoicesDAO = createInvoicesDAO();
 export const productsDAO = createFirestoreDAO<Product>('products');
-export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
 export const purchasesDAO = createFirestoreDAO<Purchase>('purchases');
 export const businessProfileDAO = createFirestoreDAO<BusinessProfile>('businessProfile');
 export { userProfileDAO, adminUsersDAO, featureFlagsDAO };

@@ -6,6 +6,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { usePathname, useRouter } from 'next/navigation';
 import { userProfileDAO, UserProfile } from '@/lib/data';
+import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
@@ -15,7 +16,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, userProfile: null, isLoading: true });
 
-const PROTECTED_ROUTES = ['/', '/invoices', '/contacts', '/inventory', '/reports', '/profile'];
+const PROTECTED_ROUTES = ['/', '/invoices', '/contacts', '/inventory', '/reports', '/profile', '/customers', '/vendors', '/products', '/settings'];
 const PUBLIC_ROUTES = ['/login', '/signup'];
 const ADMIN_ROUTES = ['/admin'];
 
@@ -25,9 +26,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const pathname = usePathname();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setIsLoading(true);
       setUser(user);
       if (user) {
           const profile = await userProfileDAO.get(user.uid);
@@ -44,7 +47,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isLoading) return;
 
-    const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route) && (route !== '/' || pathname === '/'));
+    const isProtectedRoute = PROTECTED_ROUTES.some(route => {
+        if (route === '/') return pathname === '/';
+        return pathname.startsWith(route);
+    });
+
     const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
     const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route));
 
@@ -53,7 +60,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else if (user && isPublicRoute) {
       router.push('/');
     } else if (user && isAdminRoute && !userProfile?.isAdmin) {
-      // If a non-admin tries to access an admin route, redirect them
       toast({
           variant: 'destructive',
           title: 'Access Denied',
@@ -62,30 +68,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       router.push('/');
     }
 
-  }, [user, userProfile, isLoading, pathname, router]);
+  }, [user, userProfile, isLoading, pathname, router, toast]);
 
-  if (isLoading) {
+  const isAuthCheckComplete = !isLoading;
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
+
+  // While auth is resolving, show a loader.
+  // Or if we're on a protected route without a user, show a loader while we redirect.
+  if (isLoading || (!user && !isPublicRoute)) {
     return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
   
-  const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route) && (route !== '/' || pathname === '/'));
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname);
-  const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route));
-  
-  if (!user && (isProtectedRoute || isAdminRoute)) {
-     // While redirecting, show a loading screen.
-     return <div className="flex h-screen items-center justify-center">Loading...</div>;
-  }
-  
   if (user && isPublicRoute) {
-      // While redirecting, show a loading screen.
+      // While redirecting a logged-in user from a public page, show loader.
       return <div className="flex h-screen items-center justify-center">Loading...</div>;
   }
 
-
   return (
     <AuthContext.Provider value={{ user, userProfile, isLoading }}>
-      {children}
+      {isAuthCheckComplete ? children : <div className="flex h-screen items-center justify-center">Loading...</div>}
     </AuthContext.Provider>
   );
 }
@@ -97,6 +98,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-// A helper toast function that can be used outside of components
-import { toast } from '@/hooks/use-toast';
