@@ -57,13 +57,27 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
       });
       return;
     }
-    // Simulate finding a random product
-    const randomProduct = products[Math.floor(Math.random() * products.length)];
-    toast({
-        title: 'Item Scanned',
-        description: `Added ${randomProduct.name} to the invoice.`,
-    });
-    onScan(randomProduct);
+    // Simulate finding a product based on a "scanned" SKU.
+    // For this simulation, we'll pick a random product's SKU to look up.
+    const randomProductToFind = products[Math.floor(Math.random() * products.length)];
+    const scannedSku = randomProductToFind.sku;
+    
+    const foundProduct = products.find(p => p.sku === scannedSku);
+
+    if (foundProduct) {
+        toast({
+            title: 'Item Scanned',
+            description: `Added ${foundProduct.name} to the invoice.`,
+        });
+        onScan(foundProduct);
+    } else {
+        // This case would happen in a real scenario if the SKU is not found
+        toast({
+            variant: 'destructive',
+            title: 'Product Not Found',
+            description: `No product found with SKU: ${scannedSku}`,
+        });
+    }
   }, [products, onScan, toast]);
 
   useEffect(() => {
