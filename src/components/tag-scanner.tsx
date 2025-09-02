@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Camera, Loader2 } from 'lucide-react';
 
 interface TagScannerProps {
   open: boolean;
@@ -28,12 +29,12 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const { toast } = useToast();
   const [scannedSku, setScannedSku] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const codeReader = useRef(new BrowserMultiFormatReader());
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
 
   const stopScanner = useCallback(() => {
-    codeReader.current.reset();
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -43,43 +44,12 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     }
   }, []);
 
-  const startScanner = useCallback(() => {
-    if (!videoRef.current) return;
-
-    codeReader.current.decodeFromVideoElement(videoRef.current, (result, err) => {
-      if (result) {
-        const sku = result.getText();
-        const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
-
-        if (foundProduct) {
-          toast({
-            title: 'Item Found',
-            description: `${foundProduct.name} added.`,
-          });
-          onScan(foundProduct);
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Product Not Found',
-            description: `No product found with SKU: ${sku}`,
-          });
-        }
-      }
-      if (err && !(err instanceof NotFoundException)) {
-        console.error('Scan Error:', err);
-      }
-    }).catch(err => {
-      console.error('DecodeFromVideoElement Error:', err);
-    });
-  }, [products, onScan, toast]);
-
   useEffect(() => {
     const getCameraPermission = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         streamRef.current = stream;
         setHasCameraPermission(true);
-
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -96,12 +66,70 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     }
 
     return () => {
-      if (!open) {
-        stopScanner();
-      }
+       if (!open) {
+          stopScanner();
+       }
     };
   }, [open, stopScanner]);
 
+  const handleCapture = async () => {
+    if (!videoRef.current || !canvasRef.current) {
+      toast({
+        variant: 'destructive',
+        title: 'Scanner not ready',
+        description: 'The video feed is not available to capture an image.',
+      });
+      return;
+    }
+    setIsScanning(true);
+
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    context?.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
+    
+    const imageDataUrl = canvas.toDataURL('image/png');
+    const codeReader = new BrowserMultiFormatReader();
+
+    try {
+      const result = await codeReader.decodeFromImageUrl(imageDataUrl);
+      const sku = result.getText();
+      const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+
+      if (foundProduct) {
+        toast({
+          title: 'Item Found',
+          description: `${foundProduct.name} added.`,
+        });
+        onScan(foundProduct);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Product Not Found',
+          description: `No product found with SKU: ${sku}`,
+        });
+      }
+    } catch (err) {
+       if (err instanceof NotFoundException) {
+          toast({
+            variant: 'destructive',
+            title: 'Barcode Not Found',
+            description: 'Could not detect a barcode in the captured image. Please try again.',
+          });
+       } else {
+          console.error('Scan Error:', err);
+          toast({
+            variant: 'destructive',
+            title: 'Scan Error',
+            description: 'An unexpected error occurred during the scan.',
+          });
+       }
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
   const handleManualScan = () => {
     if (!scannedSku) {
@@ -148,8 +176,8 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
               autoPlay
               playsInline
               muted
-              onCanPlay={startScanner}
             />
+            <canvas ref={canvasRef} className="hidden" />
             {hasCameraPermission === false && (
               <div className="absolute inset-0 flex items-center justify-center p-4">
                 <Alert variant="destructive">
@@ -160,7 +188,21 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
                 </Alert>
               </div>
             )}
+             {hasCameraPermission === null && (
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <p className="text-white">Requesting camera access...</p>
+                </div>
+             )}
           </div>
+
+          <Button onClick={handleCapture} disabled={!hasCameraPermission || isScanning} className="w-full">
+            {isScanning ? (
+              <Loader2 className="mr-2 animate-spin" />
+            ) : (
+              <Camera className="mr-2" />
+            )}
+            Capture Barcode
+          </Button>
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
