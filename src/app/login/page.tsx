@@ -11,8 +11,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useAuth } from '@/components/auth-provider';
+import { userProfileDAO, businessProfileDAO } from '@/lib/data';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+
 
 export default function LoginPage() {
     const { toast } = useToast();
@@ -50,7 +53,31 @@ export default function LoginPage() {
         setIsGoogleLoggingIn(true);
         const provider = new GoogleAuthProvider();
         try {
-            await signInWithPopup(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+            const firebaseUser = result.user;
+
+            // Check if user profile already exists
+            const userProfileRef = doc(db, 'userProfile', firebaseUser.uid);
+            const userProfileSnap = await getDoc(userProfileRef);
+
+            if (!userProfileSnap.exists()) {
+                // If it doesn't exist, create it
+                await setDoc(userProfileRef, {
+                    name: firebaseUser.displayName || 'Google User',
+                    email: firebaseUser.email,
+                });
+                
+                // Also create a business profile
+                await businessProfileDAO.add({
+                    userId: firebaseUser.uid,
+                    companyName: `${firebaseUser.displayName || 'My'}'s Business`,
+                });
+                toast({
+                    title: 'Account Created',
+                    description: 'Your new account has been set up.',
+                });
+            }
+
              toast({
                 title: 'Login Successful',
                 description: "Welcome back!",
@@ -124,18 +151,18 @@ export default function LoginPage() {
                   <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                   <div className='flex justify-between items-center'>
+                     <Label htmlFor="password">Password</Label>
+                      <Button
+                          variant="link"
+                          type="button"
+                          className="p-0 h-auto text-sm font-medium text-primary hover:underline"
+                          onClick={handleForgotPassword}
+                      >
+                          Forgot password?
+                      </Button>
+                   </div>
                   <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
-                </div>
-                 <div className="flex justify-end">
-                    <Button
-                        variant="link"
-                        type="button"
-                        className="p-0 h-auto text-sm font-medium text-primary hover:underline"
-                        onClick={handleForgotPassword}
-                    >
-                        Forgot password?
-                    </Button>
                 </div>
                 <div className="space-y-2 pt-2">
                     <Button type="submit" className="w-full" disabled={isLoggingIn || isGoogleLoggingIn}>
