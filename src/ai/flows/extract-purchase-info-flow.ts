@@ -66,24 +66,7 @@ const extractPurchaseInfoFlow = ai.defineFlow(
     outputSchema: ExtractedPurchaseInfoSchema,
   },
   async (input) => {
-    try {
-      const { output } = await prompt(input, { model: 'googleai/gemini-1.5-pro' });
-      return output!;
-    } catch (e: any) {
-      console.error("Initial prompt failed, retrying with safety settings. Error:", e.message || e);
-      // Retry with different safety settings if the first attempt fails.
-      const { output } = await prompt(input, {
-        model: 'googleai/gemini-1.5-pro',
-        config: {
-          safetySettings: [
-            {
-              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
-              threshold: 'BLOCK_ONLY_HIGH',
-            },
-          ],
-        },
-      });
-      return output!;
-    }
+    const { output } = await prompt(input, { model: 'googleai/gemini-1.5-pro' });
+    return output!;
   }
 );
