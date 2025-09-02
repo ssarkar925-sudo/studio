@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -15,7 +15,7 @@ import type { Product } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
-import { Upload } from 'lucide-react';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 interface TagScannerProps {
   open: boolean;
@@ -27,52 +27,71 @@ interface TagScannerProps {
 export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerProps) {
   const { toast } = useToast();
   const [scannedSku, setScannedSku] = useState('');
-  const [isDecoding, setIsDecoding] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const codeReader = new BrowserMultiFormatReader();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const codeReaderRef = useRef(new BrowserMultiFormatReader());
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  const stopScanner = useCallback(() => {
+    codeReaderRef.current.reset();
+  }, []);
 
-    setIsDecoding(true);
-    toast({
-        title: 'Decoding Image...',
-        description: 'Please wait while the barcode is being processed.',
-    });
+  const startScanner = useCallback(() => {
+    if (!open || !videoRef.current || hasCameraPermission === false) return;
 
-    try {
-        const imageUrl = URL.createObjectURL(file);
-        const result = await codeReader.decodeFromImageUrl(imageUrl);
-        const sku = result.getText();
-        const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        setHasCameraPermission(true);
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(e => console.error("Video play failed", e));
+          
+          codeReaderRef.current.decodeFromVideoElement(videoRef.current, (result, err) => {
+            if (result) {
+              const sku = result.getText();
+              const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
 
-        if (foundProduct) {
-            toast({
-                title: 'Item Found',
-                description: `${foundProduct.name} details displayed.`,
-            });
-            onScan(foundProduct);
-        } else {
-            toast({
+              if (foundProduct) {
+                toast({
+                  title: 'Item Found',
+                  description: `${foundProduct.name} added.`,
+                });
+                onScan(foundProduct);
+              } else {
+                toast({
+                  variant: 'destructive',
+                  title: 'Product Not Found',
+                  description: `No product found with SKU: ${sku}`,
+                });
+              }
+            }
+            if (err && !(err instanceof NotFoundException)) {
+              console.error(err);
+              toast({
                 variant: 'destructive',
-                title: 'Product Not Found',
-                description: `No product found with SKU: ${sku}`,
-            });
+                title: 'Scan Error',
+                description: 'An unexpected error occurred while scanning.',
+              });
+            }
+          });
         }
-    } catch (error) {
-        if (error instanceof NotFoundException) {
-            toast({ variant: 'destructive', title: 'Scan Failed', description: 'No barcode was found in the image.' });
-        } else {
-            console.error("Decoding error:", error);
-            toast({ variant: 'destructive', title: 'Scan Error', description: 'Could not decode the barcode from the image.' });
-        }
-    } finally {
-        setIsDecoding(false);
-        // Reset file input to allow scanning the same file again
-        if(fileInputRef.current) fileInputRef.current.value = "";
+      })
+      .catch(err => {
+        console.error("Camera access denied:", err);
+        setHasCameraPermission(false);
+      });
+  }, [open, products, onScan, toast, hasCameraPermission]);
+
+  useEffect(() => {
+    if (open) {
+      startScanner();
+    } else {
+      stopScanner();
     }
-  }
+
+    return () => {
+      stopScanner();
+    };
+  }, [open, startScanner, stopScanner]);
 
   const handleManualScan = () => {
     if (!scannedSku) {
@@ -87,10 +106,6 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     const foundProduct = products.find(p => p.sku.toLowerCase().endsWith(scannedSku.toLowerCase()));
 
     if (foundProduct) {
-      toast({
-        title: 'Item Found',
-        description: `${foundProduct.name} details displayed.`,
-      });
       onScan(foundProduct);
       setScannedSku('');
     } else {
@@ -105,6 +120,7 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       setScannedSku('');
+      setHasCameraPermission(null);
     }
     onOpenChange(isOpen);
   };
@@ -113,17 +129,23 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>Find Item</DialogTitle>
+          <DialogTitle>Scan Item</DialogTitle>
         </DialogHeader>
         <div className='p-4 bg-muted rounded-md space-y-4'>
-            <div>
-                 <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept="image/*" />
-                 <Button type="button" onClick={() => fileInputRef.current?.click()} className="w-full" disabled={isDecoding}>
-                    <Upload className="mr-2" />
-                    {isDecoding ? 'Processing...' : 'Upload Barcode Image'}
-                </Button>
-                <p className="text-xs text-center text-muted-foreground mt-2">Take a picture of a barcode to scan it.</p>
+            <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
+                <video ref={videoRef} className="w-full h-full object-cover" />
+                {hasCameraPermission === false && (
+                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                        <Alert variant="destructive">
+                            <AlertTitle>Camera Access Denied</AlertTitle>
+                            <AlertDescription>
+                                Please enable camera permissions in your browser settings to use the scanner.
+                            </AlertDescription>
+                        </Alert>
+                    </div>
+                )}
             </div>
+            
             <div className="relative">
                 <div className="absolute inset-0 flex items-center">
                     <span className="w-full border-t" />
