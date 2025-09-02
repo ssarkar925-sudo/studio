@@ -87,7 +87,7 @@ export function Combobox({
                   value={option.value}
                   disabled={option.disabled}
                   onSelect={(currentValue) => {
-                    onSelect(currentValue === value ? "" : currentValue)
+                    onSelect(currentValue)
                     setOpen(false)
                   }}
                 >
