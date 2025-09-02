@@ -15,8 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
+import { BrowserMultiFormatReader, NotFoundException, DecodeHintType } from '@zxing/library';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import Webcam from 'react-webcam';
 
 interface TagScannerProps {
   open: boolean;
@@ -28,70 +29,54 @@ interface TagScannerProps {
 export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerProps) {
   const { toast } = useToast();
   const [scannedSku, setScannedSku] = useState('');
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const codeReaderRef = useRef(new BrowserMultiFormatReader());
+  const webcamRef = useRef<Webcam>(null);
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const codeReaderRef = useRef(new BrowserMultiFormatReader());
+  const captureIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const capture = useCallback(() => {
+    if (!webcamRef.current) return;
+    const imageSrc = webcamRef.current.getScreenshot();
+    if (imageSrc) {
+      codeReaderRef.current.decodeFromImageUrl(imageSrc)
+        .then(result => {
+          const sku = result.getText();
+          const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+
+          if (foundProduct) {
+            toast({
+              title: 'Item Found',
+              description: `${foundProduct.name} added.`,
+            });
+            onScan(foundProduct);
+          } else {
+            toast({
+              variant: 'destructive',
+              title: 'Product Not Found',
+              description: `No product found with SKU: ${sku}`,
+            });
+          }
+        })
+        .catch(err => {
+          if (err instanceof NotFoundException) {
+            // No barcode found, which is normal.
+          } else {
+            console.error("Scan error:", err);
+          }
+        });
+    }
+  }, [webcamRef, onScan, products, toast]);
 
   useEffect(() => {
-    let isCancelled = false;
-
-    const startCamera = async () => {
-      if (!open || isCancelled) return;
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        if (isCancelled) {
-          stream.getTracks().forEach(track => track.stop());
-          return;
-        }
-        setHasCameraPermission(true);
-
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          codeReaderRef.current.decodeFromVideoElement(videoRef.current, (result, error) => {
-            if (isCancelled) return;
-
-            if (result) {
-              const sku = result.getText();
-              const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
-
-              if (foundProduct) {
-                toast({
-                  title: 'Item Found',
-                  description: `${foundProduct.name} added.`,
-                });
-                onScan(foundProduct);
-              } else {
-                toast({
-                  variant: 'destructive',
-                  title: 'Product Not Found',
-                  description: `No product found with SKU: ${sku}`,
-                });
-              }
-            }
-            if (error && !(error instanceof NotFoundException)) {
-              console.error('Scan Error:', error);
-            }
-          });
-        }
-      } catch (err) {
-        console.error('Camera access error:', err);
-        setHasCameraPermission(false);
-      }
-    };
-    
-    startCamera();
-
+    if (open && hasCameraPermission) {
+      captureIntervalRef.current = setInterval(capture, 500);
+    }
     return () => {
-      isCancelled = true;
-      codeReaderRef.current.reset();
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
+      if (captureIntervalRef.current) {
+        clearInterval(captureIntervalRef.current);
       }
     };
-  }, [open, onScan, products, toast]);
+  }, [open, hasCameraPermission, capture]);
 
 
   const handleManualScan = () => {
@@ -124,6 +109,15 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     }
     onOpenChange(isOpen);
   };
+  
+  const handleUserMedia = () => {
+    setHasCameraPermission(true);
+  }
+  
+  const handleUserMediaError = (error: string | DOMException) => {
+    console.error("Webcam error:", error);
+    setHasCameraPermission(false);
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -136,13 +130,17 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
         </DialogHeader>
         <div className='p-4 bg-muted rounded-md space-y-4'>
           <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
-            <video
-              ref={videoRef}
-              className="w-full h-full object-cover"
-              playsInline
-              autoPlay
-              muted
-            />
+            {open && (
+                 <Webcam
+                    audio={false}
+                    ref={webcamRef}
+                    screenshotFormat="image/jpeg"
+                    videoConstraints={{ facingMode: 'environment' }}
+                    onUserMedia={handleUserMedia}
+                    onUserMediaError={handleUserMediaError}
+                    className="w-full h-full object-cover"
+                />
+            )}
             {hasCameraPermission === false && (
               <div className="absolute inset-0 flex items-center justify-center p-4">
                 <Alert variant="destructive">
@@ -153,11 +151,6 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
                 </Alert>
               </div>
             )}
-             {hasCameraPermission === null && (
-                <div className="absolute inset-0 flex items-center justify-center p-4">
-                  <p className="text-white">Requesting camera access...</p>
-                </div>
-             )}
           </div>
 
           <div className="relative">
