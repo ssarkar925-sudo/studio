@@ -288,7 +288,10 @@ export default function NewInvoicePage() {
                                       </SelectTrigger>
                                       <SelectContent>
                                           {customers.map((customer) => (
-                                          <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
+                                          <SelectItem key={customer.id} value={customer.id}>
+                                            {customer.name}{' '}
+                                            {customer.phone ? `(${customer.phone})` : ''}
+                                          </SelectItem>
                                           ))}
                                       </SelectContent>
                                   </Select>
