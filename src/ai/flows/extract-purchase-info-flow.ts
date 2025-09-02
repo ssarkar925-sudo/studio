@@ -66,7 +66,13 @@ const extractPurchaseInfoFlow = ai.defineFlow(
     outputSchema: ExtractedPurchaseInfoSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+     try {
+      const { output } = await prompt(input, { model: 'googleai/gemini-1.5-flash' });
+      return output!;
+    } catch (e: any) {
+      console.error(`[extractPurchaseInfoFlow] Error: ${e.message}`, e);
+      // Re-throw the error to be caught by the calling function
+      throw new Error('Failed to extract details from image.');
+    }
   }
 );
