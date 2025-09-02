@@ -68,10 +68,10 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
         <Command
-          filter={(value, search, keywords = []) => {
-            const extendedKeywords = options.find(o => o.value === value)?.searchable || '';
-            const lowerCaseSearch = search.toLowerCase();
-            if (extendedKeywords.includes(lowerCaseSearch)) {
+          filter={(itemValue, search) => {
+            const option = options.find(o => o.value === itemValue);
+            const searchableText = option?.searchable || option?.label || '';
+            if (searchableText.toLowerCase().includes(search.toLowerCase())) {
               return 1;
             }
             return 0;
