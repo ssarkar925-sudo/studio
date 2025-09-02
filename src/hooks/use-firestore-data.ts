@@ -43,26 +43,23 @@ export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
     
     let unsubscribe: (() => void) | undefined;
 
-    const setupSubscription = () => {
-        const handleData = (newData: T[]) => {
-            setData(newData);
-            setIsLoading(false);
-            setError(null);
-        };
-        const handleError = (err: Error) => {
-            console.error("Error fetching Firestore data:", err);
-            setError(err);
-            setIsLoading(false);
-        };
-        
-        if (!isUserRequired) {
-            return (dao as AdminDao).subscribe(handleData as (data: any[]) => void, handleError);
-        } else if (user) {
-            return (dao as Dao<T>).subscribe(user.uid, handleData, handleError);
-        }
+    const handleData = (newData: T[]) => {
+        setData(newData);
+        setIsLoading(false);
+        setError(null);
+    };
+    const handleError = (err: Error) => {
+        console.error("Error fetching Firestore data:", err);
+        setError(err);
+        setIsLoading(false);
     };
     
-    unsubscribe = setupSubscription();
+    if (!isUserRequired) {
+        unsubscribe = (dao as AdminDao).subscribe(handleData as (data: any[]) => void, handleError);
+    } else if (user) {
+        unsubscribe = (dao as Dao<T>).subscribe(user.uid, handleData, handleError);
+    }
+
 
     // The cleanup function will be called when the component unmounts
     // or when the dependencies (dao, user, isAuthLoading) change.
