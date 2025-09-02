@@ -15,7 +15,7 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { Product } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BrowserMultiFormatReader, NotFoundException, ChecksumException, FormatException } from '@zxing/library';
+import { BrowserMultiFormatReader, NotFoundException } from '@zxing/library';
 
 interface TagScannerProps {
   open: boolean;
@@ -25,78 +25,74 @@ interface TagScannerProps {
 }
 
 export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerProps) {
-  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const { toast } = useToast();
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const [scannedSku, setScannedSku] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
   const codeReader = useRef(new BrowserMultiFormatReader());
-  const streamRef = useRef<MediaStream | null>(null);
+  const controlsRef = useRef<any>(null); // To store controls from the decoder
 
-  const startScanner = useCallback(() => {
-    if (!videoRef.current || !streamRef.current) return;
+  const startScanner = useCallback(async () => {
+    if (!videoRef.current || !hasCameraPermission) return;
 
-    codeReader.current.decodeFromStream(videoRef.current, streamRef.current, (result, err) => {
-      if (result) {
-        const sku = result.getText();
-        const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
-        if (foundProduct) {
-          toast({
-            title: 'Item Scanned',
-            description: `${foundProduct.name} found.`,
-          });
-          onScan(foundProduct);
+    try {
+       const newControls = await codeReader.current.decodeFromVideoElement(videoRef.current, (result, err) => {
+        if (result) {
+            const sku = result.getText();
+            const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+            if (foundProduct) {
+              toast({
+                title: 'Item Scanned',
+                description: `${foundProduct.name} found.`,
+              });
+              onScan(foundProduct);
+            }
         }
-      }
-      if (err && !(err instanceof NotFoundException) && !(err instanceof ChecksumException) && !(err instanceof FormatException)) {
-        console.error("Decoding error:", err);
-      }
-    }).catch(err => {
-      console.error("Error starting the decoder from stream", err);
-    });
-  }, [onScan, products, toast]);
+         if (err && !(err instanceof NotFoundException)) {
+            console.error("Decoding error:", err);
+        }
+      });
+      controlsRef.current = newControls;
+    } catch(err) {
+        console.error("Failed to start scanner:", err);
+    }
+  }, [hasCameraPermission, onScan, products, toast]);
 
-  const stopScanner = useCallback(() => {
-    codeReader.current.reset();
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-  }, []);
 
   useEffect(() => {
-    if (open) {
-      const getCameraPermission = async () => {
-        try {
-          setHasCameraPermission(null);
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-          streamRef.current = stream;
-          if (videoRef.current) {
+    const getCameraPermissionAndStart = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (videoRef.current) {
             videoRef.current.srcObject = stream;
             setHasCameraPermission(true);
-            // The scanner will be started by the `onCanPlay` event on the video element
-          }
-        } catch (error) {
-          console.error('Error accessing camera:', error);
-          setHasCameraPermission(false);
-          toast({
-            variant: 'destructive',
-            title: 'Camera Access Denied',
-            description: 'Please enable camera permissions in your browser settings.',
-          });
+            // `startScanner` will be called by `onCanPlay` event on video element
         }
-      };
-      getCameraPermission();
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings.',
+        });
+      }
+    };
+    
+    if (open) {
+        getCameraPermissionAndStart();
     } else {
-      stopScanner();
+        if (controlsRef.current) {
+            controlsRef.current.stop();
+        }
     }
 
     return () => {
-      stopScanner();
+      if (controlsRef.current) {
+        controlsRef.current.stop();
+      }
     };
-  }, [open, stopScanner, toast]);
+  }, [open, toast]);
 
   const handleManualScan = () => {
     if (!scannedSku) {
