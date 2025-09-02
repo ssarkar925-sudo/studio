@@ -1,6 +1,6 @@
 
 import { db, auth } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc, FieldValue, serverTimestamp, deleteField, where, writeBatch, limit } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc, FieldValue, serverTimestamp, deleteField, where, writeBatch, limit, orderBy } from 'firebase/firestore';
 import { format } from 'date-fns';
 
 type BaseDocument = {
@@ -116,7 +116,7 @@ export type FeatureFlag = {
 function createFirestoreDAO<T extends {id: string, userId?: string}>(collectionName: string) {
     const collectionRef = collection(db, collectionName);
 
-    const add = async (item: Omit<T, 'id'>) => {
+    const add = async (item: Omit<T, 'id' | 'userId'> & { userId: string }) => {
         try {
             const docRef = await addDoc(collectionRef, item);
             return { ...item, id: docRef.id } as T;
@@ -145,6 +145,18 @@ function createFirestoreDAO<T extends {id: string, userId?: string}>(collectionN
            throw error;
        }
     }
+    
+     const get = async (id: string): Promise<T | null> => {
+        const docRef = doc(db, collectionName, id);
+        const docSnap = await getDoc(docRef);
+        return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as T : null;
+    }
+
+    const load = async (): Promise<T[]> => {
+        const snapshot = await getDocs(collectionRef);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
+    };
+
 
     const subscribe = (
       userId: string,
@@ -164,7 +176,7 @@ function createFirestoreDAO<T extends {id: string, userId?: string}>(collectionN
         return unsubscribe;
     }
 
-    return { add, update, remove, subscribe };
+    return { add, update, remove, subscribe, get, load };
 }
 
 // User Profile DAO is special as it uses the auth UID as the document ID
@@ -228,7 +240,7 @@ const createInvoicesDAO = () => {
 
             const productDocs = new Map<string, any>();
             for (const item of invoiceData.items) {
-                if (item.productId) {
+                if (item.productId && !item.productId.startsWith('new_')) {
                     const productRef = doc(db, 'products', item.productId);
                     const productDoc = await transaction.get(productRef);
                     if (!productDoc.exists() || productDoc.data().stock < item.quantity) {
@@ -258,7 +270,7 @@ const createInvoicesDAO = () => {
             });
 
             for (const item of invoiceData.items) {
-                if(item.productId) {
+                if(item.productId && !item.productId.startsWith('new_')) {
                     const productDoc = productDocs.get(item.productId);
                     if (productDoc) {
                         const productRef = doc(db, 'products', item.productId);
@@ -297,7 +309,7 @@ const createInvoicesDAO = () => {
             const allProductIds = new Set([...originalInvoice.items.map(i => i.productId), ...newInvoiceData.items.map(i => i.productId)]);
             const productDocs = new Map<string, any>();
             for (const productId of allProductIds) {
-                if (!productId) continue;
+                if (!productId || productId.startsWith('new_')) continue;
                 const productRef = doc(db, 'products', productId);
                 const productDoc = await transaction.get(productRef);
                  if (productDoc.exists()) {
@@ -319,7 +331,7 @@ const createInvoicesDAO = () => {
             const newItemsMap = new Map(newInvoiceData.items.map(item => [item.productId, item.quantity]));
             
             for(const productId of allProductIds) {
-                 if (!productId) continue;
+                 if (!productId || productId.startsWith('new_')) continue;
                 const originalQty = originalItemsMap.get(productId) || 0;
                 const newQty = newItemsMap.get(productId) || 0;
                 const stockChange = originalQty - newQty;
@@ -360,7 +372,7 @@ const createInvoicesDAO = () => {
             
             const productDocs = new Map<string, any>();
             for (const item of invoiceData.items) {
-                 if (item.productId) {
+                 if (item.productId && !item.productId.startsWith('new_')) {
                     const productRef = doc(db, 'products', item.productId);
                     const productDoc = await transaction.get(productRef);
                     if (productDoc.exists()) {
@@ -384,7 +396,7 @@ const createInvoicesDAO = () => {
             }
 
             for (const item of invoiceData.items) {
-                 if(item.productId) {
+                 if(item.productId && !item.productId.startsWith('new_')) {
                     const productDoc = productDocs.get(item.productId);
                     if(productDoc) {
                         const productRef = doc(db, 'products', item.productId);
@@ -441,7 +453,7 @@ const featureFlagsDAO = {
                 });
                 batch.commit().then(() => callback(defaultFlags)).catch(onError);
             } else {
-                const data = querySnapshot.docs.map(doc => ({ ...doc.data() } as FeatureFlag));
+                const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as FeatureFlag));
                 callback(data);
             }
         }, (error) => {
