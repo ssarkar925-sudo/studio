@@ -29,20 +29,21 @@ export default function LoginPage() {
 
     useEffect(() => {
         const handleRedirectResult = async () => {
+            setIsGoogleLoggingIn(true);
             try {
                 const result = await getRedirectResult(auth);
                 if (result) {
-                    setIsGoogleLoggingIn(true);
                     const firebaseUser = result.user;
                     const userProfileRef = doc(db, 'userProfile', firebaseUser.uid);
                     const userProfileSnap = await getDoc(userProfileRef);
 
                     if (!userProfileSnap.exists()) {
+                        // Check if this is the very first user
                         const usersQuery = query(collection(db, 'userProfile'), limit(1));
                         const usersSnapshot = await getDocs(usersQuery);
                         const isFirstUser = usersSnapshot.empty;
 
-                        await setDoc(doc(db, "userProfile", firebaseUser.uid), {
+                        await setDoc(userProfileRef, {
                             name: firebaseUser.displayName || 'Google User',
                             email: firebaseUser.email,
                             isAdmin: isFirstUser,
@@ -133,6 +134,7 @@ export default function LoginPage() {
         }
     }
     
+    // While loading or if user is already logged in, show loading to prevent flashing login page
     if (isLoading || user) {
         return <div className="flex h-screen items-center justify-center">Loading...</div>;
     }
