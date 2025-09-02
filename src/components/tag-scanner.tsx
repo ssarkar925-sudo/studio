@@ -32,18 +32,31 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const codeReader = useRef(new BrowserMultiFormatReader());
 
   useEffect(() => {
+    let stream: MediaStream | null = null;
+    
+    const cleanup = () => {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        if (videoRef.current) {
+            videoRef.current.srcObject = null;
+        }
+        codeReader.current.reset();
+    };
+
     if (open) {
       const getCameraPermission = async () => {
         try {
-          // Reset permission state on open
           setHasCameraPermission(null); 
-          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          
           if (videoRef.current) {
             videoRef.current.srcObject = stream;
             setHasCameraPermission(true);
 
              try {
-                await codeReader.current.decodeFromStream(videoRef.current, stream, (result, err) => {
+                // Pass undefined for the video element and let the library handle it with the stream.
+                await codeReader.current.decodeFromStream(undefined, stream, (result, err) => {
                     if (result) {
                         const sku = result.getText();
                         const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
@@ -53,13 +66,10 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
                                 description: `${foundProduct.name} found.`,
                             });
                             onScan(foundProduct);
-                        } else {
-                            // This toast might be too noisy if it keeps scanning non-matching codes
-                            // console.log(`SKU ${sku} scanned but not found in products.`);
                         }
                     }
                     if (err && !(err instanceof NotFoundException) && !(err instanceof ChecksumException) && !(err instanceof FormatException)) {
-                        // console.error("Decoding error:", err);
+                        console.error("Decoding error:", err);
                     }
                 });
             } catch (decodeError) {
@@ -79,23 +89,10 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
 
       getCameraPermission();
     } else {
-        // Cleanup when dialog closes
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-            videoRef.current.srcObject = null;
-        }
-        codeReader.current.reset();
+        cleanup();
     }
     
-    // Cleanup function
-    return () => {
-        if (videoRef.current && videoRef.current.srcObject) {
-            const stream = videoRef.current.srcObject as MediaStream;
-            stream.getTracks().forEach(track => track.stop());
-        }
-        codeReader.current.reset();
-    }
+    return cleanup;
   }, [open, onScan, products, toast]);
 
   
