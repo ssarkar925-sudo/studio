@@ -19,15 +19,17 @@ import { useRouter } from 'next/navigation';
 import { vendorsDAO } from '@/lib/data';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/components/auth-provider';
 
 export default function NewVendorPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const { user } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if(isSaving) return;
+    if(isSaving || !user) return;
 
     const formData = new FormData(e.currentTarget);
     const vendorName = formData.get('vendorName') as string;
@@ -49,6 +51,7 @@ export default function NewVendorPage() {
     setIsSaving(true);
     try {
       await vendorsDAO.add({
+        userId: user.uid,
         vendorName,
         contactPerson,
         contactNumber,

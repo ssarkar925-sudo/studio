@@ -507,3 +507,4 @@ export const deleteAllUserData = async (userId: string) => {
     await batch.commit();
     console.log(`Successfully deleted all data for user ${userId}`);
 };
+
