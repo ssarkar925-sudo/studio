@@ -167,6 +167,14 @@ export default function PrintInvoicePage() {
             <p className="text-muted-foreground text-sm">{invoice.orderNote}</p>
           </footer>
         )}
+        
+        <section className="mt-20 text-right">
+            <div className="inline-block text-left">
+                <div className="border-t-2 border-black w-48 pt-2">
+                    <p className="text-sm font-semibold">Authorised Signatory</p>
+                </div>
+            </div>
+        </section>
       </div>
     </PrintLayout>
   );
