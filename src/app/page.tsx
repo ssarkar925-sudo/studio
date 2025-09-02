@@ -4,7 +4,7 @@
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { invoicesDAO, Invoice, businessProfileDAO, customersDAO, vendorsDAO, purchasesDAO, Purchase, productsDAO, Product, featureFlagsDAO, FeatureFlag } from '@/lib/data';
-import { DollarSign, FileText, Clock, Bot, Send, Users, Store, Truck, PackageX } from 'lucide-react';
+import { DollarSign, FileText, Clock, Bot, Send, Users, Store, Truck, PackageX, ScanLine } from 'lucide-react';
 import { DashboardClient } from '@/app/dashboard-client';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useEffect, useState, useMemo, useRef, Suspense } from 'react';
@@ -17,7 +17,14 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import Markdown from 'react-markdown';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
-
+import { TagScanner } from '@/components/tag-scanner';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
     if (invoices.length === 0) {
@@ -153,15 +160,15 @@ function AiAnalyzer({ invoices, isLoading, isEnabled }: { invoices: Invoice[], i
     return months.map(({ name, profit }) => ({ name, profit }));
   }, [invoices]);
 
-  const totalRevenue = invoices
+  const totalRevenue = useMemo(() => invoices
     .filter((i) => i.status === 'Paid')
-    .reduce((sum, i) => sum + i.amount, 0);
+    .reduce((sum, i) => sum + i.amount, 0), [invoices]);
 
-  const outstanding = invoices
+  const outstanding = useMemo(() => invoices
     .filter((i) => i.status === 'Pending' || i.status === 'Overdue')
-    .reduce((sum, i) => sum + i.amount, 0);
+    .reduce((sum, i) => sum + i.amount, 0), [invoices]);
 
-  const overdue = invoices.filter((i) => i.status === 'Overdue').length;
+  const overdue = useMemo(() => invoices.filter((i) => i.status === 'Overdue').length, [invoices]);
 
   useEffect(() => {
     if(scrollAreaRef.current) {
@@ -423,8 +430,18 @@ function StatCards() {
 function MainDashboardContent() {
     const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
     const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
+    const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
     const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
     
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [scannedProduct, setScannedProduct] = useState<Product | null>(null);
+    
+    const handleScan = (product: Product) => {
+        setScannedProduct(product);
+        setIsScannerOpen(false);
+    };
+
+
     useEffect(() => {
         const unsubscribe = featureFlagsDAO.subscribe(setFeatureFlags);
         return () => unsubscribe();
@@ -433,6 +450,31 @@ function MainDashboardContent() {
     const aiAnalysisEnabled = featureFlags.find(f => f.id === 'aiAnalysis')?.enabled ?? false;
 
     return (
+    <>
+        <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-semibold">Dashboard</h1>
+            <Button variant="outline" onClick={() => setIsScannerOpen(true)}>
+                <ScanLine className="mr-2 h-4 w-4"/>
+                Scan Item
+            </Button>
+        </div>
+        <Suspense fallback={
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                {Array.from({ length: 5 }).map((_, i) => (
+                    <Card key={i}>
+                        <CardHeader>
+                            <Skeleton className="h-5 w-3/4" />
+                        </CardHeader>
+                        <CardContent>
+                            <Skeleton className="h-8 w-1/2" />
+                            <Skeleton className="h-4 w-full mt-2" />
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        }>
+            <StatCards/>
+        </Suspense>
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
             <Suspense fallback={<Card className="lg:col-span-3"><CardContent><Skeleton className="h-[300px] w-full"/></CardContent></Card>}>
                  <DashboardClient invoices={invoices} />
@@ -463,31 +505,44 @@ function MainDashboardContent() {
                 <AiAnalyzer invoices={invoices} isLoading={invoicesLoading} isEnabled={aiAnalysisEnabled} />
             </Suspense>
         </div>
+        <TagScanner
+            open={isScannerOpen}
+            onOpenChange={setIsScannerOpen}
+            onScan={handleScan}
+            products={products}
+        />
+        <Dialog open={!!scannedProduct} onOpenChange={() => setScannedProduct(null)}>
+            <DialogContent>
+                 <DialogHeader>
+                    <DialogTitle>{scannedProduct?.name}</DialogTitle>
+                    <DialogDescription>
+                        Product Details
+                    </DialogDescription>
+                </DialogHeader>
+                {scannedProduct && (
+                     <div className="grid grid-cols-2 gap-4">
+                        <div className="font-semibold">Selling Price</div>
+                        <div>₹{scannedProduct.sellingPrice.toFixed(2)}</div>
+                        <div className="font-semibold">Stock</div>
+                        <div>{scannedProduct.stock}</div>
+                        <div className="font-semibold">SKU</div>
+                        <div>{scannedProduct.sku}</div>
+                         <div className="font-semibold">Batch Code</div>
+                        <div>{scannedProduct.batchCode}</div>
+                     </div>
+                )}
+            </DialogContent>
+        </Dialog>
+    </>
     )
 }
 
 export default function DashboardPage() {
     return (
         <AppLayout>
-        <h1 className="text-2xl font-semibold mb-4">Dashboard</h1>
-            <Suspense fallback={
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                        <Card key={i}>
-                            <CardHeader>
-                               <Skeleton className="h-5 w-3/4" />
-                            </CardHeader>
-                            <CardContent>
-                                <Skeleton className="h-8 w-1/2" />
-                                <Skeleton className="h-4 w-full mt-2" />
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
-            }>
-                <StatCards/>
-            </Suspense>
             <MainDashboardContent/>
         </AppLayout>
     );
 }
+
+    
