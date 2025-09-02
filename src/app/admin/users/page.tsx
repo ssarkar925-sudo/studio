@@ -14,6 +14,8 @@ import {
 import { adminUsersDAO, type UserProfile } from '@/lib/data';
 import { useAuth } from '@/components/auth-provider';
 import { useEffect, useState } from 'react';
+import { Badge } from '@/components/ui/badge';
+
 
 // A custom hook to fetch all users for the admin panel
 function useAllUsers() {
@@ -79,6 +81,7 @@ export default function AdminUsersPage() {
                                 <TableHead>Name</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>User ID</TableHead>
+                                <TableHead>Role</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -87,6 +90,9 @@ export default function AdminUsersPage() {
                                     <TableCell className="font-medium">{user.name}</TableCell>
                                     <TableCell>{user.email}</TableCell>
                                     <TableCell className="text-muted-foreground text-xs">{user.id}</TableCell>
+                                    <TableCell>
+                                        {user.isAdmin && <Badge variant="secondary">Admin</Badge>}
+                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
