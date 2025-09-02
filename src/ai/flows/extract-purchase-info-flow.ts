@@ -57,6 +57,7 @@ const prompt = ai.definePrompt({
 - The amount paid, if mentioned.
 
 Photo: {{media url=photoDataUri}}`,
+  model: 'googleai/gemini-1.5-pro',
 });
 
 const extractPurchaseInfoFlow = ai.defineFlow(
