@@ -28,34 +28,25 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const { toast } = useToast();
   const [scannedSku, setScannedSku] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
-  // Using a ref for the code reader to persist it across renders
   const codeReader = useRef(new BrowserMultiFormatReader());
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-  const stopScanner = useCallback(() => {
-    try {
-        codeReader.current.reset();
-    } catch(e) {
-        // Can ignore this error, it happens if reset is called before stream is fully initialized
-    }
-    if (videoRef.current && videoRef.current.srcObject) {
-      (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-      videoRef.current.srcObject = null;
-    }
-  }, []);
+  useEffect(() => {
+    let stream: MediaStream | null = null;
+    const reader = codeReader.current;
 
-  const startScanner = useCallback(async () => {
-    if (!videoRef.current) return;
+    const startScanner = async () => {
+      if (!videoRef.current || !open) return;
 
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-      setHasCameraPermission(true);
-      videoRef.current.srcObject = stream;
-      
-      // We must wait for the video to be playable before decoding
-      videoRef.current.oncanplay = () => {
-        try {
-            codeReader.current.decodeFromVideoElement(videoRef.current!, (result, err) => {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        
+          videoRef.current.oncanplay = () => {
+            reader.decodeFromVideoElement(videoRef.current!, (result, err) => {
               if (result) {
                 const sku = result.getText();
                 const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
@@ -74,37 +65,32 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
                   });
                 }
               } else if (err && !(err instanceof NotFoundException)) {
-                // We ignore NotFoundException because it fires constantly when no barcode is in view
                 console.error('Scan Error:', err);
-                toast({
-                  variant: 'destructive',
-                  title: 'Scan Error',
-                  description: 'An unexpected error occurred during the scan.',
-                });
               }
             });
-        } catch (decodeErr) {
-            console.error("Error starting decoder:", decodeErr);
+          };
         }
-      };
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+      }
+    };
 
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      setHasCameraPermission(false);
-    }
-  }, [products, onScan, toast]);
-
-  useEffect(() => {
     if (open) {
       startScanner();
-    } else {
-      stopScanner();
     }
-    // This cleanup runs when the component unmounts or when `open` changes to false
+
     return () => {
-      stopScanner();
+      // Cleanup: stop the camera and reset the reader
+      reader.reset();
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
     };
-  }, [open, startScanner, stopScanner]);
+  }, [open, products, onScan, toast]);
 
   const handleManualScan = () => {
     if (!scannedSku) {
