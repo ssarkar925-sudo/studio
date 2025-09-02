@@ -44,33 +44,21 @@ export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
     let unsubscribe: (() => void) | undefined;
 
     const setupSubscription = () => {
+        const handleData = (newData: T[]) => {
+            setData(newData);
+            setIsLoading(false);
+            setError(null);
+        };
+        const handleError = (err: Error) => {
+            console.error("Error fetching Firestore data:", err);
+            setError(err);
+            setIsLoading(false);
+        };
+        
         if (!isUserRequired) {
-            return (dao as AdminDao).subscribe(
-                (newData) => {
-                    setData(newData as T[]);
-                    setIsLoading(false);
-                    setError(null);
-                },
-                (err: Error) => {
-                    console.error("Error fetching admin data:", err);
-                    setError(err);
-                    setIsLoading(false);
-                }
-            );
+            return (dao as AdminDao).subscribe(handleData as (data: any[]) => void, handleError);
         } else if (user) {
-            return (dao as Dao<T>).subscribe(
-                user.uid,
-                (newData) => {
-                    setData(newData);
-                    setIsLoading(false);
-                    setError(null);
-                },
-                (err: Error) => {
-                    console.error("Error fetching Firestore data:", err);
-                    setError(err);
-                    setIsLoading(false);
-                }
-            );
+            return (dao as Dao<T>).subscribe(user.uid, handleData, handleError);
         }
     };
     
