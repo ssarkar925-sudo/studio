@@ -9,13 +9,13 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 const ExtractPurchaseInfoInputSchema = z.object({
   photoDataUri: z
     .string()
     .describe(
-      "A photo of a bill or invoice, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'."
+      "A photo of a bill or invoice, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
     ),
 });
 export type ExtractPurchaseInfoInput = z.infer<typeof ExtractPurchaseInfoInputSchema>;
@@ -66,8 +66,24 @@ const extractPurchaseInfoFlow = ai.defineFlow(
     inputSchema: ExtractPurchaseInfoInputSchema,
     outputSchema: ExtractedPurchaseInfoSchema,
   },
-  async input => {
-    const {output} = await prompt(input);
-    return output!;
+  async (input) => {
+    try {
+      const { output } = await prompt(input);
+      return output!;
+    } catch (e) {
+      console.error("Initial prompt failed, retrying with safety settings", e);
+      // Retry with different safety settings if the first attempt fails.
+      const { output } = await prompt(input, {
+        config: {
+          safetySettings: [
+            {
+              category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+              threshold: 'BLOCK_ONLY_HIGH',
+            },
+          ],
+        },
+      });
+      return output!;
+    }
   }
 );
