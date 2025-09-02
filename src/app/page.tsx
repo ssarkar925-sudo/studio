@@ -125,26 +125,8 @@ function AiAnalyzer({ invoices, isLoading, isEnabled }: { invoices: Invoice[], i
   const [query, setQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  if (!isEnabled) {
-    return (
-         <Card className="lg:col-span-2 flex flex-col h-[500px] items-center justify-center">
-            <CardHeader className="text-center">
-                <CardTitle className="flex items-center justify-center gap-2">
-                    <Bot /> AI Analysis Disabled
-                </CardTitle>
-                 <CardDescription>This feature is currently turned off.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <p className="text-sm text-muted-foreground">
-                    An administrator can enable it from the Admin -{'>'} Tiers & Features page.
-                </p>
-            </CardContent>
-         </Card>
-    );
-  }
-
-   const chartData = useMemo(() => {
+  
+  const chartData = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => {
       const date = subMonths(new Date(), 5 - i);
       return { name: format(date, 'MMM yy'), profit: 0, start: startOfMonth(date) };
@@ -181,6 +163,33 @@ function AiAnalyzer({ invoices, isLoading, isEnabled }: { invoices: Invoice[], i
 
   const overdue = invoices.filter((i) => i.status === 'Overdue').length;
 
+  useEffect(() => {
+    if(scrollAreaRef.current) {
+        scrollAreaRef.current.scrollTo({
+            top: scrollAreaRef.current.scrollHeight,
+            behavior: 'smooth'
+        });
+    }
+  }, [history])
+
+  if (!isEnabled) {
+    return (
+         <Card className="lg:col-span-2 flex flex-col h-[500px] items-center justify-center">
+            <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center gap-2">
+                    <Bot /> AI Analysis Disabled
+                </CardTitle>
+                 <CardDescription>This feature is currently turned off.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm text-muted-foreground">
+                    An administrator can enable it from the Admin -{'>'} Tiers & Features page.
+                </p>
+            </CardContent>
+         </Card>
+    );
+  }
+
   const handleInitialAnalysis = async () => {
      if (invoices.length > 0) {
       setIsAnalyzing(true);
@@ -203,16 +212,6 @@ function AiAnalyzer({ invoices, isLoading, isEnabled }: { invoices: Invoice[], i
         setHistory([{ role: 'model', content: 'There is no data to analyze yet. Create some invoices to get started!'}]);
     }
   }
-
-
-  useEffect(() => {
-    if(scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTo({
-            top: scrollAreaRef.current.scrollHeight,
-            behavior: 'smooth'
-        });
-    }
-  }, [history])
 
   const handleQuerySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
