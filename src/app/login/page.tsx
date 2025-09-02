@@ -14,7 +14,7 @@ import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPa
 import { auth, db } from '@/lib/firebase';
 import { useAuth } from '@/components/auth-provider';
 import { userProfileDAO, businessProfileDAO } from '@/lib/data';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, setDoc, query, limit } from 'firebase/firestore';
 
 
 export default function LoginPage() {
@@ -56,18 +56,20 @@ export default function LoginPage() {
             const result = await signInWithPopup(auth, provider);
             const firebaseUser = result.user;
 
-            // Check if user profile already exists
             const userProfileRef = doc(db, 'userProfile', firebaseUser.uid);
             const userProfileSnap = await getDoc(userProfileRef);
 
             if (!userProfileSnap.exists()) {
-                // If it doesn't exist, create it
+                 const usersQuery = query(collection(db, 'userProfile'), limit(1));
+                 const usersSnapshot = await getDocs(usersQuery);
+                 const isFirstUser = usersSnapshot.empty;
+
                 await setDoc(userProfileRef, {
                     name: firebaseUser.displayName || 'Google User',
                     email: firebaseUser.email,
+                    isAdmin: isFirstUser,
                 });
                 
-                // Also create a business profile
                 await businessProfileDAO.add({
                     userId: firebaseUser.uid,
                     companyName: `${firebaseUser.displayName || 'My'}'s Business`,

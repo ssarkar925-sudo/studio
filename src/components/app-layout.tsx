@@ -41,18 +41,18 @@ import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 const menuItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/invoices', label: 'Invoices', icon: FileText },
-  { href: '/contacts', label: 'Contacts', icon: Contact },
-  { href: '/inventory', label: 'Inventory', icon: Package },
-  { href: '/reports', label: 'Reports', icon: BarChart },
-  { href: '/admin', label: 'Admin', icon: Shield },
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard, admin: false },
+  { href: '/invoices', label: 'Invoices', icon: FileText, admin: false },
+  { href: '/contacts', label: 'Contacts', icon: Contact, admin: false },
+  { href: '/inventory', label: 'Inventory', icon: Package, admin: false },
+  { href: '/reports', label: 'Reports', icon: BarChart, admin: false },
+  { href: '/admin', label: 'Admin', icon: Shield, admin: true },
 ];
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: profiles } = useFirestoreData(businessProfileDAO);
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   
   if (!user) {
     return null; // Or a loading spinner, this is handled by AuthProvider
@@ -60,6 +60,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   
   const companyName = profiles[0]?.companyName || 'SC Billing';
   const logoUrl = profiles[0]?.logoUrl;
+  
+  const availableMenuItems = menuItems.filter(item => !item.admin || userProfile?.isAdmin);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -91,7 +93,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     </SheetTitle>
                 </SheetHeader>
               <nav className="grid gap-6 text-lg font-medium mt-6">
-                {menuItems.map((item) => (
+                {availableMenuItems.map((item) => (
                    <Link
                       key={item.label}
                       href={item.href}
@@ -109,7 +111,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             </SheetContent>
           </Sheet>
            <nav className="hidden flex-1 justify-center flex-col gap-6 text-lg font-medium md:flex md:flex-row md:items-center md:gap-5 md:text-sm lg:gap-6">
-            {menuItems.map((item) => (
+            {availableMenuItems.map((item) => (
                 <Link
                 key={item.label}
                 href={item.href}

@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { collection, doc, getDocs, setDoc, query, limit } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { businessProfileDAO, userProfileDAO } from '@/lib/data';
 import { useAuth } from '@/components/auth-provider';
@@ -43,18 +43,22 @@ export default function SignupPage() {
         }
         setIsSigningUp(true);
         try {
+            // Check if this is the first user
+            const usersQuery = query(collection(db, 'userProfile'), limit(1));
+            const usersSnapshot = await getDocs(usersQuery);
+            const isFirstUser = usersSnapshot.empty;
+
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const firebaseUser = userCredential.user;
 
             await updateProfile(firebaseUser, { displayName: name });
             
-            // Create user profile in Firestore
             await setDoc(doc(db, "userProfile", firebaseUser.uid), {
                 name: name,
                 email: email,
+                isAdmin: isFirstUser,
             });
 
-            // Create a business profile for the user
             await businessProfileDAO.add({
                 userId: firebaseUser.uid,
                 companyName: companyName,

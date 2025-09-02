@@ -1,6 +1,6 @@
 
 import { db, auth } from '@/lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc, FieldValue, serverTimestamp, deleteField, where, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot, query, Unsubscribe, runTransaction, getDoc, FieldValue, serverTimestamp, deleteField, where, writeBatch, limit } from 'firebase/firestore';
 import { format } from 'date-fns';
 
 type BaseDocument = {
@@ -103,6 +103,7 @@ export type UserProfile = {
   name: string;
   email: string;
   phone?: string;
+  isAdmin?: boolean;
 }
 
 function createFirestoreDAO<T extends {id: string, userId?: string}>(collectionName: string) {
