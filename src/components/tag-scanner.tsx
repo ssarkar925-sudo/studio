@@ -33,41 +33,40 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    let codeReader: BrowserMultiFormatReader;
+    if (!open) {
+      // Cleanup when dialog is closed
+      if (codeReaderRef.current) {
+        codeReaderRef.current.reset();
+        codeReaderRef.current = null;
+      }
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
+      }
+      return;
+    }
+
     let isCancelled = false;
 
     const startScan = async () => {
-      if (!open || !videoRef.current) return;
-      
-      codeReader = new BrowserMultiFormatReader();
+      if (!videoRef.current || isCancelled) return;
+
+      const codeReader = new BrowserMultiFormatReader();
       codeReaderRef.current = codeReader;
 
       try {
-        const videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices();
-        
-        let selectedDeviceId = videoInputDevices[0]?.deviceId;
-        const rearCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back'));
-        if (rearCamera) {
-          selectedDeviceId = rearCamera.deviceId;
-        }
-        
-        if (!selectedDeviceId) {
-           setHasCameraPermission(false);
-           return;
-        }
-
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         setHasCameraPermission(true);
-
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { deviceId: { exact: selectedDeviceId } },
-        });
 
         if (videoRef.current && !isCancelled) {
           videoRef.current.srcObject = stream;
-
+          
           await codeReader.decodeFromStream(stream, videoRef.current, (result, error) => {
             if (isCancelled) return;
+            
             if (result) {
+              codeReader.reset(); // Stop scanning after a successful read
               const sku = result.getText();
               const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
 
@@ -90,24 +89,27 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
             }
           });
         }
-
       } catch (err) {
         console.error('Camera access error:', err);
         setHasCameraPermission(false);
+         toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
       }
     };
-    
+
     startScan();
 
     return () => {
       isCancelled = true;
-      if (codeReaderRef.current) {
+       if (codeReaderRef.current) {
         codeReaderRef.current.reset();
       }
       if (videoRef.current?.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
       }
     };
   }, [open, onScan, products, toast]);
