@@ -6,10 +6,10 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { featureFlagsDAO, type FeatureFlag } from '@/lib/data';
 
 const servicePlans = [
     { id: 'free', name: 'Free', price: '₹0', features: ['5 Invoices/mo', '10 Customers', 'Basic Reporting'] },
@@ -17,25 +17,61 @@ const servicePlans = [
     { id: 'pro', name: 'Pro', price: '₹999/mo', features: ['Unlimited Invoices', 'Unlimited Customers', 'AI Analysis', 'Advanced Reporting'] },
 ];
 
-const featureFlags = [
-    { id: 'aiAnalysis', name: 'AI Dashboard Analysis', description: 'Enable or disable the AI-powered analysis on the main dashboard.' },
-    { id: 'reportsPage', name: 'Reports Page', description: 'Toggle access to the detailed Reports page for all users.' },
-];
+function useFeatureFlags() {
+    const [flags, setFlags] = useState<FeatureFlag[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<Error | null>(null);
+
+    useEffect(() => {
+        const unsubscribe = featureFlagsDAO.subscribe(
+            (allFlags) => {
+                setFlags(allFlags);
+                setIsLoading(false);
+            },
+            (err) => {
+                setError(err);
+                setIsLoading(false);
+            }
+        );
+        return () => unsubscribe();
+    }, []);
+
+    return { flags, setFlags, isLoading, error };
+}
+
 
 export default function ServiceTiersPage() {
+    const { flags, setFlags, isLoading: flagsLoading } = useFeatureFlags();
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
 
-    const handleSaveChanges = () => {
+    const handleFlagChange = (flagId: string, checked: boolean) => {
+        setFlags(currentFlags => 
+            currentFlags.map(f => f.id === flagId ? { ...f, enabled: checked } : f)
+        );
+    }
+
+    const handleSaveChanges = async () => {
         setIsSaving(true);
-        // Simulate an API call
-        setTimeout(() => {
-            setIsSaving(false);
+        try {
+            const updatePromises = flags.map(flag => 
+                featureFlagsDAO.update(flag.id, { enabled: flag.enabled })
+            );
+            await Promise.all(updatePromises);
             toast({
                 title: 'Changes Saved',
-                description: 'Service tiers and feature flags have been updated.',
+                description: 'Feature flags have been updated.',
             })
-        }, 1500);
+        } catch (err) {
+             console.error("Failed to save feature flags", err);
+             toast({
+                variant: 'destructive',
+                title: 'Save Failed',
+                description: 'Could not update feature flags.',
+            })
+        } finally {
+            setIsSaving(false);
+        }
     }
 
     return (
@@ -77,20 +113,28 @@ export default function ServiceTiersPage() {
                         <CardDescription>Globally enable or disable specific application features.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        {featureFlags.map(flag => (
-                            <div key={flag.id} className="flex items-center justify-between p-4 border rounded-lg">
-                                <div>
-                                    <Label htmlFor={flag.id} className="font-semibold">{flag.name}</Label>
-                                    <p className="text-sm text-muted-foreground">{flag.description}</p>
+                        {flagsLoading ? (
+                            <p>Loading feature flags...</p>
+                        ) : (
+                            flags.map(flag => (
+                                <div key={flag.id} className="flex items-center justify-between p-4 border rounded-lg">
+                                    <div>
+                                        <Label htmlFor={flag.id} className="font-semibold">{flag.name}</Label>
+                                        <p className="text-sm text-muted-foreground">{flag.description}</p>
+                                    </div>
+                                    <Switch 
+                                        id={flag.id} 
+                                        checked={flag.enabled} 
+                                        onCheckedChange={(checked) => handleFlagChange(flag.id, checked)}
+                                    />
                                 </div>
-                                <Switch id={flag.id} defaultChecked={true} />
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </CardContent>
                 </Card>
 
                 <div className="flex justify-end">
-                    <Button onClick={handleSaveChanges} disabled={isSaving}>
+                    <Button onClick={handleSaveChanges} disabled={isSaving || flagsLoading}>
                         {isSaving && <Loader2 className="mr-2 animate-spin" />}
                         Save Changes
                     </Button>

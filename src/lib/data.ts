@@ -106,6 +106,13 @@ export type UserProfile = {
   isAdmin?: boolean;
 }
 
+export type FeatureFlag = {
+    id: string;
+    name: string;
+    description: string;
+    enabled: boolean;
+};
+
 function createFirestoreDAO<T extends {id: string, userId?: string}>(collectionName: string) {
     const collectionRef = collection(db, collectionName);
 
@@ -413,12 +420,53 @@ const createInvoicesDAO = () => {
     }
 }
 
+// DAO for feature flags, which are not user-specific.
+const featureFlagsDAO = {
+    subscribe: (
+        callback: (data: FeatureFlag[]) => void,
+        onError?: (error: Error) => void
+    ): Unsubscribe => {
+        const collectionRef = collection(db, 'featureFlags');
+        const unsubscribe = onSnapshot(collectionRef, (querySnapshot) => {
+            if (querySnapshot.empty) {
+                // If no flags exist, create the default ones
+                const defaultFlags = [
+                    { id: 'aiAnalysis', name: 'AI Dashboard Analysis', description: 'Enable or disable the AI-powered analysis on the main dashboard.', enabled: true },
+                    { id: 'reportsPage', name: 'Reports Page', description: 'Toggle access to the detailed Reports page for all users.', enabled: true },
+                ];
+                const batch = writeBatch(db);
+                defaultFlags.forEach(flag => {
+                    const docRef = doc(db, 'featureFlags', flag.id);
+                    batch.set(docRef, flag);
+                });
+                batch.commit().then(() => callback(defaultFlags)).catch(onError);
+            } else {
+                const data = querySnapshot.docs.map(doc => ({ ...doc.data() } as FeatureFlag));
+                callback(data);
+            }
+        }, (error) => {
+            console.error(`Error subscribing to featureFlags collection:`, error);
+            if (onError) onError(error);
+        });
+        return unsubscribe;
+    },
+    update: async (id: string, updatedItem: Partial<Omit<FeatureFlag, 'id'>>) => {
+        try {
+            const docRef = doc(db, 'featureFlags', id);
+            await updateDoc(docRef, updatedItem);
+        } catch (error) {
+            console.error(`Error updating document in featureFlags:`, error);
+            throw error;
+        }
+    }
+};
+
 export const invoicesDAO = createInvoicesDAO();
 export const productsDAO = createFirestoreDAO<Product>('products');
 export const vendorsDAO = createFirestoreDAO<Vendor>('vendors');
 export const purchasesDAO = createFirestoreDAO<Purchase>('purchases');
 export const businessProfileDAO = createFirestoreDAO<BusinessProfile>('businessProfile');
-export { userProfileDAO, adminUsersDAO };
+export { userProfileDAO, adminUsersDAO, featureFlagsDAO };
 
 export const deleteAllUserData = async (userId: string) => {
     console.log(`Deleting all data for user ${userId}`);

@@ -3,7 +3,7 @@
 
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { invoicesDAO, Invoice, businessProfileDAO, customersDAO, vendorsDAO, purchasesDAO, Purchase, productsDAO, Product } from '@/lib/data';
+import { invoicesDAO, Invoice, businessProfileDAO, customersDAO, vendorsDAO, purchasesDAO, Purchase, productsDAO, Product, featureFlagsDAO, FeatureFlag } from '@/lib/data';
 import { DollarSign, FileText, Clock, Bot, Send, Users, Store, Truck, PackageX } from 'lucide-react';
 import { DashboardClient } from '@/app/dashboard-client';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
@@ -120,12 +120,29 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
 }
 
 
-function AiAnalyzer({ invoices, isLoading }: { invoices: Invoice[], isLoading: boolean }) {
+function AiAnalyzer({ invoices, isLoading, isEnabled }: { invoices: Invoice[], isLoading: boolean, isEnabled: boolean }) {
   const [history, setHistory] = useState<ChatMessage[]>([]);
   const [query, setQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  if (!isEnabled) {
+    return (
+         <Card className="lg:col-span-2 flex flex-col h-[500px] items-center justify-center">
+            <CardHeader className="text-center">
+                <CardTitle className="flex items-center justify-center gap-2">
+                    <Bot /> AI Analysis Disabled
+                </CardTitle>
+                 <CardDescription>This feature is currently turned off.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <p className="text-sm text-muted-foreground">
+                    An administrator can enable it from the Admin -{'>'} Tiers & Features page.
+                </p>
+            </CardContent>
+         </Card>
+    );
+  }
 
    const chartData = useMemo(() => {
     const months = Array.from({ length: 6 }, (_, i) => {
@@ -407,7 +424,15 @@ function StatCards() {
 function MainDashboardContent() {
     const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
     const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
+    const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
     
+    useEffect(() => {
+        const unsubscribe = featureFlagsDAO.subscribe(setFeatureFlags);
+        return () => unsubscribe();
+    }, []);
+
+    const aiAnalysisEnabled = featureFlags.find(f => f.id === 'aiAnalysis')?.enabled ?? false;
+
     return (
         <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-5">
             <Suspense fallback={<Card className="lg:col-span-3"><CardContent><Skeleton className="h-[300px] w-full"/></CardContent></Card>}>
@@ -436,7 +461,7 @@ function MainDashboardContent() {
                 </Card>
             </div>
             <Suspense fallback={<Card className="lg:col-span-2"><CardContent><Skeleton className="h-[500px] w-full"/></CardContent></Card>}>
-                <AiAnalyzer invoices={invoices} isLoading={invoicesLoading} />
+                <AiAnalyzer invoices={invoices} isLoading={invoicesLoading} isEnabled={aiAnalysisEnabled} />
             </Suspense>
         </div>
     )
@@ -467,5 +492,3 @@ export default function DashboardPage() {
         </AppLayout>
     );
 }
-
-    

@@ -34,34 +34,51 @@ import {
   SheetTrigger,
 } from '@/components/ui/sheet';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
-import { businessProfileDAO } from '@/lib/data';
+import { businessProfileDAO, featureFlagsDAO, type FeatureFlag } from '@/lib/data';
 import { useAuth } from './auth-provider';
 import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
+import { useState, useEffect } from 'react';
 
-const menuItems = [
-  { href: '/', label: 'Dashboard', icon: LayoutDashboard, admin: false },
-  { href: '/invoices', label: 'Invoices', icon: FileText, admin: false },
-  { href: '/contacts', label: 'Contacts', icon: Contact, admin: false },
-  { href: '/inventory', label: 'Inventory', icon: Package, admin: false },
-  { href: '/reports', label: 'Reports', icon: BarChart, admin: false },
-  { href: '/admin', label: 'Admin', icon: Shield, admin: true },
+const allMenuItems = [
+  { href: '/', label: 'Dashboard', icon: LayoutDashboard, admin: false, flagId: null },
+  { href: '/invoices', label: 'Invoices', icon: FileText, admin: false, flagId: null },
+  { href: '/contacts', label: 'Contacts', icon: Contact, admin: false, flagId: null },
+  { href: '/inventory', label: 'Inventory', icon: Package, admin: false, flagId: null },
+  { href: '/reports', label: 'Reports', icon: BarChart, admin: false, flagId: 'reportsPage' },
+  { href: '/admin', label: 'Admin', icon: Shield, admin: true, flagId: null },
 ];
+
+function useFeatureFlags() {
+    const [flags, setFlags] = useState<FeatureFlag[]>([]);
+    useEffect(() => {
+        const unsubscribe = featureFlagsDAO.subscribe(setFlags);
+        return () => unsubscribe();
+    }, []);
+    return flags;
+}
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: profiles } = useFirestoreData(businessProfileDAO);
   const { user, userProfile } = useAuth();
+  const featureFlags = useFeatureFlags();
+
+  const companyName = profiles[0]?.companyName || 'SC Billing';
+  const logoUrl = profiles[0]?.logoUrl;
+  
+  const featureFlagsMap = new Map(featureFlags.map(f => [f.id, f.enabled]));
+
+  const availableMenuItems = allMenuItems.filter(item => {
+    if (item.admin && !userProfile?.isAdmin) return false;
+    if (item.flagId && !featureFlagsMap.get(item.flagId)) return false;
+    return true;
+  });
   
   if (!user) {
     return null; // Or a loading spinner, this is handled by AuthProvider
   }
-  
-  const companyName = profiles[0]?.companyName || 'SC Billing';
-  const logoUrl = profiles[0]?.logoUrl;
-  
-  const availableMenuItems = menuItems.filter(item => !item.admin || userProfile?.isAdmin);
 
   return (
     <div className="flex min-h-screen w-full flex-col">
