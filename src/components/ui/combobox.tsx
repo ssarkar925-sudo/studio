@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -60,7 +61,7 @@ export function Combobox({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0">
+      <PopoverContent className="w-full p-0" style={{ minWidth: "var(--radix-popover-trigger-width)" }}>
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
@@ -69,9 +70,9 @@ export function Combobox({
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onSelect(currentValue === value ? "" : currentValue)
+                  value={option.label} // Use label for filtering
+                  onSelect={() => {
+                    onSelect(option.value === value ? "" : option.value)
                     setOpen(false)
                   }}
                 >
