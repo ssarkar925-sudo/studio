@@ -14,13 +14,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
   const variant = {
-    Paid: 'default',
+    Paid: 'success',
     Pending: 'secondary',
     Overdue: 'destructive',
-    Partial: 'outline',
-  }[status] as 'default' | 'secondary' | 'destructive' | 'outline';
+    Partial: 'warning',
+  }[status] as 'success' | 'secondary' | 'destructive' | 'warning';
 
-  return <Badge variant={variant} className="capitalize">{status}</Badge>;
+  return <Badge variant={variant} className="capitalize">{status.toLowerCase()}</Badge>;
 }
 
 export default function PrintInvoicePage() {
@@ -83,16 +83,23 @@ export default function PrintInvoicePage() {
           </div>
         </header>
 
-        <section className="flex justify-between items-start mb-10">
+        <section className="grid grid-cols-2 items-start mb-10">
           <div>
             <h3 className="font-semibold mb-2">Billed To</h3>
             <p className="font-bold">{invoice.customer.name}</p>
             <p className="text-muted-foreground">{invoice.customer.email}</p>
           </div>
           <div className="text-right">
-            <h3 className="font-semibold mb-2">Status</h3>
-            <InvoiceStatusBadge status={invoice.status} />
-            <p className="mt-2 font-semibold">Due Date: {invoice.dueDate}</p>
+            <div className='grid grid-cols-2 gap-4'>
+                <div className='text-left'>
+                    <h3 className="font-semibold mb-2">Status</h3>
+                    <InvoiceStatusBadge status={invoice.status} />
+                </div>
+                <div className='text-right'>
+                    <h3 className="font-semibold mb-2">Due Date</h3>
+                    <p className="mt-2 font-semibold">{invoice.dueDate}</p>
+                </div>
+            </div>
           </div>
         </section>
 
@@ -168,8 +175,8 @@ export default function PrintInvoicePage() {
           </footer>
         )}
         
-        <section className="mt-20 text-center">
-            <div className="inline-block">
+        <section className="mt-20 text-right">
+            <div className="inline-block text-center">
                 <div className="border-t-2 border-black w-48 pt-2">
                     <p className="text-sm font-semibold">Authorised Signatory</p>
                     <p className="text-sm text-muted-foreground">{businessProfile.companyName}</p>
@@ -180,6 +187,7 @@ export default function PrintInvoicePage() {
     </PrintLayout>
   );
 }
+
 
 
 
