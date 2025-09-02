@@ -9,29 +9,28 @@ import { Button } from '@/components/ui/button';
 import { Download, Printer as PrintIcon } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import Barcode from 'react-barcode';
+import QRCode from 'react-qr-code';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
-function BarcodeTag({ product, size }: { product: Product; size: 'a4' | 'thermal' }) {
+function QRCodeTag({ product, size }: { product: Product; size: 'a4' | 'thermal' }) {
   return (
     <div
       className={cn(
         "p-2 border border-dashed border-black break-inside-avoid-page flex flex-col items-center justify-center text-center bg-white overflow-hidden",
-        size === 'a4' && "w-[240px] h-[130px]",
+        size === 'a4' && "w-[130px] h-[130px]",
         size === 'thermal' && "w-[190px] p-1" // ~50mm width for 2-inch thermal paper
       )}
     >
-      <p className={cn("font-bold truncate w-full", size === 'a4' ? 'text-lg' : 'text-sm')}>{product.name}</p>
-      <p className={cn("mb-1", size === 'a4' ? 'text-sm' : 'text-xs')}>SKU: {product.sku}</p>
-      <div className='w-full overflow-hidden flex justify-center'>
-        <Barcode 
+      <p className={cn("font-bold truncate w-full", size === 'a4' ? 'text-sm' : 'text-xs')}>{product.name}</p>
+      <p className={cn("mb-1", size === 'a4' ? 'text-xs' : 'text-[10px]')}>SKU: {product.sku}</p>
+      <div className='w-full overflow-hidden flex justify-center p-1 bg-white'>
+        <QRCode 
           value={product.sku} 
-          height={size === 'a4' ? 50 : 40} 
-          width={size === 'a4' ? 2 : 1.8} 
-          fontSize={size === 'a4' ? 14 : 10}
-          margin={4}
+          size={size === 'a4' ? 80 : 64}
+          viewBox={`0 0 ${size === 'a4' ? 80 : 64} ${size === 'a4' ? 80 : 64}`}
+          className="w-full h-auto"
         />
       </div>
     </div>
@@ -75,7 +74,7 @@ function PrintPageContent() {
     });
     
     pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-    pdf.save('barcode-tags.pdf');
+    pdf.save('qrcode-tags.pdf');
     setIsDownloading(false);
   };
   
@@ -95,7 +94,7 @@ function PrintPageContent() {
     <div className="bg-gray-100 min-h-screen p-8 print:bg-white print:p-0">
         <div className="max-w-4xl mx-auto">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 print:hidden">
-                <h1 className="text-2xl font-bold">Barcode Tags</h1>
+                <h1 className="text-2xl font-bold">QR Code Tags</h1>
                  <div className="flex items-center gap-4">
                     <div className="grid gap-1.5">
                       <Label htmlFor="paper-size">Paper Size</Label>
@@ -127,7 +126,7 @@ function PrintPageContent() {
                     paperSize === 'thermal' && "flex-col items-center"
                 )}>
                     {selectedProducts.map((product) => (
-                        <BarcodeTag key={product.id} product={product} size={paperSize} />
+                        <QRCodeTag key={product.id} product={product} size={paperSize} />
                     ))}
                 </div>
             </div>
