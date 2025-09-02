@@ -62,7 +62,17 @@ export function Combobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-full p-0" style={{ minWidth: "var(--radix-popover-trigger-width)" }}>
-        <Command>
+        <Command
+            // This filter function is the key to fixing the search.
+            // It tells CMDK to filter based on the item's display label, not its value.
+            filter={(value, search) => {
+                const option = options.find(o => o.value === value);
+                if (option) {
+                    return option.label.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                }
+                return 0;
+            }}
+        >
           <CommandInput placeholder={searchPlaceholder} />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
