@@ -18,21 +18,21 @@ function QRCodeTag({ product, size }: { product: Product; size: 'a4' | 'thermal'
   return (
     <div
       className={cn(
-        "p-2 border border-dashed border-black break-inside-avoid-page flex flex-col items-center justify-center text-center bg-white overflow-hidden",
+        "p-2 border border-dashed border-black break-inside-avoid-page flex flex-col items-center justify-between text-center bg-white",
         size === 'a4' && "w-[130px] h-[130px]",
         size === 'thermal' && "w-[190px] p-1" // ~50mm width for 2-inch thermal paper
       )}
     >
-      <div className="h-[40px] flex flex-col justify-center items-center">
-        <p className={cn("font-bold", size === 'a4' ? 'text-sm' : 'text-xs')}>{product.name}</p>
-        <p className={cn(size === 'a4' ? 'text-xs' : 'text-[10px]')}>SKU: {product.sku}</p>
+      <div className="text-center">
+        <p className={cn("font-bold break-words", size === 'a4' ? 'text-sm' : 'text-xs')}>{product.name}</p>
+        <p className={cn("break-all", size === 'a4' ? 'text-xs' : 'text-[10px]')}>SKU: {product.sku}</p>
       </div>
-      <div className='flex-grow w-full overflow-hidden flex justify-center items-center p-1 bg-white'>
+      <div className='w-full p-1 mt-1 bg-white flex justify-center'>
         <QRCode 
           value={product.sku} 
-          size={size === 'a4' ? 80 : 64}
-          viewBox={`0 0 ${size === 'a4' ? 80 : 64} ${size === 'a4' ? 80 : 64}`}
-          className="w-full h-auto max-w-[80px] max-h-[80px]"
+          size={size === 'a4' ? 70 : 64}
+          viewBox={`0 0 ${size === 'a4' ? 70 : 64} ${size === 'a4' ? 70 : 64}`}
+          className="w-full h-auto max-w-[70px] max-h-[70px]"
         />
       </div>
     </div>
