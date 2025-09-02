@@ -8,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -31,55 +32,58 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const codeReader = useRef(new BrowserMultiFormatReader());
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
-   const startScan = useCallback((reader: BrowserMultiFormatReader, videoElement: HTMLVideoElement) => {
-    reader.decodeFromVideoElement(videoElement, (result, err) => {
-      if (result) {
-        const sku = result.getText();
-        const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
-
-        if (foundProduct) {
-          toast({
-            title: 'Item Found',
-            description: `${foundProduct.name} added.`,
-          });
-          onScan(foundProduct);
-        } else {
-          toast({
-            variant: 'destructive',
-            title: 'Product Not Found',
-            description: `No product found with SKU: ${sku}`,
-          });
-        }
-      } else if (err && !(err instanceof NotFoundException)) {
-        console.error('Scan Error:', err);
-      }
-    }).catch(err => console.error(err));
-  }, [products, onScan, toast]);
-
   useEffect(() => {
     let stream: MediaStream | null = null;
     const reader = codeReader.current;
-    
-    const getCameraPermission = async () => {
-      if (!videoRef.current) return;
+
+    const startCamera = async () => {
+      if (!open || !videoRef.current) return;
 
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-        setHasCameraPermission(true);
-        videoRef.current.srcObject = stream;
-        startScan(reader, videoRef.current);
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment' },
+        });
 
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+
+        setHasCameraPermission(true);
+
+        await reader.decodeFromVideoElement(videoRef.current, (result, err) => {
+          if (result) {
+            const sku = result.getText();
+            const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+
+            if (foundProduct) {
+              toast({
+                title: 'Item Found',
+                description: `${foundProduct.name} added.`,
+              });
+              onScan(foundProduct);
+            } else {
+              toast({
+                variant: 'destructive',
+                title: 'Product Not Found',
+                description: `No product found with SKU: ${sku}`,
+              });
+            }
+          } else if (err && !(err instanceof NotFoundException)) {
+            console.error('Scan Error:', err);
+          }
+        });
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
       }
     };
-    
+
     if (open) {
-      getCameraPermission();
+      startCamera();
     }
 
     return () => {
+      // This is the cleanup function
       reader.reset();
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
@@ -88,7 +92,7 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
         videoRef.current.srcObject = null;
       }
     };
-  }, [open, startScan]);
+  }, [open, onScan, products, toast]);
 
 
   const handleManualScan = () => {
@@ -127,6 +131,9 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>Scan Item</DialogTitle>
+           <DialogDescription>
+            Scan a barcode or enter the SKU manually to find an item.
+          </DialogDescription>
         </DialogHeader>
         <div className='p-4 bg-muted rounded-md space-y-4'>
           <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
