@@ -32,7 +32,6 @@ import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Combobox } from '@/components/ui/combobox';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -286,15 +285,18 @@ export default function EditInvoicePage() {
                         </div>
                         <div className="grid gap-3">
                             <Label htmlFor="customer">Customer</Label>
-                            <Combobox
-                                options={customers.map(c => ({ value: c.id, label: c.name }))}
-                                value={customerId}
-                                onSelect={setCustomerId}
-                                placeholder="Select a customer"
-                                searchPlaceholder="Search customers..."
-                                noResultsText="No customer found."
-                                disabled={true}
-                              />
+                            <Select value={customerId} onValueChange={setCustomerId} disabled>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a customer" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {customers.map(customer => (
+                                  <SelectItem key={customer.id} value={customer.id}>
+                                    {customer.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                         </div>
                     </div>
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -360,14 +362,18 @@ export default function EditInvoicePage() {
                                         onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                     />
                                 ) : (
-                                    <Combobox
-                                      options={productOptions}
-                                      value={item.productId}
-                                      onSelect={(value) => handleItemChange(index, 'productId', value)}
-                                      placeholder="Select item"
-                                      searchPlaceholder="Search items..."
-                                      noResultsText="No item found."
-                                    />
+                                    <Select value={item.productId} onValueChange={(value) => handleItemChange(index, 'productId', value)}>
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select an item" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {productOptions.map(p => (
+                                          <SelectItem key={p.value} value={p.value} disabled={p.disabled}>
+                                            {p.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
                                 )}
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">

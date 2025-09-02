@@ -37,7 +37,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog"
 import { useAuth } from '@/components/auth-provider';
-import { Combobox } from '@/components/ui/combobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -254,15 +254,6 @@ export default function NewInvoicePage() {
     }
   };
 
-  const customerOptions = useMemo(() => {
-    return customers.map(c => ({
-      value: c.id,
-      label: c.name,
-      secondaryLabel: c.email || c.phone || '',
-      searchable: `${c.name} ${c.email} ${c.phone}`.toLowerCase(),
-    }))
-  }, [customers]);
-
   return (
     <>
     <AppLayout>
@@ -285,14 +276,18 @@ export default function NewInvoicePage() {
                             <div className="grid gap-3">
                                 <Label htmlFor="customer">Customer</Label>
                                 <div className="flex gap-2">
-                                  <Combobox
-                                    options={customerOptions}
-                                    value={customerId}
-                                    onSelect={setCustomerId}
-                                    placeholder="Select a customer"
-                                    searchPlaceholder="Search customers..."
-                                    noResultsText="No customer found."
-                                  />
+                                  <Select value={customerId} onValueChange={setCustomerId}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select a customer" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {customers.map(customer => (
+                                        <SelectItem key={customer.id} value={customer.id}>
+                                          {customer.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                   <Dialog open={isNewCustomerDialogOpen} onOpenChange={setIsNewCustomerDialogOpen}>
                                       <DialogTrigger asChild>
                                           <Button variant="outline" size="icon">
@@ -359,18 +354,18 @@ export default function NewInvoicePage() {
                                             onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                         />
                                     ) : (
-                                        <Combobox
-                                            options={products.map(p => ({
-                                                value: p.id,
-                                                label: `${p.name} (Stock: ${p.stock})`,
-                                                disabled: p.stock <= 0
-                                            }))}
-                                            value={item.productId}
-                                            onSelect={(value) => handleItemChange(index, 'productId', value)}
-                                            placeholder="Select item"
-                                            searchPlaceholder="Search items..."
-                                            noResultsText="No item found."
-                                        />
+                                      <Select value={item.productId} onValueChange={(value) => handleItemChange(index, 'productId', value)}>
+                                        <SelectTrigger>
+                                          <SelectValue placeholder="Select an item" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                          {products.map(p => (
+                                            <SelectItem key={p.id} value={p.id} disabled={p.stock <= 0}>
+                                              {p.name} (Stock: {p.stock})
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
                                     )}
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">

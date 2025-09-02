@@ -16,7 +16,7 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
-import { Combobox } from '@/components/ui/combobox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 type PurchaseItem = {
@@ -191,15 +191,6 @@ export default function EditPurchasePage() {
     );
   }
 
-  const vendorOptions = useMemo(() => {
-    return vendors.map(v => ({
-      value: v.id,
-      label: v.vendorName,
-      secondaryLabel: v.contactPerson || '',
-      searchable: `${v.vendorName} ${v.email} ${v.contactPerson} ${v.contactNumber}`.toLowerCase(),
-    }))
-  }, [vendors]);
-
   const productOptions = useMemo(() => {
     return [
       ...products.map(p => ({
@@ -227,14 +218,18 @@ export default function EditPurchasePage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
-                            <Combobox
-                              options={vendorOptions}
-                              value={vendorId}
-                              onSelect={setVendorId}
-                              placeholder="Select a vendor"
-                              searchPlaceholder="Search vendors..."
-                              noResultsText="No vendor found."
-                            />
+                            <Select value={vendorId} onValueChange={setVendorId}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select a vendor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {vendors.map(vendor => (
+                                  <SelectItem key={vendor.id} value={vendor.id}>
+                                    {vendor.vendorName}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                         </div>
                         <div className="grid gap-3">
                             <Label htmlFor="orderDate">Order Date</Label>
@@ -283,14 +278,18 @@ export default function EditPurchasePage() {
                                         onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                     />
                                 ) : (
-                                    <Combobox
-                                      options={productOptions}
-                                      value={item.productId}
-                                      onSelect={(value) => handleItemChange(index, 'productId', value)}
-                                      placeholder="Select item"
-                                      searchPlaceholder="Search items..."
-                                      noResultsText="No item found."
-                                    />
+                                  <Select value={item.productId} onValueChange={(value) => handleItemChange(index, 'productId', value)}>
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select an item" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {productOptions.map(p => (
+                                        <SelectItem key={p.value} value={p.value}>
+                                          {p.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 )}
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
