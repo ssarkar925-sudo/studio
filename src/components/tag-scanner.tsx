@@ -2,7 +2,6 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import Webcam from 'react-webcam';
 import {
   Dialog,
   DialogContent,
@@ -25,75 +24,80 @@ interface TagScannerProps {
   products: Product[];
 }
 
-const videoConstraints = {
-  width: 1280,
-  height: 720,
-  facingMode: 'environment',
-};
-
 export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerProps) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const { toast } = useToast();
   const [scannedSku, setScannedSku] = useState('');
-  const webcamRef = useRef<Webcam>(null);
-  const reader = useRef(new BrowserMultiFormatReader());
-  
-  const capture = useCallback(() => {
-    if (webcamRef.current && hasCameraPermission) {
-      const imageSrc = webcamRef.current.getScreenshot();
-      if (imageSrc) {
-        reader.current.decodeFromImageUrl(imageSrc).then(result => {
-          const sku = result.getText();
-          const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
-           if (foundProduct) {
-              toast({
-                  title: 'Item Scanned',
-                  description: `${foundProduct.name} added.`,
-              });
-              onScan(foundProduct);
-          } else {
-              toast({
-                  variant: 'destructive',
-                  title: 'Product Not Found',
-                  description: `No product found with SKU: ${sku}`,
-              });
-          }
-        }).catch(err => {
-            if (!(err instanceof NotFoundException) && !(err instanceof ChecksumException) && !(err instanceof FormatException)) {
-                // console.error("Scan Error:", err);
-            }
-        });
-      }
-    }
-  }, [webcamRef, hasCameraPermission, products, onScan, toast]);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const codeReader = useRef(new BrowserMultiFormatReader());
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (open && hasCameraPermission) {
-      interval = setInterval(capture, 500); // Scan every 500ms
+    if (open) {
+      const getCameraPermission = async () => {
+        try {
+          // Reset permission state on open
+          setHasCameraPermission(null); 
+          const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+          if (videoRef.current) {
+            videoRef.current.srcObject = stream;
+            setHasCameraPermission(true);
+
+             try {
+                await codeReader.current.decodeFromStream(videoRef.current, stream, (result, err) => {
+                    if (result) {
+                        const sku = result.getText();
+                        const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+                        if (foundProduct) {
+                            toast({
+                                title: 'Item Scanned',
+                                description: `${foundProduct.name} found.`,
+                            });
+                            onScan(foundProduct);
+                        } else {
+                            // This toast might be too noisy if it keeps scanning non-matching codes
+                            // console.log(`SKU ${sku} scanned but not found in products.`);
+                        }
+                    }
+                    if (err && !(err instanceof NotFoundException) && !(err instanceof ChecksumException) && !(err instanceof FormatException)) {
+                        // console.error("Decoding error:", err);
+                    }
+                });
+            } catch (decodeError) {
+                console.error("Error starting the decoder", decodeError);
+            }
+          }
+        } catch (error) {
+          console.error('Error accessing camera:', error);
+          setHasCameraPermission(false);
+          toast({
+            variant: 'destructive',
+            title: 'Camera Access Denied',
+            description: 'Please enable camera permissions in your browser settings.',
+          });
+        }
+      };
+
+      getCameraPermission();
+    } else {
+        // Cleanup when dialog closes
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+        codeReader.current.reset();
     }
+    
+    // Cleanup function
     return () => {
-      if (interval) {
-        clearInterval(interval);
-      }
-    };
-  }, [open, hasCameraPermission, capture]);
+        if (videoRef.current && videoRef.current.srcObject) {
+            const stream = videoRef.current.srcObject as MediaStream;
+            stream.getTracks().forEach(track => track.stop());
+        }
+        codeReader.current.reset();
+    }
+  }, [open, onScan, products, toast]);
 
-
-  const handleUserMedia = () => {
-    setHasCameraPermission(true);
-  };
-
-  const handleUserMediaError = (error: any) => {
-    console.error('Error accessing camera:', error);
-    setHasCameraPermission(false);
-    toast({
-      variant: 'destructive',
-      title: 'Camera Access Denied',
-      description:
-        'Please enable camera permissions in your browser settings.',
-    });
-  };
   
   const handleManualScan = () => {
     if (!scannedSku) {
@@ -113,7 +117,7 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
             description: `${foundProduct.name} details displayed.`,
         });
         onScan(foundProduct);
-        setScannedSku(''); // Clear input after successful scan
+        setScannedSku('');
     } else {
         toast({
             variant: 'destructive',
@@ -123,7 +127,6 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     }
   };
 
-  // Close and reset state when dialog closes
   const handleOpenChange = (isOpen: boolean) => {
       if (!isOpen) {
           setScannedSku('');
@@ -138,15 +141,7 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
           <DialogTitle>Scan Item Tag</DialogTitle>
         </DialogHeader>
         <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-muted">
-          <Webcam
-            ref={webcamRef}
-            audio={false}
-            videoConstraints={videoConstraints}
-            onUserMedia={handleUserMedia}
-            onUserMediaError={handleUserMediaError}
-            className="h-full w-full object-cover"
-            screenshotFormat="image/jpeg"
-          />
+          <video ref={videoRef} className="h-full w-full object-cover" autoPlay playsInline muted/>
            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-3/4 h-1/2 border-4 border-dashed border-white/50 rounded-lg" />
             </div>
