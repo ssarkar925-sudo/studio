@@ -13,7 +13,6 @@ const nextConfig: NextConfig = {
     serverActions: {
         allowedOrigins: ["*.cloudworkstations.dev", "*.firebaseapp.com", "*.web.app"],
     },
-    allowedDevOrigins: ['http://*.cloudworkstations.dev'],
   },
   images: {
     remotePatterns: [
