@@ -6,7 +6,7 @@ import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
+import { Download, Printer as PrintIcon } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import Barcode from 'react-barcode';
@@ -75,6 +75,10 @@ function PrintPageContent() {
     pdf.save('barcode-tags.pdf');
     setIsDownloading(false);
   };
+  
+  const handlePrint = () => {
+      window.print();
+  }
 
   if (isLoading) {
     return <div className="p-8">Loading Tags...</div>;
@@ -85,10 +89,10 @@ function PrintPageContent() {
   }
 
   return (
-    <div className="bg-gray-100 min-h-screen p-8">
+    <div className="bg-gray-100 min-h-screen p-8 print:bg-white print:p-0">
         <div className="max-w-4xl mx-auto">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-                <h1 className="text-2xl font-bold">Download Barcode Tags</h1>
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4 print:hidden">
+                <h1 className="text-2xl font-bold">Barcode Tags</h1>
                  <div className="flex items-center gap-4">
                     <div className="grid gap-1.5">
                       <Label htmlFor="paper-size">Paper Size</Label>
@@ -102,13 +106,19 @@ function PrintPageContent() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={handleDownload} disabled={isDownloading} className="self-end">
-                        <Download className="mr-2 h-4 w-4" />
-                        {isDownloading ? 'Downloading...' : 'Download PDF'}
-                    </Button>
+                    <div className="flex gap-2 self-end">
+                        <Button onClick={handlePrint}>
+                            <PrintIcon className="mr-2 h-4 w-4" />
+                            Print
+                        </Button>
+                        <Button onClick={handleDownload} disabled={isDownloading}>
+                            <Download className="mr-2 h-4 w-4" />
+                            {isDownloading ? 'Downloading...' : 'Download PDF'}
+                        </Button>
+                    </div>
                 </div>
             </div>
-            <div ref={tagsContainerRef} className="p-4 bg-white rounded-lg shadow-lg">
+            <div ref={tagsContainerRef} className="p-4 bg-white rounded-lg shadow-lg print:shadow-none print:p-0">
                 <div className={cn(
                     "flex flex-wrap justify-center gap-2",
                     paperSize === 'thermal' && "flex-col items-center"
