@@ -64,7 +64,7 @@ export default function LoginPage() {
                  const usersSnapshot = await getDocs(usersQuery);
                  const isFirstUser = usersSnapshot.empty;
 
-                await setDoc(userProfileRef, {
+                await userProfileDAO.update(firebaseUser.uid, {
                     name: firebaseUser.displayName || 'Google User',
                     email: firebaseUser.email,
                     isAdmin: isFirstUser,
