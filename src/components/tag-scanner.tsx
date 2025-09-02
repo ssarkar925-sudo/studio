@@ -32,21 +32,17 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    let stream: MediaStream | null = null;
     const reader = codeReader.current;
-
-    const startScanner = async () => {
-      if (!videoRef.current || !open) return;
-
+    let stream: MediaStream | null = null;
+    
+    const getCameraPermission = async () => {
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
         setHasCameraPermission(true);
 
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
-        
-          videoRef.current.oncanplay = () => {
-            reader.decodeFromVideoElement(videoRef.current!, (result, err) => {
+           reader.decodeFromVideoElement(videoRef.current, (result, err) => {
               if (result) {
                 const sku = result.getText();
                 const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
@@ -68,29 +64,27 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
                 console.error('Scan Error:', err);
               }
             });
-          };
         }
       } catch (error) {
         console.error('Error accessing camera:', error);
         setHasCameraPermission(false);
       }
     };
-
+    
     if (open) {
-      startScanner();
+      getCameraPermission();
     }
 
     return () => {
-      // Cleanup: stop the camera and reset the reader
       reader.reset();
-      if (stream) {
+       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
       if (videoRef.current) {
         videoRef.current.srcObject = null;
       }
     };
-  }, [open, products, onScan, toast]);
+  }, [open, onScan, products, toast]);
 
   const handleManualScan = () => {
     if (!scannedSku) {
