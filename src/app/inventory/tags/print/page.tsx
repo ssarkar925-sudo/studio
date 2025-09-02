@@ -19,7 +19,7 @@ function QRCodeTag({ product, size }: { product: Product; size: 'a4' | 'thermal'
     <div
       className={cn(
         "p-2 border border-dashed border-black break-inside-avoid-page flex flex-col items-center justify-center text-center bg-white overflow-hidden",
-        size === 'a4' && "w-[130px] h-[130px] rounded-full",
+        size === 'a4' && "w-[130px] h-[130px]",
         size === 'thermal' && "w-[190px] p-1" // ~50mm width for 2-inch thermal paper
       )}
     >
