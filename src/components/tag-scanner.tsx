@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import type { Product } from '@/lib/data';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface TagScannerProps {
   open: boolean;
@@ -31,7 +33,7 @@ const videoConstraints = {
 export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerProps) {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const { toast } = useToast();
-  const scanIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [scannedSku, setScannedSku] = useState('');
 
   const handleUserMedia = () => {
     setHasCameraPermission(true);
@@ -48,61 +50,44 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     });
   };
   
-  const simulateScan = useCallback(() => {
-    if (products.length === 0) {
+  const handleManualScan = () => {
+    if (!scannedSku) {
       toast({
         variant: 'destructive',
-        title: 'No Products',
-        description: 'There are no products in the inventory to scan.',
+        title: 'No SKU Entered',
+        description: 'Please enter an SKU to find a product.',
       });
       return;
     }
-    // Simulate finding a product based on a "scanned" SKU.
-    // For this simulation, we'll pick a random product's SKU to look up.
-    const randomProductToFind = products[Math.floor(Math.random() * products.length)];
-    const scannedSku = randomProductToFind.sku;
     
-    const foundProduct = products.find(p => p.sku === scannedSku);
+    const foundProduct = products.find(p => p.sku.toLowerCase() === scannedSku.toLowerCase());
 
     if (foundProduct) {
         toast({
-            title: 'Item Scanned',
+            title: 'Item Found',
             description: `Added ${foundProduct.name} to the invoice.`,
         });
         onScan(foundProduct);
+        setScannedSku(''); // Clear input after successful scan
     } else {
-        // This case would happen in a real scenario if the SKU is not found
         toast({
             variant: 'destructive',
             title: 'Product Not Found',
             description: `No product found with SKU: ${scannedSku}`,
         });
     }
-  }, [products, onScan, toast]);
+  };
 
-  useEffect(() => {
-    if (open && hasCameraPermission) {
-      // Start "scanning" every 3 seconds
-      scanIntervalRef.current = setInterval(() => {
-        simulateScan();
-      }, 3000);
-    } else {
-      // Clear interval when dialog is closed or permission is denied
-      if (scanIntervalRef.current) {
-        clearInterval(scanIntervalRef.current);
+  // Close and reset state when dialog closes
+  const handleOpenChange = (isOpen: boolean) => {
+      if (!isOpen) {
+          setScannedSku('');
       }
-    }
-
-    return () => {
-      if (scanIntervalRef.current) {
-        clearInterval(scanIntervalRef.current);
-      }
-    };
-  }, [open, hasCameraPermission, simulateScan]);
-
+      onOpenChange(isOpen);
+  }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Scan Item Tag</DialogTitle>
@@ -129,8 +114,22 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
             </div>
           )}
         </div>
+        <div className='p-4 bg-muted rounded-md'>
+            <Label htmlFor='sku-manual-scan' className='text-sm font-medium'>Or Enter SKU Manually</Label>
+            <div className='flex gap-2 mt-2'>
+                <Input 
+                    id='sku-manual-scan'
+                    placeholder='e.g. SKU-12345'
+                    value={scannedSku}
+                    onChange={(e) => setScannedSku(e.target.value)}
+                />
+                 <Button type="button" onClick={handleManualScan}>
+                    Find
+                </Button>
+            </div>
+        </div>
         <DialogFooter>
-          <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>
+          <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
             Close
           </Button>
         </DialogFooter>
