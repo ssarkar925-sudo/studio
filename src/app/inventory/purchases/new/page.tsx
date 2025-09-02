@@ -12,13 +12,24 @@ import { useToast } from '@/hooks/use-toast';
 import { vendorsDAO, productsDAO, purchasesDAO, type Vendor, type Product } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { format, parse } from 'date-fns';
-import { CalendarIcon, PlusCircle, Trash2, Upload, Loader2 } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Upload, Loader2, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { extractPurchaseInfoFromBill } from '@/ai/flows/extract-purchase-info-flow';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useAuth } from '@/components/auth-provider';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose
+} from "@/components/ui/dialog";
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -47,6 +58,8 @@ export default function NewPurchasePage() {
   
   const [isExtracting, setIsExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isNewVendorDialogOpen, setIsNewVendorDialogOpen] = useState(false);
+
 
   const handleAddItem = () => {
     setItems([
@@ -159,6 +172,46 @@ export default function NewPurchasePage() {
         setIsExtracting(false);
     };
   }
+  
+    const handleNewVendorSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!user) return;
+    const formData = new FormData(e.currentTarget);
+    const vendorName = formData.get('vendorName') as string;
+
+    if (!vendorName) {
+      toast({
+        variant: 'destructive',
+        title: 'Name is required',
+      });
+      return;
+    }
+
+    try {
+      const newVendor = await vendorsDAO.add({
+        userId: user.uid,
+        vendorName: vendorName,
+        contactPerson: formData.get('contactPerson') as string,
+        contactNumber: formData.get('contactNumber') as string,
+        email: formData.get('email') as string,
+        gstn: formData.get('gstn') as string,
+        address: formData.get('address') as string,
+      });
+
+      toast({
+        title: 'Vendor Created',
+        description: `Successfully created ${newVendor.vendorName}.`,
+      });
+      setVendorId(newVendor.id);
+      setIsNewVendorDialogOpen(false);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Failed to create vendor',
+      });
+    }
+  }
+
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -223,16 +276,67 @@ export default function NewPurchasePage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
-                            <Select name="vendor" required onValueChange={setVendorId} value={vendorId}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a vendor" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {vendors.map((vendor) => (
-                                    <SelectItem key={vendor.id} value={vendor.id}>{vendor.vendorName}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <div className="flex gap-2">
+                                <Select name="vendor" required onValueChange={setVendorId} value={vendorId}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select a vendor" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {vendors.map((vendor) => (
+                                        <SelectItem key={vendor.id} value={vendor.id}>{vendor.vendorName}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <Dialog open={isNewVendorDialogOpen} onOpenChange={setIsNewVendorDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <Button variant="outline" size="icon">
+                                            <UserPlus />
+                                        </Button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <form onSubmit={handleNewVendorSubmit}>
+                                            <DialogHeader>
+                                                <DialogTitle>Add New Vendor</DialogTitle>
+                                                <DialogDescription>
+                                                    Create a new vendor profile. This will be saved to your contacts.
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <div className="grid gap-4 py-4">
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="vendorName">Vendor Name</Label>
+                                                    <Input id="vendorName" name="vendorName" placeholder="e.g. Acme Inc." required />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="contactPerson">Contact Person</Label>
+                                                    <Input id="contactPerson" name="contactPerson" placeholder="John Doe" />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="contactNumber">Contact Number</Label>
+                                                    <Input id="contactNumber" name="contactNumber" type="tel" placeholder="+91 98765 43210" />
+                                                </div>
+                                                 <div className="grid gap-2">
+                                                    <Label htmlFor="email">Email</Label>
+                                                    <Input id="email" name="email" type="email" placeholder="contact@acme.com" />
+                                                </div>
+                                                <div className="grid gap-2">
+                                                    <Label htmlFor="gstn">GSTN</Label>
+                                                    <Input id="gstn" name="gstn" type="text" placeholder="29AABCU9603R1ZM" />
+                                                </div>
+                                                 <div className="grid gap-2">
+                                                    <Label htmlFor="address">Address</Label>
+                                                    <Textarea id="address" name="address" placeholder="Enter vendor's address" />
+                                                </div>
+                                            </div>
+                                            <DialogFooter>
+                                                <DialogClose asChild>
+                                                    <Button type="button" variant="outline">Cancel</Button>
+                                                </DialogClose>
+                                                <Button type="submit">Save Vendor</Button>
+                                            </DialogFooter>
+                                        </form>
+                                    </DialogContent>
+                                </Dialog>
+                            </div>
                         </div>
                         <div className="grid gap-3">
                             <Label htmlFor="orderDate">Order Date</Label>
