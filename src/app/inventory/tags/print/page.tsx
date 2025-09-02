@@ -23,14 +23,16 @@ function QRCodeTag({ product, size }: { product: Product; size: 'a4' | 'thermal'
         size === 'thermal' && "w-[190px] p-1" // ~50mm width for 2-inch thermal paper
       )}
     >
-      <p className={cn("font-bold truncate w-full", size === 'a4' ? 'text-sm' : 'text-xs')}>{product.name}</p>
-      <p className={cn("mb-1", size === 'a4' ? 'text-xs' : 'text-[10px]')}>SKU: {product.sku}</p>
-      <div className='w-full overflow-hidden flex justify-center p-1 bg-white'>
+      <div className="h-[40px] flex flex-col justify-center items-center">
+        <p className={cn("font-bold", size === 'a4' ? 'text-sm' : 'text-xs')}>{product.name}</p>
+        <p className={cn(size === 'a4' ? 'text-xs' : 'text-[10px]')}>SKU: {product.sku}</p>
+      </div>
+      <div className='flex-grow w-full overflow-hidden flex justify-center items-center p-1 bg-white'>
         <QRCode 
           value={product.sku} 
           size={size === 'a4' ? 80 : 64}
           viewBox={`0 0 ${size === 'a4' ? 80 : 64} ${size === 'a4' ? 80 : 64}`}
-          className="w-full h-auto"
+          className="w-full h-auto max-w-[80px] max-h-[80px]"
         />
       </div>
     </div>
