@@ -33,66 +33,74 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (open) {
-      codeReaderRef.current = new BrowserMultiFormatReader();
-      const codeReader = codeReaderRef.current;
+    let codeReader: BrowserMultiFormatReader;
+    let isCancelled = false;
+
+    const startScan = async () => {
+      if (!open || !videoRef.current) return;
       
-      const startScan = async () => {
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: 'environment' },
-          });
-          setHasCameraPermission(true);
+      codeReader = new BrowserMultiFormatReader();
+      codeReaderRef.current = codeReader;
 
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            
-            await codeReader.decodeFromStream(stream, videoRef.current, (result, error) => {
-              if (result) {
-                const sku = result.getText();
-                const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
-
-                if (foundProduct) {
-                  toast({
-                    title: 'Item Found',
-                    description: `${foundProduct.name} added.`,
-                  });
-                  onScan(foundProduct);
-                } else {
-                  toast({
-                    variant: 'destructive',
-                    title: 'Product Not Found',
-                    description: `No product found with SKU: ${sku}`,
-                  });
-                }
-              }
-              if (error && !(error instanceof NotFoundException)) {
-                console.error('Scan Error:', error);
-              }
-            });
-          }
-        } catch (err) {
-          console.error('Camera access error:', err);
-          setHasCameraPermission(false);
+      try {
+        const videoInputDevices = await BrowserMultiFormatReader.listVideoInputDevices();
+        
+        let selectedDeviceId = videoInputDevices[0]?.deviceId;
+        const rearCamera = videoInputDevices.find(device => device.label.toLowerCase().includes('back'));
+        if (rearCamera) {
+          selectedDeviceId = rearCamera.deviceId;
         }
-      };
-      
-      startScan();
+        
+        if (!selectedDeviceId) {
+           setHasCameraPermission(false);
+           return;
+        }
 
-    } else {
-      // Cleanup when the dialog is closed
-      if (codeReaderRef.current) {
-        codeReaderRef.current.reset();
-      }
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-      }
-    }
+        setHasCameraPermission(true);
 
-    // This is the main cleanup function for when the component unmounts
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { deviceId: { exact: selectedDeviceId } },
+        });
+
+        if (videoRef.current && !isCancelled) {
+          videoRef.current.srcObject = stream;
+
+          await codeReader.decodeFromStream(stream, videoRef.current, (result, error) => {
+            if (isCancelled) return;
+            if (result) {
+              const sku = result.getText();
+              const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+
+              if (foundProduct) {
+                toast({
+                  title: 'Item Found',
+                  description: `${foundProduct.name} added.`,
+                });
+                onScan(foundProduct);
+              } else {
+                toast({
+                  variant: 'destructive',
+                  title: 'Product Not Found',
+                  description: `No product found with SKU: ${sku}`,
+                });
+              }
+            }
+            if (error && !(error instanceof NotFoundException)) {
+              console.error('Scan Error:', error);
+            }
+          });
+        }
+
+      } catch (err) {
+        console.error('Camera access error:', err);
+        setHasCameraPermission(false);
+      }
+    };
+    
+    startScan();
+
     return () => {
+      isCancelled = true;
       if (codeReaderRef.current) {
         codeReaderRef.current.reset();
       }
@@ -182,11 +190,11 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
             </div>
           </div>
           <div>
-            <Label htmlFor='sku-manual-scan' className='text-sm font-medium'>Enter last 5 digits of SKU</Label>
+            <Label htmlFor='sku-manual-scan' className='text-sm font-medium'>Enter SKU</Label>
             <div className='flex gap-2 mt-2'>
               <Input
                 id='sku-manual-scan'
-                placeholder='e.g. 12345'
+                placeholder='e.g. 8A4D9F1B'
                 value={scannedSku}
                 onChange={(e) => setScannedSku(e.target.value)}
                 onKeyDown={(e) => {
