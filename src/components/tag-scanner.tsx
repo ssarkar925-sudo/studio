@@ -38,8 +38,8 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
-    if(videoRef.current) {
-        videoRef.current.srcObject = null;
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
     }
   }, []);
 
@@ -47,33 +47,32 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     if (!videoRef.current) return;
 
     codeReader.current.decodeFromVideoElement(videoRef.current, (result, err) => {
-        if (result) {
-          const sku = result.getText();
-          const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
+      if (result) {
+        const sku = result.getText();
+        const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
 
-          if (foundProduct) {
-            toast({
-              title: 'Item Found',
-              description: `${foundProduct.name} added.`,
-            });
-            onScan(foundProduct);
-          } else {
-            toast({
-              variant: 'destructive',
-              title: 'Product Not Found',
-              description: `No product found with SKU: ${sku}`,
-            });
-          }
+        if (foundProduct) {
+          toast({
+            title: 'Item Found',
+            description: `${foundProduct.name} added.`,
+          });
+          onScan(foundProduct);
+        } else {
+          toast({
+            variant: 'destructive',
+            title: 'Product Not Found',
+            description: `No product found with SKU: ${sku}`,
+          });
         }
-        if (err && !(err instanceof NotFoundException)) {
-          console.error('Scan Error:', err);
-        }
-      }).catch(err => {
-         console.error('DecodeFromVideoElement Error:', err);
-      });
-
+      }
+      if (err && !(err instanceof NotFoundException)) {
+        console.error('Scan Error:', err);
+      }
+    }).catch(err => {
+      console.error('DecodeFromVideoElement Error:', err);
+    });
   }, [products, onScan, toast]);
-  
+
   useEffect(() => {
     const getCameraPermission = async () => {
       try {
@@ -97,9 +96,12 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     }
 
     return () => {
-      stopScanner();
+      if (!open) {
+        stopScanner();
+      }
     };
   }, [open, stopScanner]);
+
 
   const handleManualScan = () => {
     if (!scannedSku) {
@@ -139,56 +141,56 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
           <DialogTitle>Scan Item</DialogTitle>
         </DialogHeader>
         <div className='p-4 bg-muted rounded-md space-y-4'>
-            <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
-                <video 
-                    ref={videoRef} 
-                    className="w-full h-full object-cover" 
-                    autoPlay 
-                    muted 
-                    playsInline
-                    onCanPlay={startScanner}
-                 />
-                {hasCameraPermission === false && (
-                    <div className="absolute inset-0 flex items-center justify-center p-4">
-                        <Alert variant="destructive">
-                            <AlertTitle>Camera Access Denied</AlertTitle>
-                            <AlertDescription>
-                                Please enable camera permissions in your browser settings to use the scanner.
-                            </AlertDescription>
-                        </Alert>
-                    </div>
-                )}
+          <div className="relative w-full aspect-video bg-black rounded-md overflow-hidden">
+            <video
+              ref={videoRef}
+              className="w-full h-full object-cover"
+              autoPlay
+              playsInline
+              muted
+              onCanPlay={startScanner}
+            />
+            {hasCameraPermission === false && (
+              <div className="absolute inset-0 flex items-center justify-center p-4">
+                <Alert variant="destructive">
+                  <AlertTitle>Camera Access Denied</AlertTitle>
+                  <AlertDescription>
+                    Please enable camera permissions in your browser settings to use the scanner.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+          </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
             </div>
-            
-            <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-muted px-2 text-muted-foreground">
-                    Or
-                    </span>
-                </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-muted px-2 text-muted-foreground">
+                Or
+              </span>
             </div>
-            <div>
-                <Label htmlFor='sku-manual-scan' className='text-sm font-medium'>Enter last 5 digits of SKU</Label>
-                <div className='flex gap-2 mt-2'>
-                    <Input
-                    id='sku-manual-scan'
-                    placeholder='e.g. 12345'
-                    value={scannedSku}
-                    onChange={(e) => setScannedSku(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                        handleManualScan();
-                        }
-                    }}
-                    />
-                    <Button type="button" onClick={handleManualScan}>
-                    Find
-                    </Button>
-                </div>
+          </div>
+          <div>
+            <Label htmlFor='sku-manual-scan' className='text-sm font-medium'>Enter last 5 digits of SKU</Label>
+            <div className='flex gap-2 mt-2'>
+              <Input
+                id='sku-manual-scan'
+                placeholder='e.g. 12345'
+                value={scannedSku}
+                onChange={(e) => setScannedSku(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleManualScan();
+                  }
+                }}
+              />
+              <Button type="button" onClick={handleManualScan}>
+                Find
+              </Button>
             </div>
+          </div>
         </div>
         <DialogFooter>
           <Button type="button" variant="secondary" onClick={() => handleOpenChange(false)}>
