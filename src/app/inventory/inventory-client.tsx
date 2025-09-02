@@ -376,7 +376,7 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
     }
     
     try {
-        const batchCode = `BCH-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`.toUpperCase();
+        const batchCode = `BCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
         for (const item of purchase.items) {
             const totalItemsInPurchase = purchase.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
@@ -390,7 +390,7 @@ function PurchaseHistory({ initialPurchases }: { initialPurchases: Purchase[] })
                     purchasePrice: purchasePriceWithCharges,
                     sellingPrice: purchasePriceWithCharges * 1.5, // 50% markup
                     stock: item.quantity,
-                    sku: `SKU-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`.toUpperCase(),
+                    sku: `SKU-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
                     batchCode: batchCode,
                 });
             } else {
