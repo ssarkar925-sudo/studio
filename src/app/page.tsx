@@ -516,7 +516,7 @@ function MainDashboardContent() {
                  <DialogHeader>
                     <DialogTitle>{scannedProduct?.name}</DialogTitle>
                     <DialogDescription>
-                        Product Details
+                        This dialog shows the details of the scanned product.
                     </DialogDescription>
                 </DialogHeader>
                 {scannedProduct && (

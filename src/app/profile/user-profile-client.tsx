@@ -224,7 +224,7 @@ export function UserProfileClient() {
                             <DialogHeader>
                                 <DialogTitle>Change Password</DialogTitle>
                                 <DialogDescription>
-                                    Enter your old and new password below.
+                                    Enter your old password and a new password below.
                                 </DialogDescription>
                             </DialogHeader>
                             <div className="grid gap-4 py-4">
