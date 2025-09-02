@@ -47,6 +47,9 @@ export default function NewInventoryItemPage() {
 
     setIsSaving(true);
     try {
+      const sku = Math.random().toString(36).substring(2, 10).toUpperCase();
+      const batchCode = `BCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+
       await purchasesDAO.add({
           userId: user.uid,
           vendorName: 'N/A (Manual Entry)',
@@ -59,6 +62,8 @@ export default function NewInventoryItemPage() {
               purchasePrice: purchasePrice,
               total: stock * purchasePrice,
               isNew: true,
+              sku: sku,
+              batchCode: batchCode,
           }],
           totalAmount: stock * purchasePrice,
           paymentDone: 0,

@@ -41,6 +41,8 @@ type PurchaseItem = {
     purchasePrice: number;
     total: number;
     isNew?: boolean;
+    sku?: string;
+    batchCode?: string;
 };
 
 export default function NewPurchasePage() {
@@ -230,12 +232,24 @@ export default function NewPurchasePage() {
 
     setIsSaving(true);
     try {
+      // For a given purchase, all items should have the same batch code.
+      const batchCode = `BCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+      
+      const finalItems = items.map(item => {
+        const sku = item.isNew ? Math.random().toString(36).substring(2, 10).toUpperCase() : products.find(p => p.id === item.productId)?.sku;
+        return {
+          ...item,
+          sku,
+          batchCode,
+        }
+      });
+      
       await purchasesDAO.add({
           userId: user.uid,
           vendorId: vendor.id,
           vendorName: vendor.vendorName,
           orderDate: format(orderDate, 'dd/MM/yyyy'),
-          items: items.map(({id, ...rest}) => ({...rest})),
+          items: finalItems.map(({id, ...rest}) => ({...rest})),
           totalAmount,
           paymentDone,
           dueAmount,

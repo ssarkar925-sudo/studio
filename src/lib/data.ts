@@ -76,6 +76,8 @@ export type PurchaseItem = {
     purchasePrice: number;
     total: number;
     isNew?: boolean;
+    sku?: string;
+    batchCode?: string;
 }
 
 export type Purchase = BaseDocument & {

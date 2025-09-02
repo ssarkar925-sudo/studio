@@ -369,7 +369,7 @@ function PurchaseHistory({ purchases }: { purchases: Purchase[] }) {
     }
     
     try {
-        const batchCode = `BCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+        const batchCode = purchase.items[0].batchCode || `BCH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
         for (const item of purchase.items) {
             const totalItemsInPurchase = purchase.items.reduce((sum, i) => sum + i.quantity, 0) || 1;
@@ -383,7 +383,7 @@ function PurchaseHistory({ purchases }: { purchases: Purchase[] }) {
                     purchasePrice: purchasePriceWithCharges,
                     sellingPrice: purchasePriceWithCharges * 1.5, // 50% markup
                     stock: item.quantity,
-                    sku: `SKU-${Math.random().toString(36).substring(2, 10).toUpperCase()}`,
+                    sku: item.sku || Math.random().toString(36).substring(2, 10).toUpperCase(),
                     batchCode: batchCode,
                 });
             } else {
@@ -448,7 +448,7 @@ function PurchaseHistory({ purchases }: { purchases: Purchase[] }) {
              {selectedPurchases.length > 0 && (
                  <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">Delete ({selectedPurchases.length})</Button>
+                        <Button variant="destructive" size="sm"><Trash2 /> Delete ({selectedPurchases.length})</Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                         <AlertDialogHeader>
