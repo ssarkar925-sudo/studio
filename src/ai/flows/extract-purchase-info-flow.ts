@@ -46,7 +46,7 @@ const prompt = ai.definePrompt({
   name: 'extractPurchaseInfoPrompt',
   input: {schema: ExtractPurchaseInfoInputSchema},
   output: {schema: ExtractedPurchaseInfoSchema},
-  prompt: `You are an expert at extracting structured information from images of invoices and bills. Analyze the provided image and extract the following details. If a value is not present, omit the field.
+  prompt: `You are an expert at extracting structured information from images of invoices and bills. Analyze the provided image and extract the following details. If a value is not present or is illegible, omit the field. Do not fail if there are OCR errors; extract what you can.
 
 - The vendor's name.
 - The date of the order. Format it as dd/MM/yyyy (e.g., '02/07/2024').
@@ -57,7 +57,6 @@ const prompt = ai.definePrompt({
 - The amount paid, if mentioned.
 
 Photo: {{media url=photoDataUri}}`,
-  model: 'googleai/gemini-1.5-pro',
 });
 
 const extractPurchaseInfoFlow = ai.defineFlow(
@@ -65,13 +64,14 @@ const extractPurchaseInfoFlow = ai.defineFlow(
     name: 'extractPurchaseInfoFlow',
     inputSchema: ExtractPurchaseInfoInputSchema,
     outputSchema: ExtractedPurchaseInfoSchema,
+    model: 'googleai/gemini-1.5-pro',
   },
   async (input) => {
     try {
       const { output } = await prompt(input);
       return output!;
-    } catch (e) {
-      console.error("Initial prompt failed, retrying with safety settings", e);
+    } catch (e: any) {
+      console.error("Initial prompt failed, retrying with safety settings. Error:", e.message || e);
       // Retry with different safety settings if the first attempt fails.
       const { output } = await prompt(input, {
         config: {
