@@ -19,15 +19,17 @@ import { useRouter } from 'next/navigation';
 import { customersDAO } from '@/lib/data';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import { useAuth } from '@/components/auth-provider';
 
 export default function NewCustomerPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { user } = useAuth();
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isSaving) return;
+    if (isSaving || !user) return;
 
     const formData = new FormData(e.currentTarget);
     const name = formData.get('name') as string;
@@ -47,6 +49,7 @@ export default function NewCustomerPage() {
     setIsSaving(true);
     try {
       await customersDAO.add({
+        userId: user.uid,
         name,
         email,
         phone,

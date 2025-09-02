@@ -12,11 +12,10 @@ type Dao<T> = {
 // Admin DAO has a different subscribe signature
 type AdminDao = {
     subscribe: (callback: (data: any[]) => void, onError: (error: Error) => void) => () => void;
-    id: 'adminUsersDAO';
+    id: 'adminUsersDAO' | 'featureFlagsDAO';
 }
 
-const ADMIN_DAOS = ['adminUsersDAO'];
-
+const ADMIN_DAOS = ['adminUsersDAO', 'featureFlagsDAO'];
 
 export function useFirestoreData<T>(dao: Dao<T> | AdminDao) {
   const [data, setData] = useState<T[]>([]);
