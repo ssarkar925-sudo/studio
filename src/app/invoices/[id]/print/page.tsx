@@ -169,7 +169,7 @@ export default function PrintInvoicePage() {
         )}
         
         <section className="mt-20 text-right">
-            <div className="inline-block text-left">
+            <div className="inline-block text-center">
                 <div className="border-t-2 border-black w-48 pt-2">
                     <p className="text-sm font-semibold">Authorised Signatory</p>
                     <p className="text-sm text-muted-foreground">{businessProfile.companyName}</p>
@@ -180,3 +180,4 @@ export default function PrintInvoicePage() {
     </PrintLayout>
   );
 }
+
