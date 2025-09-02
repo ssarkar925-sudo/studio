@@ -20,7 +20,7 @@ function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
     Partial: 'outline',
   }[status] as 'default' | 'secondary' | 'destructive' | 'outline';
 
-  return <Badge variant={variant} className="capitalize text-white">{status}</Badge>;
+  return <Badge variant={variant} className="capitalize">{status}</Badge>;
 }
 
 export default function PrintInvoicePage() {
@@ -168,8 +168,8 @@ export default function PrintInvoicePage() {
           </footer>
         )}
         
-        <section className="mt-20 text-right">
-            <div className="inline-block text-center">
+        <section className="mt-20 text-center">
+            <div className="inline-block">
                 <div className="border-t-2 border-black w-48 pt-2">
                     <p className="text-sm font-semibold">Authorised Signatory</p>
                     <p className="text-sm text-muted-foreground">{businessProfile.companyName}</p>
@@ -180,5 +180,6 @@ export default function PrintInvoicePage() {
     </PrintLayout>
   );
 }
+
 
 
