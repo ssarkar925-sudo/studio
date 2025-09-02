@@ -19,19 +19,19 @@ function BarcodeTag({ product, size }: { product: Product; size: 'a4' | 'thermal
     <div
       className={cn(
         "p-2 border border-dashed border-black break-inside-avoid-page flex flex-col items-center justify-center text-center bg-white overflow-hidden",
-        size === 'a4' && "w-[220px] h-[120px]",
+        size === 'a4' && "w-[240px] h-[130px]",
         size === 'thermal' && "w-[190px] p-1" // ~50mm width for 2-inch thermal paper
       )}
     >
-      <p className={cn("font-bold truncate w-full", size === 'a4' ? 'text-base' : 'text-sm')}>{product.name}</p>
+      <p className={cn("font-bold truncate w-full", size === 'a4' ? 'text-lg' : 'text-sm')}>{product.name}</p>
       <p className={cn("mb-1", size === 'a4' ? 'text-sm' : 'text-xs')}>SKU: {product.sku}</p>
       <div className='w-full overflow-hidden flex justify-center'>
         <Barcode 
           value={product.sku} 
-          height={size === 'a4' ? 40 : 30} 
-          width={size === 'a4' ? 1.5 : 1.2} 
-          fontSize={size === 'a4' ? 12 : 10}
-          margin={2}
+          height={size === 'a4' ? 50 : 40} 
+          width={size === 'a4' ? 2 : 1.8} 
+          fontSize={size === 'a4' ? 14 : 10}
+          margin={4}
         />
       </div>
     </div>
