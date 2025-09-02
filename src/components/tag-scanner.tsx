@@ -65,7 +65,7 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
     if (foundProduct) {
         toast({
             title: 'Item Found',
-            description: `Added ${foundProduct.name} to the invoice.`,
+            description: `${foundProduct.name} details displayed.`,
         });
         onScan(foundProduct);
         setScannedSku(''); // Clear input after successful scan
