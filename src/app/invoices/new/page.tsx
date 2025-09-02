@@ -15,13 +15,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { customersDAO, invoicesDAO, productsDAO, type Product, type Invoice, type Customer } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -44,6 +37,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog"
 import { useAuth } from '@/components/auth-provider';
+import { Combobox } from '@/components/ui/combobox';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -260,6 +254,15 @@ export default function NewInvoicePage() {
     }
   };
 
+  const customerOptions = useMemo(() => {
+    return customers.map(c => ({
+      value: c.id,
+      label: c.name,
+      secondaryLabel: c.email || c.phone || '',
+      searchable: `${c.name} ${c.email} ${c.phone}`.toLowerCase(),
+    }))
+  }, [customers]);
+
   return (
     <>
     <AppLayout>
@@ -282,14 +285,14 @@ export default function NewInvoicePage() {
                             <div className="grid gap-3">
                                 <Label htmlFor="customer">Customer</Label>
                                 <div className="flex gap-2">
-                                  <Select onValueChange={setCustomerId} value={customerId}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select a customer" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                                    </SelectContent>
-                                  </Select>
+                                  <Combobox
+                                    options={customerOptions}
+                                    value={customerId}
+                                    onSelect={setCustomerId}
+                                    placeholder="Select a customer"
+                                    searchPlaceholder="Search customers..."
+                                    noResultsText="No customer found."
+                                  />
                                   <Dialog open={isNewCustomerDialogOpen} onOpenChange={setIsNewCustomerDialogOpen}>
                                       <DialogTrigger asChild>
                                           <Button variant="outline" size="icon">
@@ -356,14 +359,18 @@ export default function NewInvoicePage() {
                                             onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                         />
                                     ) : (
-                                        <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select item" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {products.map((p) => <SelectItem key={p.id} value={p.id} disabled={p.stock <=0 }>{p.name} (Stock: {p.stock})</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
+                                        <Combobox
+                                            options={products.map(p => ({
+                                                value: p.id,
+                                                label: `${p.name} (Stock: ${p.stock})`,
+                                                disabled: p.stock <= 0
+                                            }))}
+                                            value={item.productId}
+                                            onSelect={(value) => handleItemChange(index, 'productId', value)}
+                                            placeholder="Select item"
+                                            searchPlaceholder="Search items..."
+                                            noResultsText="No item found."
+                                        />
                                     )}
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">
@@ -517,5 +524,3 @@ export default function NewInvoicePage() {
     </>
   );
 }
-
-    

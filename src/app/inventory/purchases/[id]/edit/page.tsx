@@ -16,13 +16,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
+
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -196,6 +191,25 @@ export default function EditPurchasePage() {
     );
   }
 
+  const vendorOptions = useMemo(() => {
+    return vendors.map(v => ({
+      value: v.id,
+      label: v.vendorName,
+      secondaryLabel: v.contactPerson || '',
+      searchable: `${v.vendorName} ${v.email} ${v.contactPerson} ${v.contactNumber}`.toLowerCase(),
+    }))
+  }, [vendors]);
+
+  const productOptions = useMemo(() => {
+    return [
+      ...products.map(p => ({
+        value: p.id,
+        label: `${p.name} (${p.batchCode})`,
+      })),
+      { value: 'add_new', label: 'Add New Item' }
+    ]
+  }, [products]);
+
   return (
     <AppLayout>
       <div className="mx-auto grid w-full max-w-4xl gap-2">
@@ -213,14 +227,14 @@ export default function EditPurchasePage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
-                            <Select onValueChange={setVendorId} value={vendorId}>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a vendor" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {vendors.map((v) => <SelectItem key={v.id} value={v.id}>{v.vendorName}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
+                            <Combobox
+                              options={vendorOptions}
+                              value={vendorId}
+                              onSelect={setVendorId}
+                              placeholder="Select a vendor"
+                              searchPlaceholder="Search vendors..."
+                              noResultsText="No vendor found."
+                            />
                         </div>
                         <div className="grid gap-3">
                             <Label htmlFor="orderDate">Order Date</Label>
@@ -269,19 +283,14 @@ export default function EditPurchasePage() {
                                         onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                     />
                                 ) : (
-                                    <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select item" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({p.batchCode})</SelectItem>)}
-                                            <SelectItem value="add_new">
-                                                <div className="flex items-center">
-                                                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
-                                                </div>
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <Combobox
+                                      options={productOptions}
+                                      value={item.productId}
+                                      onSelect={(value) => handleItemChange(index, 'productId', value)}
+                                      placeholder="Select item"
+                                      searchPlaceholder="Search items..."
+                                      noResultsText="No item found."
+                                    />
                                 )}
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
@@ -353,5 +362,3 @@ export default function EditPurchasePage() {
     </AppLayout>
   );
 }
-
-    

@@ -29,13 +29,8 @@ import {
   DialogTrigger,
   DialogClose
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
+
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -264,6 +259,25 @@ export default function NewPurchasePage() {
     }
   };
 
+  const vendorOptions = useMemo(() => {
+    return vendors.map(v => ({
+      value: v.id,
+      label: v.vendorName,
+      secondaryLabel: v.contactPerson || '',
+      searchable: `${v.vendorName} ${v.email} ${v.contactPerson} ${v.contactNumber}`.toLowerCase(),
+    }))
+  }, [vendors]);
+
+  const productOptions = useMemo(() => {
+    return [
+      ...products.map(p => ({
+        value: p.id,
+        label: `${p.name} (${p.batchCode})`,
+      })),
+      { value: 'add_new', label: 'Add New Item' }
+    ]
+  }, [products]);
+
   return (
     <AppLayout>
       <div className="mx-auto grid w-full max-w-4xl gap-2">
@@ -282,14 +296,14 @@ export default function NewPurchasePage() {
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
                             <div className="flex gap-2">
-                                <Select onValueChange={setVendorId} value={vendorId}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Select a vendor" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {vendors.map((v) => <SelectItem key={v.id} value={v.id}>{v.vendorName}</SelectItem>)}
-                                  </SelectContent>
-                                </Select>
+                                <Combobox
+                                  options={vendorOptions}
+                                  value={vendorId}
+                                  onSelect={setVendorId}
+                                  placeholder="Select a vendor"
+                                  searchPlaceholder="Search vendors..."
+                                  noResultsText="No vendor found."
+                                />
                                 <Dialog open={isNewVendorDialogOpen} onOpenChange={setIsNewVendorDialogOpen}>
                                     <DialogTrigger asChild>
                                         <Button variant="outline" size="icon">
@@ -398,19 +412,14 @@ export default function NewPurchasePage() {
                                         onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                     />
                                 ) : (
-                                    <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select item" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {products.map((p) => <SelectItem key={p.id} value={p.id}>{p.name} ({p.batchCode})</SelectItem>)}
-                                            <SelectItem value="add_new">
-                                                <div className="flex items-center">
-                                                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Item
-                                                </div>
-                                            </SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <Combobox
+                                      options={productOptions}
+                                      value={item.productId}
+                                      onSelect={(value) => handleItemChange(index, 'productId', value)}
+                                      placeholder="Select item"
+                                      searchPlaceholder="Search items..."
+                                      noResultsText="No item found."
+                                    />
                                 )}
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
@@ -482,5 +491,3 @@ export default function NewPurchasePage() {
     </AppLayout>
   );
 }
-
-    

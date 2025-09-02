@@ -27,11 +27,12 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon } from 'lucide-react';
 import { format, parse, isValid } from 'date-fns';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
+import { Combobox } from '@/components/ui/combobox';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -248,6 +249,19 @@ export default function EditInvoicePage() {
     );
   }
 
+  const productOptions = useMemo(() => {
+    return products.map((p: Product) => {
+      const originalItem = invoice?.items.find(i => i.productId === p.id);
+      const originalQuantity = originalItem ? originalItem.quantity : 0;
+      const availableStock = p.stock + originalQuantity;
+      return {
+          value: p.id,
+          label: `${p.name} (Stock: ${availableStock})`,
+          disabled: availableStock <= 0 && !originalItem
+      }
+    })
+  }, [products, invoice]);
+
   return (
     <AppLayout>
       <div className="mx-auto grid w-full max-w-4xl gap-2">
@@ -272,16 +286,15 @@ export default function EditInvoicePage() {
                         </div>
                         <div className="grid gap-3">
                             <Label htmlFor="customer">Customer</Label>
-                            <Select name="customer" required onValueChange={setCustomerId} value={customerId} disabled>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a customer" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {customers.map((customer) => (
-                                <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
-                                ))}
-                            </SelectContent>
-                            </Select>
+                            <Combobox
+                                options={customers.map(c => ({ value: c.id, label: c.name }))}
+                                value={customerId}
+                                onSelect={setCustomerId}
+                                placeholder="Select a customer"
+                                searchPlaceholder="Search customers..."
+                                noResultsText="No customer found."
+                                disabled={true}
+                              />
                         </div>
                     </div>
                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -347,19 +360,14 @@ export default function EditInvoicePage() {
                                         onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                     />
                                 ) : (
-                                    <Select onValueChange={(value) => handleItemChange(index, 'productId', value)} value={item.productId}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select item" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {products.map((p: Product) => {
-                                                const originalItem = invoice?.items.find(i => i.productId === p.id);
-                                                const originalQuantity = originalItem ? originalItem.quantity : 0;
-                                                const availableStock = p.stock + originalQuantity;
-                                                return <SelectItem key={p.id} value={p.id} disabled={availableStock <= 0 && !originalItem}>{p.name} (Stock: {availableStock})</SelectItem>
-                                            })}
-                                        </SelectContent>
-                                    </Select>
+                                    <Combobox
+                                      options={productOptions}
+                                      value={item.productId}
+                                      onSelect={(value) => handleItemChange(index, 'productId', value)}
+                                      placeholder="Select item"
+                                      searchPlaceholder="Search items..."
+                                      noResultsText="No item found."
+                                    />
                                 )}
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
