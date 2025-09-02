@@ -9,8 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { LogIn, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, sendPasswordResetEmail } from 'firebase/auth';
+import { useState, useEffect } from 'react';
+import { signInWithEmailAndPassword, signInWithRedirect, GoogleAuthProvider, sendPasswordResetEmail, getRedirectResult } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
 import { useAuth } from '@/components/auth-provider';
 import { userProfileDAO, businessProfileDAO } from '@/lib/data';
@@ -26,6 +26,59 @@ export default function LoginPage() {
     const [password, setPassword] = useState('');
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [isGoogleLoggingIn, setIsGoogleLoggingIn] = useState(false);
+
+    useEffect(() => {
+        const handleRedirectResult = async () => {
+            try {
+                const result = await getRedirectResult(auth);
+                if (result) {
+                    setIsGoogleLoggingIn(true);
+                    const firebaseUser = result.user;
+                    const userProfileRef = doc(db, 'userProfile', firebaseUser.uid);
+                    const userProfileSnap = await getDoc(userProfileRef);
+
+                    if (!userProfileSnap.exists()) {
+                        const usersQuery = query(collection(db, 'userProfile'), limit(1));
+                        const usersSnapshot = await getDocs(usersQuery);
+                        const isFirstUser = usersSnapshot.empty;
+
+                        await userProfileDAO.update(firebaseUser.uid, {
+                            name: firebaseUser.displayName || 'Google User',
+                            email: firebaseUser.email,
+                            isAdmin: isFirstUser,
+                        });
+                        
+                        await businessProfileDAO.add({
+                            userId: firebaseUser.uid,
+                            companyName: `${firebaseUser.displayName || 'My'}'s Business`,
+                        });
+                        toast({
+                            title: 'Account Created',
+                            description: 'Your new account has been set up.',
+                        });
+                    }
+
+                    toast({
+                        title: 'Login Successful',
+                        description: "Welcome back!",
+                    });
+                    router.push('/');
+                }
+            } catch (error: any) {
+                console.error("Google login failed", error);
+                toast({
+                    variant: 'destructive',
+                    title: 'Google Login Failed',
+                    description: error.message || "Could not log in with Google. Please try again.",
+                });
+            } finally {
+                setIsGoogleLoggingIn(false);
+            }
+        };
+
+        handleRedirectResult();
+    }, [router, toast]);
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,49 +105,7 @@ export default function LoginPage() {
     const handleGoogleLogin = async () => {
         setIsGoogleLoggingIn(true);
         const provider = new GoogleAuthProvider();
-        try {
-            const result = await signInWithPopup(auth, provider);
-            const firebaseUser = result.user;
-
-            const userProfileRef = doc(db, 'userProfile', firebaseUser.uid);
-            const userProfileSnap = await getDoc(userProfileRef);
-
-            if (!userProfileSnap.exists()) {
-                 const usersQuery = query(collection(db, 'userProfile'), limit(1));
-                 const usersSnapshot = await getDocs(usersQuery);
-                 const isFirstUser = usersSnapshot.empty;
-
-                await userProfileDAO.update(firebaseUser.uid, {
-                    name: firebaseUser.displayName || 'Google User',
-                    email: firebaseUser.email,
-                    isAdmin: isFirstUser,
-                });
-                
-                await businessProfileDAO.add({
-                    userId: firebaseUser.uid,
-                    companyName: `${firebaseUser.displayName || 'My'}'s Business`,
-                });
-                toast({
-                    title: 'Account Created',
-                    description: 'Your new account has been set up.',
-                });
-            }
-
-             toast({
-                title: 'Login Successful',
-                description: "Welcome back!",
-            });
-            router.push('/');
-        } catch (error: any) {
-            console.error("Google login failed", error);
-            toast({
-                variant: 'destructive',
-                title: 'Google Login Failed',
-                description: error.message || "Could not log in with Google. Please try again.",
-            });
-        } finally {
-            setIsGoogleLoggingIn(false);
-        }
+        await signInWithRedirect(auth, provider);
     }
     
     const handleForgotPassword = async () => {
