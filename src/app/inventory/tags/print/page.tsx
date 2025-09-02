@@ -10,13 +10,27 @@ import { Download } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import Barcode from 'react-barcode';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
-function BarcodeTag({ product }: { product: Product }) {
+function BarcodeTag({ product, size }: { product: Product; size: 'a4' | 'thermal' }) {
   return (
-    <div className="p-4 border border-black break-inside-avoid-page flex flex-col items-center justify-center text-center w-[220px] bg-white">
-      <p className="font-bold text-lg truncate w-full">{product.name}</p>
-      <p className="text-sm mb-2">SKU: {product.sku}</p>
-       <Barcode value={product.sku} height={40} width={1.5} fontSize={12} />
+    <div
+      className={cn(
+        "p-2 border border-dashed border-black break-inside-avoid-page flex flex-col items-center justify-center text-center bg-white",
+        size === 'a4' && "w-[220px]",
+        size === 'thermal' && "w-[190px] p-1" // ~50mm width for 2-inch thermal paper
+      )}
+    >
+      <p className={cn("font-bold truncate w-full", size === 'a4' ? 'text-lg' : 'text-sm')}>{product.name}</p>
+      <p className={cn("mb-1", size === 'a4' ? 'text-sm' : 'text-xs')}>SKU: {product.sku}</p>
+      <Barcode 
+        value={product.sku} 
+        height={size === 'a4' ? 40 : 30} 
+        width={size === 'a4' ? 1.5 : 1.2} 
+        fontSize={size === 'a4' ? 12 : 10} 
+      />
     </div>
   );
 }
@@ -27,6 +41,7 @@ function PrintPageContent() {
   const { data: allProducts, isLoading } = useFirestoreData(productsDAO);
   const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [paperSize, setPaperSize] = useState<'a4' | 'thermal'>('a4');
   const tagsContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,6 +61,7 @@ function PrintPageContent() {
     setIsDownloading(true);
     const canvas = await html2canvas(tagsContainerRef.current, {
         scale: 2, // Higher scale for better quality
+        backgroundColor: null, // Use transparent background
     });
     
     const imgData = canvas.toDataURL('image/png');
@@ -71,17 +87,34 @@ function PrintPageContent() {
   return (
     <div className="bg-gray-100 min-h-screen p-8">
         <div className="max-w-4xl mx-auto">
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
                 <h1 className="text-2xl font-bold">Download Barcode Tags</h1>
-                <Button onClick={handleDownload} disabled={isDownloading}>
-                    <Download className="mr-2 h-4 w-4" />
-                    {isDownloading ? 'Downloading...' : 'Download PDF'}
-                </Button>
+                 <div className="flex items-center gap-4">
+                    <div className="grid gap-1.5">
+                      <Label htmlFor="paper-size">Paper Size</Label>
+                      <Select value={paperSize} onValueChange={(value) => setPaperSize(value as 'a4' | 'thermal')}>
+                        <SelectTrigger id="paper-size" className="w-[180px]">
+                            <SelectValue placeholder="Select paper size" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="a4">A4 / Letter</SelectItem>
+                            <SelectItem value="thermal">2-inch Thermal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button onClick={handleDownload} disabled={isDownloading} className="self-end">
+                        <Download className="mr-2 h-4 w-4" />
+                        {isDownloading ? 'Downloading...' : 'Download PDF'}
+                    </Button>
+                </div>
             </div>
             <div ref={tagsContainerRef} className="p-4 bg-white rounded-lg shadow-lg">
-                <div className="flex flex-wrap justify-center gap-2">
+                <div className={cn(
+                    "flex flex-wrap justify-center gap-2",
+                    paperSize === 'thermal' && "flex-col items-center"
+                )}>
                     {selectedProducts.map((product) => (
-                        <BarcodeTag key={product.id} product={product} />
+                        <BarcodeTag key={product.id} product={product} size={paperSize} />
                     ))}
                 </div>
             </div>
