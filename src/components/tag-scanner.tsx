@@ -29,44 +29,29 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
   const { toast } = useToast();
   const [scannedSku, setScannedSku] = useState('');
   const videoRef = useRef<HTMLVideoElement>(null);
-  const codeReaderRef = useRef<BrowserMultiFormatReader | null>(null);
+  const codeReaderRef = useRef(new BrowserMultiFormatReader());
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (!open) {
-      // Cleanup when dialog is closed
-      if (codeReaderRef.current) {
-        codeReaderRef.current.reset();
-        codeReaderRef.current = null;
-      }
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
-        videoRef.current.srcObject = null;
-      }
-      return;
-    }
-
     let isCancelled = false;
 
-    const startScan = async () => {
-      if (!videoRef.current || isCancelled) return;
-
-      const codeReader = new BrowserMultiFormatReader();
-      codeReaderRef.current = codeReader;
+    const startCamera = async () => {
+      if (!open || isCancelled) return;
 
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+        if (isCancelled) {
+          stream.getTracks().forEach(track => track.stop());
+          return;
+        }
         setHasCameraPermission(true);
 
-        if (videoRef.current && !isCancelled) {
+        if (videoRef.current) {
           videoRef.current.srcObject = stream;
-          
-          await codeReader.decodeFromStream(stream, videoRef.current, (result, error) => {
+          codeReaderRef.current.decodeFromVideoElement(videoRef.current, (result, error) => {
             if (isCancelled) return;
-            
+
             if (result) {
-              codeReader.reset(); // Stop scanning after a successful read
               const sku = result.getText();
               const foundProduct = products.find(p => p.sku.toLowerCase() === sku.toLowerCase());
 
@@ -92,24 +77,18 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
       } catch (err) {
         console.error('Camera access error:', err);
         setHasCameraPermission(false);
-         toast({
-          variant: 'destructive',
-          title: 'Camera Access Denied',
-          description: 'Please enable camera permissions in your browser settings to use this app.',
-        });
       }
     };
-
-    startScan();
+    
+    startCamera();
 
     return () => {
       isCancelled = true;
-       if (codeReaderRef.current) {
-        codeReaderRef.current.reset();
-      }
+      codeReaderRef.current.reset();
       if (videoRef.current?.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
         stream.getTracks().forEach(track => track.stop());
+        videoRef.current.srcObject = null;
       }
     };
   }, [open, onScan, products, toast]);
@@ -152,7 +131,7 @@ export function TagScanner({ open, onOpenChange, onScan, products }: TagScannerP
         <DialogHeader>
           <DialogTitle>Scan Item</DialogTitle>
            <DialogDescription>
-            Scan a barcode or enter the SKU manually to find an item.
+            Point the camera at a barcode or enter the SKU manually.
           </DialogDescription>
         </DialogHeader>
         <div className='p-4 bg-muted rounded-md space-y-4'>
