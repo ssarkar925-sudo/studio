@@ -27,7 +27,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon, ScanLine, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
@@ -44,6 +44,7 @@ import {
   DialogClose
 } from "@/components/ui/dialog"
 import { useAuth } from '@/components/auth-provider';
+import { Combobox, ComboboxOption } from '@/components/ui/combobox';
 
 type InvoiceItem = {
     // A temporary ID for react key prop
@@ -75,6 +76,12 @@ export default function NewInvoicePage() {
   const [discount, setDiscount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
   const [orderNote, setOrderNote] = useState('');
+
+  const customerOptions: ComboboxOption[] = useMemo(() => 
+    customers.map(c => ({
+        value: c.id,
+        label: `${c.name} ${c.phone ? `(${c.phone})` : ''}`
+    })), [customers]);
 
   // Add one default item row when the component mounts
   useEffect(() => {
@@ -282,19 +289,14 @@ export default function NewInvoicePage() {
                             <div className="grid gap-3">
                                 <Label htmlFor="customer">Customer</Label>
                                 <div className="flex gap-2">
-                                  <Select name="customer" required onValueChange={setCustomerId} value={customerId}>
-                                      <SelectTrigger>
-                                          <SelectValue placeholder="Select a customer" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                          {customers.map((customer) => (
-                                          <SelectItem key={customer.id} value={customer.id}>
-                                            {customer.name}{' '}
-                                            {customer.phone ? `(${customer.phone})` : ''}
-                                          </SelectItem>
-                                          ))}
-                                      </SelectContent>
-                                  </Select>
+                                  <Combobox
+                                    options={customerOptions}
+                                    value={customerId}
+                                    onSelect={setCustomerId}
+                                    placeholder="Select a customer"
+                                    searchPlaceholder="Search customers..."
+                                    emptyText="No customers found."
+                                  />
                                   <Dialog open={isNewCustomerDialogOpen} onOpenChange={setIsNewCustomerDialogOpen}>
                                       <DialogTrigger asChild>
                                           <Button variant="outline" size="icon">

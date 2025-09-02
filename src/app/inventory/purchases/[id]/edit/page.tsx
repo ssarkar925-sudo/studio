@@ -7,16 +7,23 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { vendorsDAO, productsDAO, purchasesDAO, type Vendor, type Product, type Purchase } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { format, parse } from 'date-fns';
 import { CalendarIcon, PlusCircle, Trash2, Loader2 } from 'lucide-react';
 import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
+import { Combobox, ComboboxOption } from '@/components/ui/combobox';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -51,6 +58,12 @@ export default function EditPurchasePage() {
   const purchaseId = Array.isArray(params.id) ? params.id[0] : params.id;
 
   const isLoading = vendorsLoading || productsLoading || purchasesLoading;
+
+  const vendorOptions: ComboboxOption[] = useMemo(() =>
+    vendors.map(v => ({
+      value: v.id,
+      label: v.vendorName
+    })), [vendors]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -207,16 +220,14 @@ export default function EditPurchasePage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="grid gap-3">
                             <Label htmlFor="vendor">Vendor</Label>
-                            <Select name="vendor" onValueChange={setVendorId} value={vendorId} required>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a vendor" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {vendors.map((vendor) => (
-                                    <SelectItem key={vendor.id} value={vendor.id}>{vendor.vendorName}</SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Combobox
+                                options={vendorOptions}
+                                value={vendorId}
+                                onSelect={setVendorId}
+                                placeholder="Select a vendor"
+                                searchPlaceholder="Search vendors..."
+                                emptyText="No vendors found."
+                            />
                         </div>
                         <div className="grid gap-3">
                             <Label htmlFor="orderDate">Order Date</Label>
