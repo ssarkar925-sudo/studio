@@ -69,7 +69,7 @@ export default function EditInvoicePage() {
   const [gstPercentage, setGstPercentage] = useState(0);
   const [deliveryCharges, setDeliveryCharges] = useState(0);
   const [discount, setDiscount] = useState(0);
-  const [paidAmount, setPaidAmount = useState(0);
+  const [paidAmount, setPaidAmount] = useState(0);
   const [orderNote, setOrderNote] = useState('');
 
 
@@ -516,5 +516,3 @@ export default function EditInvoicePage() {
     </AppLayout>
   );
 }
-
-    
