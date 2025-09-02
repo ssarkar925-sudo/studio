@@ -3,11 +3,11 @@
 
 import { AppLayout } from '@/components/app-layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { CheckCircle, Users, SlidersHorizontal, Settings, BarChart3, ArrowRight } from 'lucide-react';
+import { Users, SlidersHorizontal, Settings, BarChart3, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
-export default function AdminRoadmapPage() {
+export default function AdminDashboardPage() {
   return (
     <AppLayout>
       <div className="mx-auto grid w-full max-w-4xl gap-6">
@@ -20,19 +20,10 @@ export default function AdminRoadmapPage() {
             <CardHeader>
                 <div className='flex items-center gap-3'>
                     <Users className="h-6 w-6 text-primary" />
-                    <CardTitle>1. User Management</CardTitle>
+                    <CardTitle>User Management</CardTitle>
                 </div>
                 <CardDescription>View and manage all registered users of your application.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-start gap-4">
-                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 shrink-0" />
-                    <div>
-                        <h4 className="font-semibold">User Dashboard</h4>
-                        <p className="text-sm text-muted-foreground">A central table showing all users, their email, and sign-up date.</p>
-                    </div>
-                </div>
-            </CardContent>
             <CardFooter>
                 <Button asChild variant="outline">
                     <Link href="/admin/users">
@@ -46,71 +37,51 @@ export default function AdminRoadmapPage() {
             <CardHeader>
                 <div className='flex items-center gap-3'>
                     <SlidersHorizontal className="h-6 w-6 text-primary" />
-                    <CardTitle>2. Service Tiers & Feature Control</CardTitle>
+                    <CardTitle>Service Tiers & Feature Control</CardTitle>
                 </div>
                 <CardDescription>Define what services and features are available to different users or subscription levels.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                 <div className="flex items-start gap-4">
-                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 shrink-0" />
-                    <div>
-                        <h4 className="font-semibold">Service Plan Management</h4>
-                        <p className="text-sm text-muted-foreground">Create and manage different subscription plans (e.g., Free, Basic, Pro). Define limits for each tier, such as number of invoices or customers.</p>
-                    </div>
-                </div>
-                <div className="flex items-start gap-4">
-                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 shrink-0" />
-                    <div>
-                        <h4 className="font-semibold">Feature Flags</h4>
-                        <p className="text-sm text-muted-foreground">Enable or disable specific features of the application for all users or for specific service tiers. For example, toggle access to the AI Analysis or Reports page.</p>
-                    </div>
-                </div>
-            </CardContent>
+             <CardFooter>
+                <Button asChild variant="outline">
+                    <Link href="/admin/tiers">
+                        Manage Tiers & Features <ArrowRight className="ml-2" />
+                    </Link>
+                </Button>
+            </CardFooter>
         </Card>
 
         <Card>
             <CardHeader>
                  <div className='flex items-center gap-3'>
                     <Settings className="h-6 w-6 text-primary" />
-                    <CardTitle>3. Application-Wide Controls</CardTitle>
+                    <CardTitle>Application-Wide Controls</CardTitle>
                 </div>
                 <CardDescription>Global settings to manage the entire application's state and behavior.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-start gap-4">
-                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 shrink-0" />
-                    <div>
-                        <h4 className="font-semibold">Maintenance Mode</h4>
-                        <p className="text-sm text-muted-foreground">Put the application into a "maintenance" state, which would show a specific page to all non-admin users trying to access it.</p>
-                    </div>
-                </div>
-                <div className="flex items-start gap-4">
-                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 shrink-0" />
-                    <div>
-                        <h4 className="font-semibold">Broadcast Announcements</h4>
-                        <p className="text-sm text-muted-foreground">Create and display a banner or notification to all users, perfect for announcing new features or scheduled downtime.</p>
-                    </div>
-                </div>
-            </CardContent>
+             <CardFooter>
+                <Button asChild variant="outline">
+                    <Link href="/admin/controls">
+                        Go to App Controls <ArrowRight className="ml-2" />
+                    </Link>
+                </Button>
+            </CardFooter>
         </Card>
         
         <Card>
             <CardHeader>
                  <div className='flex items-center gap-3'>
                     <BarChart3 className="h-6 w-6 text-primary" />
-                    <CardTitle>4. Admin Analytics</CardTitle>
+                    <CardTitle>Admin Analytics</CardTitle>
                 </div>
                 <CardDescription>High-level overview of application health and user engagement.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex items-start gap-4">
-                    <CheckCircle className="h-5 w-5 mt-1 text-green-500 shrink-0" />
-                    <div>
-                        <h4 className="font-semibold">Key Metrics</h4>
-                        <p className="text-sm text-muted-foreground">Dashboard widgets showing total users, new sign-ups this month, total invoices created across the platform, and other vital signs.</p>
-                    </div>
-                </div>
-            </CardContent>
+            <CardFooter>
+                <Button asChild variant="outline">
+                    <Link href="/admin/analytics">
+                        View Analytics <ArrowRight className="ml-2" />
+                    </Link>
+                </Button>
+            </CardFooter>
         </Card>
 
       </div>
