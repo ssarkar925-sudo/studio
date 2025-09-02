@@ -238,16 +238,6 @@ export default function EditInvoicePage() {
     }
   };
   
-  if (isLoading || !invoice) {
-    return (
-        <AppLayout>
-            <div className="mx-auto grid w-full max-w-2xl gap-2">
-                <h1 className="text-2xl font-semibold">Loading...</h1>
-            </div>
-        </AppLayout>
-    );
-  }
-
   const productOptions = useMemo(() => {
     return products.map((p: Product) => {
       const originalItem = invoice?.items.find(i => i.productId === p.id);
@@ -260,6 +250,16 @@ export default function EditInvoicePage() {
       }
     })
   }, [products, invoice]);
+
+  if (isLoading || !invoice) {
+    return (
+        <AppLayout>
+            <div className="mx-auto grid w-full max-w-2xl gap-2">
+                <h1 className="text-2xl font-semibold">Loading...</h1>
+            </div>
+        </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
@@ -516,3 +516,5 @@ export default function EditInvoicePage() {
     </AppLayout>
   );
 }
+
+    
