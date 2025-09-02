@@ -215,7 +215,7 @@ export default function NewInvoicePage() {
 
     setIsSaving(true);
     try {
-      const invoiceNumber = `INV-${Date.now()}`;
+      const invoiceNumber = String(Date.now()).slice(-6);
       await invoicesDAO.add({
         userId: user.uid,
         invoiceNumber,
