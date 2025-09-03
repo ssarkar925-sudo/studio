@@ -16,8 +16,16 @@ import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
 import { subDays, startOfDay, parse, format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { DollarSign, FileText, Package } from 'lucide-react';
+import { DollarSign, FileText, Package, Download } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { useToast } from '@/hooks/use-toast';
 
 type ProductProfit = {
   productId: string;
@@ -31,6 +39,7 @@ type ProductProfit = {
 export default function ReportsPage() {
   const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
   const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
+  const { toast } = useToast();
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 29),
@@ -125,6 +134,13 @@ export default function ReportsPage() {
     };
   }, [filteredInvoices, products]);
 
+  const handleDownload = (format: 'pdf' | 'excel') => {
+    toast({
+      title: 'Download Started',
+      description: `Your ${format.toUpperCase()} report is being generated. This feature is not yet implemented.`,
+    });
+  };
+
   const isLoading = invoicesLoading || productsLoading;
 
   if (isLoading) {
@@ -144,7 +160,25 @@ export default function ReportsPage() {
     <AppLayout>
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Reports</h1>
-        <DateRangePicker dateRange={dateRange} onUpdate={setDateRange} />
+        <div className="flex items-center gap-2">
+            <DateRangePicker dateRange={dateRange} onUpdate={setDateRange} />
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <DropdownMenuItem onSelect={() => handleDownload('pdf')}>
+                        Download as PDF
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => handleDownload('excel')}>
+                        Download as Excel
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
       </div>
       
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mt-4">
