@@ -70,9 +70,13 @@ const extractPurchaseInfoFlow = ai.defineFlow(
       const { output } = await prompt(input, { model: 'googleai/gemini-1.5-flash' });
       return output!;
     } catch (e: any) {
-      console.error(`[extractPurchaseInfoFlow] Error: ${e.message}`, e);
+      console.error("=============================================");
+      console.error("[extractPurchaseInfoFlow] Error:", e);
+      console.error("[extractPurchaseInfoFlow] Error Message:", e.message);
+      console.error("[extractPurchaseInfoFlow] API Key available:", !!process.env.GEMINI_API_KEY);
+      console.error("=============================================");
       // Re-throw the error to be caught by the calling function
-      throw new Error('Failed to extract details from image.');
+      throw new Error('Failed to extract details from image. Please check the server logs for more information.');
     }
   }
 );
