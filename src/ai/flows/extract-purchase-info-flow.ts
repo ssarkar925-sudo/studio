@@ -51,6 +51,14 @@ const prompt = ai.definePrompt({
 - The amount paid, if mentioned.
 
 Photo: {{media url=photoDataUri}}`,
+  config: {
+    safetySettings: [
+        {
+            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold: 'BLOCK_NONE',
+        }
+    ]
+  }
 });
 
 const extractPurchaseInfoFlow = ai.defineFlow(
