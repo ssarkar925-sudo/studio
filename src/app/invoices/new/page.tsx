@@ -54,23 +54,28 @@ type InvoiceItem = {
     isManual?: boolean;
 };
 
-function ProductSearchDialog({ onSelectProducts }: { onSelectProducts: (products: Product[]) => void }) {
+function ProductSearchDialog({ onSelectProducts, addedProductIds }: { onSelectProducts: (products: Product[]) => void, addedProductIds: Set<string> }) {
     const { data: allProducts, isLoading } = useFirestoreData(productsDAO);
     const [open, setOpen] = useState(false);
     const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
 
+    const availableProducts = useMemo(() => {
+        return allProducts.filter(p => !addedProductIds.has(p.id));
+    }, [allProducts, addedProductIds]);
+
     const filteredProducts = useMemo(() => {
-        if (!searchQuery) return allProducts;
-        return allProducts.filter(p =>
+        if (!searchQuery) return availableProducts;
+        return availableProducts.filter(p =>
             p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             p.sku.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [allProducts, searchQuery]);
+    }, [availableProducts, searchQuery]);
 
     const handleSelect = () => {
         onSelectProducts(selectedProducts);
         setSelectedProducts([]);
+        setSearchQuery("");
         setOpen(false);
     }
     
@@ -93,7 +98,7 @@ function ProductSearchDialog({ onSelectProducts }: { onSelectProducts: (products
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle>Search Products</DialogTitle>
-                    <DialogDescription>Select products to add to the invoice.</DialogDescription>
+                    <DialogDescription>Select products to add to the invoice. Products already in the invoice are hidden.</DialogDescription>
                 </DialogHeader>
                 <div className="flex flex-col gap-4">
                     <Command className="rounded-lg border shadow-md">
@@ -160,6 +165,8 @@ export default function NewInvoicePage() {
   const [discount, setDiscount] = useState(0);
   const [paidAmount, setPaidAmount] = useState(0);
   const [orderNote, setOrderNote] = useState('');
+  
+  const addedProductIds = useMemo(() => new Set(items.filter(item => !item.isManual).map(item => item.productId)), [items]);
 
   // Add one default item row when the component mounts
   useEffect(() => {
@@ -479,7 +486,7 @@ export default function NewInvoicePage() {
                             </div>
                             ))}
                             <div className="flex flex-col sm:flex-row gap-2">
-                                <ProductSearchDialog onSelectProducts={handleAddProductsFromSearch} />
+                                <ProductSearchDialog onSelectProducts={handleAddProductsFromSearch} addedProductIds={addedProductIds} />
                                 <Button type="button" variant="outline" onClick={() => handleAddItem(true)}>
                                     <PlusCircle className="mr-2" />
                                     Add Manually
