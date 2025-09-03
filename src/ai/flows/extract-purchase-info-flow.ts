@@ -36,6 +36,27 @@ const ExtractedPurchaseInfoSchema = z.object({
 });
 export type ExtractPurchaseInfoOutput = z.infer<typeof ExtractedPurchaseInfoSchema>;
 
+
+// This is the exported server action that the application will call.
+export async function extractPurchaseInfoFromBill(
+  input: ExtractPurchaseInfoInput
+): Promise<ExtractPurchaseInfoOutput> {
+   try {
+      // It calls the internal Genkit flow and returns the result.
+      return await extractPurchaseInfoFlow(input);
+    } catch (e: any) {
+      console.error("=============================================");
+      console.error("[extractPurchaseInfoFromBill] Critical Error:", e);
+      console.error("[extractPurchaseInfoFromBill] Error Message:", e.message);
+      console.error("[extractPurchaseInfoFromBill] API Key available:", !!process.env.GEMINI_API_KEY);
+      console.error("=============================================");
+      // Re-throw the error to be caught by the calling function on the client-side.
+      throw new Error('Extraction failed. Please check the server logs for more information.');
+    }
+}
+
+
+// Internal prompt definition. Not exported.
 const prompt = ai.definePrompt({
   name: 'extractPurchaseInfoPrompt',
   input: {schema: ExtractPurchaseInfoInputSchema},
@@ -61,6 +82,8 @@ Photo: {{media url=photoDataUri}}`,
   }
 });
 
+
+// Internal Genkit flow definition. Not exported.
 const extractPurchaseInfoFlow = ai.defineFlow(
   {
     name: 'extractPurchaseInfoFlow',
@@ -68,24 +91,13 @@ const extractPurchaseInfoFlow = ai.defineFlow(
     outputSchema: ExtractedPurchaseInfoSchema,
   },
   async (input) => {
+    // Explicitly call the prompt with the flash model.
     const { output } = await prompt(input, { model: 'googleai/gemini-1.5-flash' });
-    return output!;
+    
+    // Ensure output is not null or undefined before returning.
+    if (!output) {
+      throw new Error("The AI model returned no output.");
+    }
+    return output;
   }
 );
-
-
-export async function extractPurchaseInfoFromBill(
-  input: ExtractPurchaseInfoInput
-): Promise<ExtractPurchaseInfoOutput> {
-   try {
-      return await extractPurchaseInfoFlow(input);
-    } catch (e: any) {
-      console.error("=============================================");
-      console.error("[extractPurchaseInfoFromBill] Critical Error:", e);
-      console.error("[extractPurchaseInfoFromBill] Error Message:", e.message);
-      console.error("[extractPurchaseInfoFromBill] API Key available:", !!process.env.GEMINI_API_KEY);
-      console.error("=============================================");
-      // Re-throw the error to be caught by the calling function
-      throw new Error('Extraction failed. Please check the server logs for more information.');
-    }
-}
