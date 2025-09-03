@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { productsDAO, purchasesDAO, type Product, type Purchase } from '@/lib/data';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, PlusCircle, Printer, Barcode, Trash2 } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Printer, Barcode, Trash2, ArrowUpDown } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
@@ -37,19 +38,48 @@ export function InventoryClient({ activeTab, products: initialProducts, purchase
     return <StockHistory products={initialProducts || []} />;
 }
 
+type SortKey = keyof Product | 'purchasePrice' | 'sellingPrice';
+type SortDirection = 'asc' | 'desc';
+
 function StockHistory({ products }: { products: Product[]}) {
   const { toast } = useToast();
   const router = useRouter();
   const { user } = useAuth();
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
+  const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({ key: 'name', direction: 'asc' });
+
+  const sortedProducts = useMemo(() => {
+    let sortableItems = [...products];
+    if (sortConfig.key) {
+      sortableItems.sort((a, b) => {
+        let aValue: any = a[sortConfig.key as keyof Product];
+        let bValue: any = b[sortConfig.key as keyof Product];
+
+        if (typeof aValue === 'string') {
+          aValue = aValue.toLowerCase();
+        }
+        if (typeof bValue === 'string') {
+          bValue = bValue.toLowerCase();
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [products, sortConfig]);
   
   const visibleProducts = useMemo(() => {
-    // Filter out items that have been out of stock for more than 30 days
     if (!user) return [];
     const now = new Date();
     const cleanupPromises: Promise<void>[] = [];
     
-    const filtered = products.filter(product => {
+    const filtered = sortedProducts.filter(product => {
         if (product.stock > 0) {
             return true;
         }
@@ -87,7 +117,22 @@ function StockHistory({ products }: { products: Product[]}) {
       });
     }
     return filtered;
-  }, [products, toast, user]);
+  }, [sortedProducts, toast, user]);
+
+  const requestSort = (key: SortKey) => {
+    let direction: SortDirection = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  const getSortIcon = (key: SortKey) => {
+    if (sortConfig.key !== key) {
+        return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
+    }
+    return sortConfig.direction === 'asc' ? <span>▲</span> : <span>▼</span>;
+  };
 
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === visibleProducts.length, [selectedProducts, visibleProducts]);
 
@@ -159,11 +204,31 @@ function StockHistory({ products }: { products: Product[]}) {
                       aria-label="Select all"
                     />
                   </TableHead>
-                <TableHead>Item</TableHead>
-                <TableHead className="text-right">Stock</TableHead>
+                <TableHead>
+                     <Button variant="ghost" onClick={() => requestSort('name')}>
+                        Item
+                        {getSortIcon('name')}
+                    </Button>
+                </TableHead>
+                <TableHead className="text-right">
+                    <Button variant="ghost" onClick={() => requestSort('stock')}>
+                        Stock
+                        {getSortIcon('stock')}
+                    </Button>
+                </TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Purchase Price</TableHead>
-                <TableHead className="text-right">Selling Price</TableHead>
+                <TableHead className="text-right">
+                     <Button variant="ghost" onClick={() => requestSort('purchasePrice')}>
+                        Purchase Price
+                        {getSortIcon('purchasePrice')}
+                    </Button>
+                </TableHead>
+                <TableHead className="text-right">
+                    <Button variant="ghost" onClick={() => requestSort('sellingPrice')}>
+                        Selling Price
+                        {getSortIcon('sellingPrice')}
+                    </Button>
+                </TableHead>
                 <TableHead>SKU</TableHead>
                 <TableHead>Batch Code</TableHead>
                 <TableHead>

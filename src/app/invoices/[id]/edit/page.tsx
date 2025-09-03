@@ -124,6 +124,10 @@ export default function EditInvoicePage() {
         }
     }
   }, [invoiceId, invoices, products, isLoading, router, toast]);
+  
+  const sortedProducts = useMemo(() => {
+    return [...products].sort((a, b) => a.name.localeCompare(b.name));
+  }, [products]);
 
   const addedProductIds = useMemo(() => new Set(items.filter(item => !item.isManual).map(item => item.productId)), [items]);
 
@@ -395,7 +399,7 @@ export default function EditInvoicePage() {
                                             <SelectValue placeholder="Select an item" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            {products.filter(p => !addedProductIds.has(p.id) || p.id === item.productId).map(product => (
+                                            {sortedProducts.filter(p => !addedProductIds.has(p.id) || p.id === item.productId).map(product => (
                                                 <SelectItem key={product.id} value={product.id}>
                                                     {product.name} (Stock: {product.stock})
                                                 </SelectItem>
