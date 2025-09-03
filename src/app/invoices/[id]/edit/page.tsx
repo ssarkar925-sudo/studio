@@ -26,7 +26,7 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Invoice, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon, ScanLine, Check, ChevronsUpDown } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon, ScanLine } from 'lucide-react';
 import { format, parse, isValid } from 'date-fns';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -34,7 +34,6 @@ import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { TagScanner } from '@/components/tag-scanner';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 
 
 type InvoiceItem = {
@@ -70,9 +69,6 @@ export default function EditInvoicePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   
-  // State to manage popover open status for each item
-  const [openPopoverIndex, setOpenPopoverIndex] = useState<number | null>(null);
-
   // Summary state
   const [gstPercentage, setGstPercentage] = useState(0);
   const [deliveryCharges, setDeliveryCharges] = useState(0);
@@ -409,50 +405,21 @@ export default function EditInvoicePage() {
                                         onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                     />
                                 ) : (
-                                  <Popover open={openPopoverIndex === index} onOpenChange={(isOpen) => setOpenPopoverIndex(isOpen ? index : null)}>
-                                    <PopoverTrigger asChild>
-                                      <Button
-                                        variant="outline"
-                                        role="combobox"
-                                        aria-expanded={openPopoverIndex === index}
-                                        className="w-full justify-between"
-                                      >
-                                        {item.productId
-                                          ? productOptions.find((p) => p.value === item.productId)?.label.split(' (Stock:')[0]
-                                          : "Select an item..."}
-                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                      </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                                      <Command>
-                                        <CommandInput placeholder="Search item..." />
-                                        <CommandList>
-                                          <CommandEmpty>No product found.</CommandEmpty>
-                                          <CommandGroup>
-                                            {productOptions.map((option) => (
-                                              <CommandItem
-                                                key={option.value}
-                                                value={option.value}
-                                                disabled={option.disabled}
-                                                onSelect={(currentValue) => {
-                                                  handleItemChange(index, 'productId', currentValue === item.productId ? "" : currentValue);
-                                                  setOpenPopoverIndex(null);
-                                                }}
-                                              >
-                                                <Check
-                                                  className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    item.productId === option.value ? "opacity-100" : "opacity-0"
-                                                  )}
-                                                />
-                                                {option.label}
-                                              </CommandItem>
-                                            ))}
-                                          </CommandGroup>
-                                        </CommandList>
-                                      </Command>
-                                    </PopoverContent>
-                                  </Popover>
+                                  <Select 
+                                    value={item.productId}
+                                    onValueChange={(value) => handleItemChange(index, 'productId', value)}
+                                  >
+                                    <SelectTrigger>
+                                      <SelectValue placeholder="Select an item" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {productOptions.map(option => (
+                                        <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
+                                          {option.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 )}
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
