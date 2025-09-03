@@ -166,8 +166,9 @@ export default function LoginPage() {
                   <Input id="email" type="email" placeholder="m@example.com" required value={email} onChange={e => setEmail(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                   <div className='flex justify-between items-center'>
-                     <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
+                   <div className="flex justify-end">
                       <Button
                           variant="link"
                           type="button"
@@ -177,7 +178,6 @@ export default function LoginPage() {
                           Forgot password?
                       </Button>
                    </div>
-                  <Input id="password" type="password" required value={password} onChange={e => setPassword(e.target.value)} />
                 </div>
                 <div className="space-y-2 pt-2">
                     <Button type="submit" className="w-full" disabled={isLoggingIn || isGoogleLoggingIn}>
