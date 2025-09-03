@@ -12,6 +12,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
         allowedOrigins: ["*.cloudworkstations.dev", "*.firebaseapp.com", "*.web.app", "*.netlify.app"],
+        bodySizeLimit: '2mb',
     },
   },
   images: {
