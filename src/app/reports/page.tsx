@@ -16,7 +16,7 @@ import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { DateRange } from 'react-day-picker';
 import { subDays, startOfDay, parse, format } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { DollarSign, FileText, Package, Download } from 'lucide-react';
+import { DollarSign, FileText, Package, Download, TrendingUp, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import {
@@ -26,15 +26,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
-
-type ProductProfit = {
-  productId: string;
-  name: string;
-  quantitySold: number;
-  totalRevenue: number;
-  totalCost: number;
-  totalProfit: number;
-};
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Separator } from '@/components/ui/separator';
 
 export default function ReportsPage() {
   const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
@@ -68,7 +61,9 @@ export default function ReportsPage() {
     totalCogs,
     totalSales,
     monthlyProfitData,
-    productPerformance
+    productPerformance,
+    outstandingRevenue,
+    inventoryValue,
   } = useMemo(() => {
     const productsMap = new Map<string, Product>(products.map(p => [p.id, p]));
     let totalRevenue = 0;
@@ -123,6 +118,9 @@ export default function ReportsPage() {
       .sort((a,b) => b.quantitySold - a.quantitySold)
       .slice(0, 5);
 
+    const outstandingRevenue = invoices.filter(i => i.status === 'Pending' || i.status === 'Partial' || i.status === 'Overdue').reduce((sum, inv) => sum + (inv.dueAmount ?? 0), 0);
+    const inventoryValue = products.reduce((sum, p) => sum + (p.stock * p.purchasePrice), 0);
+
 
     return {
       totalRevenue,
@@ -130,9 +128,11 @@ export default function ReportsPage() {
       totalCogs,
       totalSales: filteredInvoices.length,
       monthlyProfitData,
-      productPerformance
+      productPerformance,
+      outstandingRevenue,
+      inventoryValue,
     };
-  }, [filteredInvoices, products]);
+  }, [filteredInvoices, products, invoices]);
 
   const handleDownload = (format: 'pdf' | 'excel') => {
     toast({
@@ -140,6 +140,13 @@ export default function ReportsPage() {
       description: `Your ${format.toUpperCase()} report is being generated. This feature is not yet implemented.`,
     });
   };
+  
+  const estimatedOperatingExpenses = totalRevenue * 0.15; // Placeholder at 15% of revenue
+  const netProfit = totalProfit - estimatedOperatingExpenses;
+
+  const totalAssets = outstandingRevenue + inventoryValue;
+  const totalLiabilities = 0; // Placeholder, app does not track liabilities
+  const equity = totalAssets - totalLiabilities;
 
   const isLoading = invoicesLoading || productsLoading;
 
@@ -198,7 +205,7 @@ export default function ReportsPage() {
             <Card className='hover:bg-muted/50 transition-colors'>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Cost of Goods Sold</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <Wallet className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">₹{totalCogs.toFixed(2)}</div>
@@ -210,7 +217,7 @@ export default function ReportsPage() {
             <Card className='hover:bg-muted/50 transition-colors'>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Gross Profit</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                     <div className="text-2xl font-bold">₹{totalProfit.toFixed(2)}</div>
@@ -274,6 +281,95 @@ export default function ReportsPage() {
               ))}
             </div>
           </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 mt-4 md:grid-cols-2">
+        <Card>
+            <CardHeader>
+                <CardTitle>Profit & Loss Statement</CardTitle>
+                <CardDescription>
+                    An overview of your revenue and expenses for the selected period.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableBody>
+                        <TableRow>
+                            <TableCell>Total Revenue</TableCell>
+                            <TableCell className="text-right">₹{totalRevenue.toFixed(2)}</TableCell>
+                        </TableRow>
+                         <TableRow>
+                            <TableCell>Cost of Goods Sold (COGS)</TableCell>
+                            <TableCell className="text-right">- ₹{totalCogs.toFixed(2)}</TableCell>
+                        </TableRow>
+                         <TableRow className="font-semibold">
+                            <TableCell>Gross Profit</TableCell>
+                            <TableCell className="text-right">₹{totalProfit.toFixed(2)}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                            <TableCell>Operating Expenses (Est.)</TableCell>
+                            <TableCell className="text-right">- ₹{estimatedOperatingExpenses.toFixed(2)}</TableCell>
+                        </TableRow>
+                        <TableRow className="font-bold text-lg bg-muted/50">
+                            <TableCell>Net Profit (Est.)</TableCell>
+                            <TableCell className="text-right">₹{netProfit.toFixed(2)}</TableCell>
+                        </TableRow>
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+         <Card>
+            <CardHeader>
+                <CardTitle>Balance Sheet</CardTitle>
+                <CardDescription>
+                    A snapshot of your company's financial health.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    <div>
+                        <h4 className="font-semibold mb-2">Assets</h4>
+                        <Table>
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell>Outstanding Revenue</TableCell>
+                                    <TableCell className="text-right">₹{outstandingRevenue.toFixed(2)}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell>Inventory Value (at cost)</TableCell>
+                                    <TableCell className="text-right">₹{inventoryValue.toFixed(2)}</TableCell>
+                                </TableRow>
+                                <TableRow className="font-semibold bg-muted/50">
+                                    <TableCell>Total Assets</TableCell>
+                                    <TableCell className="text-right">₹{totalAssets.toFixed(2)}</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
+                     <div>
+                        <h4 className="font-semibold mb-2">Liabilities</h4>
+                        <Table>
+                            <TableBody>
+                                 <TableRow>
+                                    <TableCell>Accounts Payable</TableCell>
+                                    <TableCell className="text-right">₹0.00</TableCell>
+                                </TableRow>
+                                <TableRow className="font-semibold bg-muted/50">
+                                    <TableCell>Total Liabilities</TableCell>
+                                    <TableCell className="text-right">₹{totalLiabilities.toFixed(2)}</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+                    </div>
+                     <div className="font-bold text-lg pt-2">
+                        <div className="flex justify-between items-center p-2 bg-muted rounded-md">
+                           <span>Equity</span>
+                           <span>₹{equity.toFixed(2)}</span>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
         </Card>
       </div>
     </AppLayout>
