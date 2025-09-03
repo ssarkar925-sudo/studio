@@ -1,16 +1,11 @@
-
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-apply from: 'variables.gradle'
-
 buildscript {
-    apply from: 'variables.gradle'
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:$AGP_VERSION"
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$KOTLIN_VERSION"
+        classpath 'com.android.tools.build:gradle:8.2.1'
     }
 }
 
