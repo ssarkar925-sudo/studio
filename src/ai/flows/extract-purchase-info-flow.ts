@@ -10,7 +10,6 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
-import {generate} from 'genkit';
 
 const ExtractPurchaseInfoInputSchema = z.object({
   photoDataUri: z
@@ -37,16 +36,11 @@ const ExtractedPurchaseInfoSchema = z.object({
 });
 export type ExtractPurchaseInfoOutput = z.infer<typeof ExtractedPurchaseInfoSchema>;
 
-export async function extractPurchaseInfoFromBill(
-  input: ExtractPurchaseInfoInput
-): Promise<ExtractPurchaseInfoOutput> {
-   try {
-      const {output} = await generate({
-          model: 'googleai/gemini-1.5-flash',
-          output: {
-            schema: ExtractedPurchaseInfoSchema,
-          },
-          prompt: `You are an expert at extracting structured information from images of invoices and bills. Analyze the provided image and extract the following details. If a value is not present or is illegible, omit the field. Do not fail if there are OCR errors; extract what you can.
+const prompt = ai.definePrompt({
+  name: 'extractPurchaseInfoPrompt',
+  input: {schema: ExtractPurchaseInfoInputSchema},
+  output: {schema: ExtractedPurchaseInfoSchema},
+  prompt: `You are an expert at extracting structured information from images of invoices and bills. Analyze the provided image and extract the following details. If a value is not present or is illegible, omit the field. Do not fail if there are OCR errors; extract what you can.
 
 - The vendor's name.
 - The date of the order. Format it as dd/MM/yyyy (e.g., '02/07/2024').
@@ -57,12 +51,26 @@ export async function extractPurchaseInfoFromBill(
 - The amount paid, if mentioned.
 
 Photo: {{media url=photoDataUri}}`,
-          input: {
-            photoDataUri: input.photoDataUri,
-          },
-      });
+});
 
-      return output!;
+const extractPurchaseInfoFlow = ai.defineFlow(
+  {
+    name: 'extractPurchaseInfoFlow',
+    inputSchema: ExtractPurchaseInfoInputSchema,
+    outputSchema: ExtractedPurchaseInfoSchema,
+  },
+  async (input) => {
+    const { output } = await prompt(input, { model: 'googleai/gemini-1.5-flash' });
+    return output!;
+  }
+);
+
+
+export async function extractPurchaseInfoFromBill(
+  input: ExtractPurchaseInfoInput
+): Promise<ExtractPurchaseInfoOutput> {
+   try {
+      return await extractPurchaseInfoFlow(input);
     } catch (e: any) {
       console.error("=============================================");
       console.error("[extractPurchaseInfoFromBill] Critical Error:", e);
