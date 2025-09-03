@@ -1,3 +1,4 @@
+
 {
   "name": "nextn",
   "version": "0.1.0",
@@ -11,7 +12,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "android": "npx cap run android",
-    "build:android": "npx cap add android && npx cap copy android && npx cap update android && npx cap sync android"
+    "build:android": "npx cap add android && npx cap sync android"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.0",
