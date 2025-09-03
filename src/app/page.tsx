@@ -479,7 +479,7 @@ function MainDashboardContent() {
             <Suspense fallback={<Card className="lg:col-span-3"><CardContent><Skeleton className="h-[300px] w-full"/></CardContent></Card>}>
                  <DashboardClient invoices={invoices} />
             </Suspense>
-            <div className="lg:col-span-2 grid grid-cols-1 gap-6">
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-6">
                 <Card>
                     <CardHeader>
                         <CardTitle>Recent Invoices</CardTitle>
