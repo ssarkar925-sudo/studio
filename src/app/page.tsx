@@ -66,50 +66,35 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
   );
 }
 
-function UpcomingDeliveries({ purchases }: { purchases: Purchase[] }) {
-  const pendingPurchases = useMemo(() => {
-    return purchases
-        .filter(p => p.status === 'Pending')
-        .sort((a,b) => {
-            try {
-                return parse(a.orderDate, 'dd/MM/yyyy', new Date()).getTime() - parse(b.orderDate, 'dd/MM/yyyy', new Date()).getTime()
-            } catch {
-                return 0;
-            }
-        });
-  }, [purchases]);
+function UpcomingDeliveriesCard() {
+  const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
   
-  if (pendingPurchases.length === 0) {
-    return (
-      <div className="text-center text-muted-foreground py-8">
-        No upcoming deliveries.
-      </div>
-    );
-  }
+  const pendingPurchasesCount = useMemo(() => {
+    return purchases.filter(p => p.status === 'Pending').length;
+  }, [purchases]);
 
   return (
-    <div className="space-y-2">
-      {pendingPurchases.slice(0, 5).map((purchase) => (
-        <Link href={`/inventory/purchases/${purchase.id}`} key={purchase.id} className="block p-2 -mx-2 rounded-md hover:bg-muted">
-            <div className="flex items-center">
-                <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                    {purchase.vendorName}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                    Order Date: {purchase.orderDate}
-                    </p>
-                </div>
-                <div className="ml-auto text-right font-medium">
-                    <p>₹{purchase.totalAmount.toFixed(2)}</p>
-                    <Badge variant='secondary'>Pending</Badge>
-                </div>
-            </div>
-        </Link>
-      ))}
-    </div>
+      <Link href="/inventory?tab=purchases">
+          <Card className='hover:bg-muted/50 transition-colors'>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Upcoming Deliveries</CardTitle>
+                  <Truck className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                  {purchasesLoading ? (
+                      <Skeleton className="h-8 w-1/2" />
+                  ) : (
+                      <div className="text-2xl font-bold">{pendingPurchasesCount}</div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                      Pending purchase orders
+                  </p>
+              </CardContent>
+          </Card>
+      </Link>
   );
 }
+
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
     const variant = {
@@ -336,8 +321,8 @@ function StatCards() {
     
     if (isLoading) {
         return (
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                {Array.from({ length: 5 }).map((_, i) => (
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {Array.from({ length: 6 }).map((_, i) => (
                     <Card key={i}>
                         <CardHeader>
                            <Skeleton className="h-5 w-3/4" />
@@ -354,7 +339,7 @@ function StatCards() {
 
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Outstanding</CardTitle>
@@ -381,6 +366,7 @@ function StatCards() {
                     </p>
                 </CardContent>
             </Card>
+            <UpcomingDeliveriesCard />
             <Link href="/inventory?tab=stock">
                 <Card className='hover:bg-muted/50 transition-colors'>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -429,7 +415,6 @@ function StatCards() {
 
 function MainDashboardContent() {
     const { data: invoices, isLoading: invoicesLoading } = useFirestoreData(invoicesDAO);
-    const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
     const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
     const [featureFlags, setFeatureFlags] = useState<FeatureFlag[]>([]);
     
@@ -459,8 +444,8 @@ function MainDashboardContent() {
             </Button>
         </div>
         <Suspense fallback={
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                {Array.from({ length: 5 }).map((_, i) => (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+                {Array.from({ length: 6 }).map((_, i) => (
                     <Card key={i}>
                         <CardHeader>
                             <Skeleton className="h-5 w-3/4" />
@@ -488,16 +473,6 @@ function MainDashboardContent() {
                          <Suspense fallback={<Skeleton className="h-40"/>}>
                             <RecentInvoices invoices={invoices} />
                          </Suspense>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Upcoming Deliveries</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <Suspense fallback={<Skeleton className="h-40"/>}>
-                            <UpcomingDeliveries purchases={purchases} />
-                        </Suspense>
                     </CardContent>
                 </Card>
             </div>
