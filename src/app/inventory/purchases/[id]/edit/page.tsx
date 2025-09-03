@@ -18,10 +18,6 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Checkbox } from '@/components/ui/checkbox';
-
 
 type PurchaseItem = {
     // A temporary ID for react key prop
@@ -33,97 +29,6 @@ type PurchaseItem = {
     total: number;
     isNew?: boolean;
 };
-
-function ProductSearchDialog({ onSelectProducts, addedProductIds }: { onSelectProducts: (products: Product[]) => void, addedProductIds: Set<string> }) {
-    const { data: allProducts, isLoading } = useFirestoreData(productsDAO);
-    const [open, setOpen] = useState(false);
-    const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
-    const [searchQuery, setSearchQuery] = useState("");
-
-    const availableProducts = useMemo(() => {
-        return allProducts.filter(p => !addedProductIds.has(p.id));
-    }, [allProducts, addedProductIds]);
-
-    const filteredProducts = useMemo(() => {
-        if (!searchQuery) return availableProducts;
-        return availableProducts.filter(p =>
-            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            p.sku.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [availableProducts, searchQuery]);
-
-    const handleSelect = () => {
-        onSelectProducts(selectedProducts);
-        setSelectedProducts([]);
-        setSearchQuery("");
-        setOpen(false);
-    }
-    
-    const toggleProductSelection = (product: Product) => {
-        setSelectedProducts(prev => 
-            prev.find(p => p.id === product.id)
-                ? prev.filter(p => p.id !== product.id)
-                : [...prev, product]
-        );
-    }
-
-    return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button type="button" variant="outline">
-                    <Search className="mr-2" />
-                    Add Items from List
-                </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-                <DialogHeader>
-                    <DialogTitle>Search Products</DialogTitle>
-                    <DialogDescription>Select products to add to the purchase order. Products already in the list are hidden.</DialogDescription>
-                </DialogHeader>
-                <div className="flex flex-col gap-4">
-                    <Command className="rounded-lg border shadow-md">
-                        <CommandInput 
-                            placeholder="Search by name or SKU..." 
-                            value={searchQuery}
-                            onValueChange={setSearchQuery}
-                        />
-                        <CommandList className="max-h-[300px]">
-                            {isLoading && <CommandItem>Loading products...</CommandItem>}
-                            <CommandEmpty>No products found.</CommandEmpty>
-                            <CommandGroup>
-                                {filteredProducts.map(product => (
-                                    <CommandItem
-                                        key={product.id}
-                                        value={product.name}
-                                        onSelect={() => toggleProductSelection(product)}
-                                        className="flex items-center gap-2"
-                                    >
-                                        <Checkbox 
-                                            checked={selectedProducts.some(p => p.id === product.id)}
-                                            onCheckedChange={() => toggleProductSelection(product)}
-                                        />
-                                        <div className="flex-grow">
-                                            <p>{product.name}</p>
-                                            <p className="text-xs text-muted-foreground">SKU: {product.sku} | Stock: {product.stock}</p>
-                                        </div>
-                                    </CommandItem>
-                                ))}
-                            </CommandGroup>
-                        </CommandList>
-                    </Command>
-                </div>
-                <DialogFooter>
-                    <DialogClose asChild>
-                        <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button onClick={handleSelect} disabled={selectedProducts.length === 0}>
-                        Add ({selectedProducts.length}) Selected Items
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    )
-}
 
 export default function EditPurchasePage() {
   const router = useRouter();
@@ -190,19 +95,6 @@ export default function EditPurchasePage() {
     ]);
   };
   
-  const handleAddProductsFromSearch = (selectedProducts: Product[]) => {
-      const newItems: PurchaseItem[] = selectedProducts.map(p => ({
-          id: `item-${p.id}-${Date.now()}`,
-          productId: p.id,
-          productName: p.name,
-          quantity: 1,
-          purchasePrice: p.purchasePrice,
-          total: p.purchasePrice,
-          isNew: false,
-      }));
-      setItems(prev => [...prev, ...newItems]);
-  };
-
   const handleItemChange = (index: number, field: keyof PurchaseItem, value: any) => {
     const newItems = [...items];
     const item = newItems[index];
@@ -371,13 +263,30 @@ export default function EditPurchasePage() {
                         <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
                             <div className="grid gap-3 col-span-12 sm:col-span-4">
                                 {index === 0 && <Label className="hidden sm:block">Item</Label>}
-                                <Input 
-                                  type="text" 
-                                  placeholder="Enter new item name" 
-                                  value={item.productName} 
-                                  onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
-                                  disabled={!item.isNew}
-                                />
+                                {item.isNew ? (
+                                    <Input 
+                                        type="text" 
+                                        placeholder="Enter new item name" 
+                                        value={item.productName} 
+                                        onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
+                                    />
+                                ) : (
+                                    <Select
+                                        value={item.productId}
+                                        onValueChange={(value) => handleItemChange(index, 'productId', value)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select an item" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {products.filter(p => !addedProductIds.has(p.id) || p.id === item.productId).map(product => (
+                                                <SelectItem key={product.id} value={product.id}>
+                                                    {product.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
                                {index === 0 && <Label className="hidden sm:block">Qty</Label>}
@@ -399,7 +308,10 @@ export default function EditPurchasePage() {
                         </div>
                         ))}
                         <div className='flex gap-2'>
-                           <ProductSearchDialog onSelectProducts={handleAddProductsFromSearch} addedProductIds={addedProductIds} />
+                           <Button type="button" variant="outline" onClick={() => handleAddItem(false)}>
+                                <PlusCircle className="mr-2" />
+                                Add Item
+                            </Button>
                            <Button type="button" variant="outline" onClick={() => handleAddItem(true)}>
                                 <PlusCircle className="mr-2" />
                                 Add New Item
