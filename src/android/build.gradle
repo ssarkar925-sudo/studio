@@ -1,0 +1,41 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    ext {
+        androidxAppCompatVersion = '1.6.1'
+        androidxCoordinatorLayoutVersion = '1.2.0'
+        androidxCoreVersion = '1.12.0'
+        androidxMaterialVersion = '1.11.0'
+        androidxBrowserVersion = '1.8.0'
+        androidxLocalbroadcastmanagerVersion = '1.1.0'
+        firebaseMessagingVersion = '23.4.1'
+        playServicesLocationVersion = '21.2.0'
+        junitVersion = '4.13.2'
+        androidxJunitVersion = '1.1.5'
+        androidxEspressoCoreVersion = '3.5.1'
+        androidxSplashScreenVersion = '1.0.1'
+        coreSplashScreenVersion = '1.0.1'
+        constraintLayoutVersion = '2.1.4'
+        materialVersion = '1.12.0'
+    }
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:8.4.1'
+        classpath 'com.google.gms:google-services:4.4.1'
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}
