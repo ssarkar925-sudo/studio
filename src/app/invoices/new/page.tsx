@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/dialog"
 import { useAuth } from '@/components/auth-provider';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Combobox } from '@/components/ui/combobox';
 
 
 type InvoiceItem = {
@@ -373,21 +374,14 @@ export default function NewInvoicePage() {
                                             onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                         />
                                     ) : (
-                                        <Select 
-                                          value={item.productId}
-                                          onValueChange={(value) => handleItemChange(index, 'productId', value)}
-                                        >
-                                          <SelectTrigger>
-                                            <SelectValue placeholder="Select an item" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {productOptions.map(option => (
-                                              <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
-                                                {option.label}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
+                                        <Combobox
+                                            options={productOptions}
+                                            value={item.productId}
+                                            onSelect={(value) => handleItemChange(index, 'productId', value)}
+                                            placeholder="Select an item"
+                                            searchPlaceholder="Search products..."
+                                            emptyResultText="No products found."
+                                        />
                                     )}
                                 </div>
                                 <div className="grid gap-3 col-span-4 sm:col-span-2">

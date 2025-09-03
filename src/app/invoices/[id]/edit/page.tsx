@@ -34,6 +34,7 @@ import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { TagScanner } from '@/components/tag-scanner';
+import { Combobox } from '@/components/ui/combobox';
 
 
 type InvoiceItem = {
@@ -405,21 +406,14 @@ export default function EditInvoicePage() {
                                         onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                     />
                                 ) : (
-                                  <Select 
+                                  <Combobox
+                                    options={productOptions}
                                     value={item.productId}
-                                    onValueChange={(value) => handleItemChange(index, 'productId', value)}
-                                  >
-                                    <SelectTrigger>
-                                      <SelectValue placeholder="Select an item" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {productOptions.map(option => (
-                                        <SelectItem key={option.value} value={option.value} disabled={option.disabled}>
-                                          {option.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                    onSelect={(value) => handleItemChange(index, 'productId', value)}
+                                    placeholder="Select an item"
+                                    searchPlaceholder="Search products..."
+                                    emptyResultText="No products found."
+                                  />
                                 )}
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
