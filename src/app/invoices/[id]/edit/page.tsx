@@ -414,6 +414,7 @@ export default function EditInvoicePage() {
                                       <Button
                                         variant="outline"
                                         role="combobox"
+                                        aria-expanded={openPopoverIndex === index}
                                         className="w-full justify-between"
                                       >
                                         {item.productId
@@ -431,10 +432,10 @@ export default function EditInvoicePage() {
                                             {productOptions.map((option) => (
                                               <CommandItem
                                                 key={option.value}
-                                                value={option.label}
+                                                value={option.value}
                                                 disabled={option.disabled}
-                                                onSelect={() => {
-                                                  handleItemChange(index, 'productId', option.value);
+                                                onSelect={(currentValue) => {
+                                                  handleItemChange(index, 'productId', currentValue === item.productId ? "" : currentValue);
                                                   setOpenPopoverIndex(null);
                                                 }}
                                               >
