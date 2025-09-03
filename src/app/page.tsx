@@ -69,29 +69,53 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
 function UpcomingDeliveriesCard() {
   const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
   
-  const pendingPurchasesCount = useMemo(() => {
-    return purchases.filter(p => p.status === 'Pending').length;
+  const pendingPurchases = useMemo(() => {
+    return purchases
+      .filter(p => p.status === 'Pending')
+      .sort((a, b) => {
+          try {
+            return parse(a.orderDate, 'dd/MM/yyyy', new Date()).getTime() - parse(b.orderDate, 'dd/MM/yyyy', new Date()).getTime()
+          } catch {
+            return 0;
+          }
+      });
   }, [purchases]);
 
   return (
-      <Link href="/inventory?tab=purchases">
-          <Card className='hover:bg-muted/50 transition-colors'>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Upcoming Deliveries</CardTitle>
-                  <Truck className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                  {purchasesLoading ? (
-                      <Skeleton className="h-8 w-1/2" />
-                  ) : (
-                      <div className="text-2xl font-bold">{pendingPurchasesCount}</div>
-                  )}
-                  <p className="text-xs text-muted-foreground">
-                      Pending purchase orders
-                  </p>
-              </CardContent>
-          </Card>
-      </Link>
+      <Card>
+          <CardHeader>
+              <CardTitle>Upcoming Deliveries</CardTitle>
+          </CardHeader>
+          <CardContent>
+              {purchasesLoading ? (
+                  <Skeleton className="h-40" />
+              ) : pendingPurchases.length === 0 ? (
+                  <div className="text-center text-muted-foreground py-8">
+                      No pending deliveries.
+                  </div>
+              ) : (
+                  <div className="space-y-2">
+                      {pendingPurchases.slice(0, 5).map((purchase) => (
+                          <Link href={`/inventory/purchases/${purchase.id}`} key={purchase.id} className="block p-2 -mx-2 rounded-md hover:bg-muted">
+                              <div className="flex items-center">
+                                  <div className="space-y-1">
+                                      <p className="text-sm font-medium leading-none">
+                                          {purchase.vendorName}
+                                      </p>
+                                      <p className="text-sm text-muted-foreground">
+                                          Order Date: {purchase.orderDate}
+                                      </p>
+                                  </div>
+                                  <div className="ml-auto text-right font-medium">
+                                      <p>₹{purchase.totalAmount.toFixed(2)}</p>
+                                  </div>
+                              </div>
+                          </Link>
+                      ))}
+                  </div>
+              )}
+          </CardContent>
+      </Card>
   );
 }
 
@@ -307,17 +331,20 @@ function StatCards() {
     const { data: customers, isLoading: customersLoading } = useFirestoreData(customersDAO);
     const { data: vendors, isLoading: vendorsLoading } = useFirestoreData(vendorsDAO);
     const { data: products, isLoading: productsLoading } = useFirestoreData(productsDAO);
+    const { data: purchases, isLoading: purchasesLoading } = useFirestoreData(purchasesDAO);
+
 
     const outstanding = useMemo(() => invoices
         .filter((i) => i.status === 'Pending' || i.status === 'Overdue')
         .reduce((sum, i) => sum + i.amount, 0), [invoices]);
 
     const overdue = useMemo(() => invoices.filter((i) => i.status === 'Overdue').length, [invoices]);
+    const pendingPurchasesCount = useMemo(() => purchases.filter(p => p.status === 'Pending').length, [purchases]);
     const totalCustomers = useMemo(() => customers.length, [customers]);
     const totalVendors = useMemo(() => vendors.length, [vendors]);
     const lowStockItems = useMemo(() => products.filter(p => p.stock > 0 && p.stock <= 10).length, [products]);
 
-    const isLoading = invoicesLoading || customersLoading || vendorsLoading || productsLoading;
+    const isLoading = invoicesLoading || customersLoading || vendorsLoading || productsLoading || purchasesLoading;
     
     if (isLoading) {
         return (
@@ -366,7 +393,20 @@ function StatCards() {
                     </p>
                 </CardContent>
             </Card>
-            <UpcomingDeliveriesCard />
+             <Link href="/inventory?tab=purchases">
+                <Card className='hover:bg-muted/50 transition-colors'>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Upcoming Deliveries</CardTitle>
+                        <Truck className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold">{pendingPurchasesCount}</div>
+                        <p className="text-xs text-muted-foreground">
+                            Pending purchase orders
+                        </p>
+                    </CardContent>
+                </Card>
+            </Link>
             <Link href="/inventory?tab=stock">
                 <Card className='hover:bg-muted/50 transition-colors'>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -475,6 +515,9 @@ function MainDashboardContent() {
                          </Suspense>
                     </CardContent>
                 </Card>
+                <Suspense fallback={<Card><CardContent><Skeleton className="h-40"/></CardContent></Card>}>
+                    <UpcomingDeliveriesCard />
+                </Suspense>
             </div>
             <Suspense fallback={<Card className="lg:col-span-2"><CardContent><Skeleton className="h-[500px] w-full"/></CardContent></Card>}>
                 <AiAnalyzer invoices={invoices} isLoading={invoicesLoading} isEnabled={aiAnalysisEnabled} />
@@ -519,5 +562,7 @@ export default function DashboardPage() {
         </AppLayout>
     );
 }
+
+    
 
     
