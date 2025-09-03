@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-        allowedOrigins: ["*.cloudworkstations.dev", "*.firebaseapp.com", "*.web.app"],
+        allowedOrigins: ["*.cloudworkstations.dev", "*.firebaseapp.com", "*.web.app", "*.netlify.app"],
     },
   },
   images: {
