@@ -70,6 +70,9 @@ export default function EditInvoicePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   
+  // State to manage popover open status for each item
+  const [openPopoverIndex, setOpenPopoverIndex] = useState<number | null>(null);
+
   // Summary state
   const [gstPercentage, setGstPercentage] = useState(0);
   const [deliveryCharges, setDeliveryCharges] = useState(0);
@@ -406,7 +409,7 @@ export default function EditInvoicePage() {
                                         onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
                                     />
                                 ) : (
-                                  <Popover>
+                                  <Popover open={openPopoverIndex === index} onOpenChange={(isOpen) => setOpenPopoverIndex(isOpen ? index : null)}>
                                     <PopoverTrigger asChild>
                                       <Button
                                         variant="outline"
@@ -431,7 +434,8 @@ export default function EditInvoicePage() {
                                                 value={option.label}
                                                 disabled={option.disabled}
                                                 onSelect={() => {
-                                                  handleItemChange(index, 'productId', option.value)
+                                                  handleItemChange(index, 'productId', option.value);
+                                                  setOpenPopoverIndex(null);
                                                 }}
                                               >
                                                 <Check
