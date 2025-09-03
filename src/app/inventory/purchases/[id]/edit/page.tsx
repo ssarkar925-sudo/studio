@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -181,16 +182,6 @@ export default function EditPurchasePage() {
     }
   };
 
-  if (isLoading || !purchase) {
-    return (
-        <AppLayout>
-            <div className="mx-auto grid w-full max-w-2xl gap-2">
-                <h1 className="text-2xl font-semibold">Loading...</h1>
-            </div>
-        </AppLayout>
-    );
-  }
-
   const productOptions = useMemo(() => {
     return [
       ...products.map(p => ({
@@ -200,6 +191,16 @@ export default function EditPurchasePage() {
       { value: 'add_new', label: 'Add New Item' }
     ]
   }, [products]);
+
+  if (isLoading || !purchase) {
+    return (
+        <AppLayout>
+            <div className="mx-auto grid w-full max-w-2xl gap-2">
+                <h1 className="text-2xl font-semibold">Loading...</h1>
+            </div>
+        </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
