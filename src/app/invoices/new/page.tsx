@@ -100,7 +100,7 @@ export default function NewInvoicePage() {
         const product = products.find(p => p.id === value);
         if (product) {
           item.productName = product.name;
-          item.sellingPrice = product.sellingPrice;
+          item.sellingPrice = Math.ceil(product.sellingPrice);
         }
     }
     
@@ -128,8 +128,8 @@ export default function NewInvoicePage() {
         productId: product.id,
         productName: product.name,
         quantity: 1,
-        sellingPrice: product.sellingPrice,
-        total: product.sellingPrice,
+        sellingPrice: Math.ceil(product.sellingPrice),
+        total: Math.ceil(product.sellingPrice),
         isManual: false
       };
       
