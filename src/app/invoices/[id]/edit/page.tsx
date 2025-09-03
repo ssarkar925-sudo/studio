@@ -26,7 +26,7 @@ import {
 import { customersDAO, invoicesDAO, productsDAO, type Invoice, type Product } from '@/lib/data';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon, ScanLine } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Loader2, XIcon, ScanLine, Search } from 'lucide-react';
 import { format, parse, isValid } from 'date-fns';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
@@ -34,7 +34,9 @@ import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { TagScanner } from '@/components/tag-scanner';
-import { Combobox } from '@/components/ui/combobox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from '@/components/ui/dialog';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 type InvoiceItem = {
@@ -47,6 +49,97 @@ type InvoiceItem = {
     total: number;
     isManual?: boolean;
 };
+
+function ProductSearchDialog({ onSelectProducts, addedProductIds }: { onSelectProducts: (products: Product[]) => void, addedProductIds: Set<string> }) {
+    const { data: allProducts, isLoading } = useFirestoreData(productsDAO);
+    const [open, setOpen] = useState(false);
+    const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const availableProducts = useMemo(() => {
+        return allProducts.filter(p => !addedProductIds.has(p.id));
+    }, [allProducts, addedProductIds]);
+
+    const filteredProducts = useMemo(() => {
+        if (!searchQuery) return availableProducts;
+        return availableProducts.filter(p =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [availableProducts, searchQuery]);
+
+    const handleSelect = () => {
+        onSelectProducts(selectedProducts);
+        setSelectedProducts([]);
+        setSearchQuery("");
+        setOpen(false);
+    }
+    
+    const toggleProductSelection = (product: Product) => {
+        setSelectedProducts(prev => 
+            prev.find(p => p.id === product.id)
+                ? prev.filter(p => p.id !== product.id)
+                : [...prev, product]
+        );
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button type="button" variant="outline">
+                    <Search className="mr-2" />
+                    Add Items from List
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Search Products</DialogTitle>
+                    <DialogDescription>Select products to add to the invoice. Products already in the invoice are hidden.</DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col gap-4">
+                    <Command className="rounded-lg border shadow-md">
+                        <CommandInput 
+                            placeholder="Search by name or SKU..." 
+                            value={searchQuery}
+                            onValueChange={setSearchQuery}
+                        />
+                        <CommandList className="max-h-[300px]">
+                            {isLoading && <CommandItem>Loading products...</CommandItem>}
+                            <CommandEmpty>No products found.</CommandEmpty>
+                            <CommandGroup>
+                                {filteredProducts.map(product => (
+                                    <CommandItem
+                                        key={product.id}
+                                        value={product.name}
+                                        onSelect={() => toggleProductSelection(product)}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Checkbox 
+                                            checked={selectedProducts.some(p => p.id === product.id)}
+                                            onCheckedChange={() => toggleProductSelection(product)}
+                                        />
+                                        <div className="flex-grow">
+                                            <p>{product.name}</p>
+                                            <p className="text-xs text-muted-foreground">SKU: {product.sku} | Stock: {product.stock}</p>
+                                        </div>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleSelect} disabled={selectedProducts.length === 0}>
+                        Add ({selectedProducts.length}) Selected Items
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 export default function EditInvoicePage() {
   const { toast } = useToast();
@@ -110,7 +203,6 @@ export default function EditInvoicePage() {
               isManual: !products.some(p => p.id === item.productId)
             })));
 
-            // Set summary fields
             setGstPercentage(foundInvoice.gstPercentage || 0);
             setDeliveryCharges(foundInvoice.deliveryCharges || 0);
             setDiscount(foundInvoice.discount || 0);
@@ -127,24 +219,20 @@ export default function EditInvoicePage() {
     }
   }, [invoiceId, invoices, products, isLoading, router, toast]);
 
-  const productOptions = useMemo(() => {
-    if (!invoice) return [];
-    // Get a set of product IDs that are already in the items list
-    const addedProductIds = new Set(items.map(item => item.productId));
-
-    return products.map((p: Product) => {
-      const originalItem = invoice.items.find(i => i.productId === p.id);
-      const originalQuantity = originalItem ? originalItem.quantity : 0;
-      const availableStock = p.stock + originalQuantity;
-      return {
-          value: p.id,
-          label: `${p.name} (Stock: ${availableStock})`,
-          // Disable if stock is zero (and not the original item) OR if it's already in the list
-          disabled: (availableStock <= 0 && !originalItem) || (addedProductIds.has(p.id) && !originalItem)
-      }
-    })
-  }, [products, invoice, items]);
-
+  const addedProductIds = useMemo(() => new Set(items.filter(item => !item.isManual).map(item => item.productId)), [items]);
+  
+  const handleAddProductsFromSearch = (selectedProducts: Product[]) => {
+      const newItems: InvoiceItem[] = selectedProducts.map(p => ({
+          id: `item-${p.id}-${Date.now()}`,
+          productId: p.id,
+          productName: p.name,
+          quantity: 1,
+          sellingPrice: p.sellingPrice,
+          total: p.sellingPrice,
+          isManual: false,
+      }));
+      setItems(prev => [...prev, ...newItems]);
+  };
 
   const handleAddItem = (isManual = false) => {
     setItems([
@@ -396,25 +484,15 @@ export default function EditInvoicePage() {
                     <div className="grid gap-4">
                         {items.map((item, index) => (
                         <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
-                            <div className="grid gap-3 col-span-12 sm:col-span-5">
+                             <div className="grid gap-3 col-span-12 sm:col-span-5">
                                 {index === 0 && <Label className="hidden sm:block">Item</Label>}
-                                {item.isManual ? (
-                                    <Input 
-                                        type="text" 
-                                        placeholder="e.g., Service Fee" 
-                                        value={item.productName} 
-                                        onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
-                                    />
-                                ) : (
-                                  <Combobox
-                                    options={productOptions}
-                                    value={item.productId}
-                                    onSelect={(value) => handleItemChange(index, 'productId', value)}
-                                    placeholder="Select an item"
-                                    searchPlaceholder="Search products..."
-                                    emptyResultText="No products found."
-                                  />
-                                )}
+                                <Input 
+                                    type="text" 
+                                    placeholder="e.g., Service Fee or select from list" 
+                                    value={item.productName} 
+                                    onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
+                                    disabled={!item.isManual}
+                                />
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
                             {index === 0 && <Label className="hidden sm:block">Qty</Label>}
@@ -422,7 +500,7 @@ export default function EditInvoicePage() {
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
                             {index === 0 && <Label className="hidden sm:block">Price</Label>}
-                                <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01" disabled={!item.isManual}/>
+                                <Input type="number" value={item.sellingPrice} onChange={(e) => handleItemChange(index, 'sellingPrice', parseFloat(e.target.value) || 0)} placeholder="0.00" step="0.01"/>
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
                             {index === 0 && <Label className="hidden sm:block">Total</Label>}
@@ -436,10 +514,7 @@ export default function EditInvoicePage() {
                         </div>
                         ))}
                         <div className="flex flex-col sm:flex-row gap-2">
-                            <Button type="button" variant="outline" onClick={() => handleAddItem(false)}>
-                                <PlusCircle className="mr-2" />
-                                Add Item
-                            </Button>
+                             <ProductSearchDialog onSelectProducts={handleAddProductsFromSearch} addedProductIds={addedProductIds} />
                             <Button type="button" variant="outline" onClick={() => handleAddItem(true)}>
                                 <PlusCircle className="mr-2" />
                                 Add Manually

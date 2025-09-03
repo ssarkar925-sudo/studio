@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { AppLayout } from '@/components/app-layout';
@@ -11,11 +12,11 @@ import { useToast } from '@/hooks/use-toast';
 import { vendorsDAO, productsDAO, purchasesDAO, type Vendor, type Product } from '@/lib/data';
 import { cn } from '@/lib/utils';
 import { format, parse } from 'date-fns';
-import { CalendarIcon, PlusCircle, Trash2, Upload, Loader2, UserPlus } from 'lucide-react';
+import { CalendarIcon, PlusCircle, Trash2, Upload, Loader2, UserPlus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
-import { extractPurchaseInfoFromBill } from '@/ai/flows/extract-purchase-info-flow';
+import { extractPurchaseInfoFromBill, ExtractPurchaseInfoOutput } from '@/ai/flows/extract-purchase-info-flow';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useAuth } from '@/components/auth-provider';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +31,8 @@ import {
   DialogClose
 } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Checkbox } from '@/components/ui/checkbox';
 
 
 type PurchaseItem = {
@@ -44,6 +47,141 @@ type PurchaseItem = {
     sku?: string;
     batchCode?: string;
 };
+
+
+function ProductSearchDialog({ onSelectProducts, addedProductIds }: { onSelectProducts: (products: Product[]) => void, addedProductIds: Set<string> }) {
+    const { data: allProducts, isLoading } = useFirestoreData(productsDAO);
+    const [open, setOpen] = useState(false);
+    const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+
+    const availableProducts = useMemo(() => {
+        return allProducts.filter(p => !addedProductIds.has(p.id));
+    }, [allProducts, addedProductIds]);
+
+    const filteredProducts = useMemo(() => {
+        if (!searchQuery) return availableProducts;
+        return availableProducts.filter(p =>
+            p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.sku.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [availableProducts, searchQuery]);
+
+    const handleSelect = () => {
+        onSelectProducts(selectedProducts);
+        setSelectedProducts([]);
+        setSearchQuery("");
+        setOpen(false);
+    }
+    
+    const toggleProductSelection = (product: Product) => {
+        setSelectedProducts(prev => 
+            prev.find(p => p.id === product.id)
+                ? prev.filter(p => p.id !== product.id)
+                : [...prev, product]
+        );
+    }
+
+    return (
+        <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+                <Button type="button" variant="outline">
+                    <Search className="mr-2" />
+                    Add Items from List
+                </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                    <DialogTitle>Search Products</DialogTitle>
+                    <DialogDescription>Select products to add to the purchase order. Products already in the list are hidden.</DialogDescription>
+                </DialogHeader>
+                <div className="flex flex-col gap-4">
+                    <Command className="rounded-lg border shadow-md">
+                        <CommandInput 
+                            placeholder="Search by name or SKU..." 
+                            value={searchQuery}
+                            onValueChange={setSearchQuery}
+                        />
+                        <CommandList className="max-h-[300px]">
+                            {isLoading && <CommandItem>Loading products...</CommandItem>}
+                            <CommandEmpty>No products found.</CommandEmpty>
+                            <CommandGroup>
+                                {filteredProducts.map(product => (
+                                    <CommandItem
+                                        key={product.id}
+                                        value={product.name}
+                                        onSelect={() => toggleProductSelection(product)}
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Checkbox 
+                                            checked={selectedProducts.some(p => p.id === product.id)}
+                                            onCheckedChange={() => toggleProductSelection(product)}
+                                        />
+                                        <div className="flex-grow">
+                                            <p>{product.name}</p>
+                                            <p className="text-xs text-muted-foreground">SKU: {product.sku} | Stock: {product.stock}</p>
+                                        </div>
+                                    </CommandItem>
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </div>
+                <DialogFooter>
+                    <DialogClose asChild>
+                        <Button variant="outline">Cancel</Button>
+                    </DialogClose>
+                    <Button onClick={handleSelect} disabled={selectedProducts.length === 0}>
+                        Add ({selectedProducts.length}) Selected Items
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+function AiReviewDialog({ open, onOpenChange, aiData, onConfirm }: { open: boolean, onOpenChange: (open: boolean) => void, aiData: ExtractPurchaseInfoOutput | null, onConfirm: (data: ExtractPurchaseInfoOutput) => void }) {
+    if (!aiData) return null;
+
+    return (
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-3xl">
+                <DialogHeader>
+                    <DialogTitle>Confirm Extracted Details</DialogTitle>
+                    <DialogDescription>Review the details extracted by AI. Edit any incorrect information on the main form after confirming.</DialogDescription>
+                </DialogHeader>
+                <div className="grid gap-4 max-h-[60vh] overflow-y-auto p-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div><span className="font-semibold">Vendor:</span> {aiData.vendorName || 'N/A'}</div>
+                        <div><span className="font-semibold">Order Date:</span> {aiData.orderDate || 'N/A'}</div>
+                        <div><span className="font-semibold">GST:</span> {aiData.gst || 0}%</div>
+                        <div><span className="font-semibold">Delivery:</span> ₹{aiData.deliveryCharges || 0}</div>
+                         <div><span className="font-semibold">Paid:</span> ₹{aiData.paymentDone || 0}</div>
+                        <div><span className="font-semibold">Total:</span> ₹{aiData.totalAmount || 0}</div>
+                    </div>
+                    <Card>
+                        <CardHeader><CardTitle>Extracted Items</CardTitle></CardHeader>
+                        <CardContent>
+                            <ul className="space-y-2">
+                                {aiData.items?.map((item, index) => (
+                                    <li key={index} className="text-sm p-2 bg-muted rounded-md">
+                                        <p className="font-semibold">{item.productName}</p>
+                                        <p>Qty: {item.quantity}, Price: ₹{item.purchasePrice}, Total: ₹{item.total}</p>
+                                    </li>
+                                ))}
+                            </ul>
+                        </CardContent>
+                    </Card>
+                </div>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+                    <Button onClick={() => onConfirm(aiData)}>Confirm and Fill Form</Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 export default function NewPurchasePage() {
   const router = useRouter();
@@ -62,34 +200,35 @@ export default function NewPurchasePage() {
   const [isExtracting, setIsExtracting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isNewVendorDialogOpen, setIsNewVendorDialogOpen] = useState(false);
+  const [aiData, setAiData] = useState<ExtractPurchaseInfoOutput | null>(null);
+  const [isAiReviewOpen, setIsAiReviewOpen] = useState(false);
+
+  const addedProductIds = useMemo(() => new Set(items.filter(item => !item.isNew).map(item => item.productId)), [items]);
   
-  const handleAddItem = () => {
+  const handleAddItem = (isNew = false) => {
     setItems([
       ...items,
-      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, purchasePrice: 0, total: 0 },
+      { id: `item-${Date.now()}`, productId: '', productName: '', quantity: 1, purchasePrice: 0, total: 0, isNew },
     ]);
+  };
+  
+  const handleAddProductsFromSearch = (selectedProducts: Product[]) => {
+      const newItems: PurchaseItem[] = selectedProducts.map(p => ({
+          id: `item-${p.id}-${Date.now()}`,
+          productId: p.id,
+          productName: p.name,
+          quantity: 1,
+          purchasePrice: p.purchasePrice,
+          total: p.purchasePrice,
+          isNew: false,
+      }));
+      setItems(prev => [...prev.filter(i => i.productName), ...newItems]);
   };
 
   const handleItemChange = (index: number, field: keyof PurchaseItem, value: any) => {
     const newItems = [...items];
     const item = newItems[index];
     (item[field] as any) = value;
-
-    if (field === 'productId') {
-        if (value === 'add_new') {
-            item.isNew = true;
-            item.productId = `new_${Date.now()}`;
-            item.productName = '';
-            item.purchasePrice = 0;
-        } else {
-            item.isNew = false;
-            const product = products.find(p => p.id === value);
-            if (product) {
-              item.productName = product.name;
-              item.purchasePrice = product.purchasePrice; // Default to last purchase price
-            }
-        }
-    }
     
     // Recalculate total
     item.total = item.quantity * item.purchasePrice;
@@ -125,44 +264,11 @@ export default function NewPurchasePage() {
       const photoDataUri = reader.result as string;
       try {
         const result = await extractPurchaseInfoFromBill({ photoDataUri });
-
-        // Auto-fill form
-        if (result.vendorName) {
-            const existingVendor = vendors.find(v => v.vendorName.toLowerCase() === result.vendorName!.toLowerCase());
-            if (existingVendor) {
-                setVendorId(existingVendor.id);
-            } else {
-                toast({ title: 'New Vendor Detected', description: `"${result.vendorName}" is not in your vendor list.`});
-            }
-        }
-        if (result.orderDate) {
-            setOrderDate(parse(result.orderDate, 'dd/MM/yyyy', new Date()));
-        }
-        if (result.items) {
-            const newItems: PurchaseItem[] = result.items.map(item => {
-                 const existingProduct = products.find(p => p.name.toLowerCase() === item.productName.toLowerCase());
-                 return {
-                    id: `item-${Date.now()}-${Math.random()}`,
-                    productId: existingProduct ? existingProduct.id : `new_${Date.now()}-${Math.random()}`,
-                    productName: item.productName,
-                    quantity: item.quantity,
-                    purchasePrice: item.purchasePrice,
-                    total: item.total,
-                    isNew: !existingProduct,
-                 }
-            });
-            setItems(newItems);
-        }
-
-        setGst(result.gst || 0);
-        setDeliveryCharges(result.deliveryCharges || 0);
-        setPaymentDone(result.paymentDone || 0);
-        
-        toast({ title: 'Success!', description: 'Purchase details have been auto-filled.'});
-
+        setAiData(result);
+        setIsAiReviewOpen(true);
       } catch (error) {
         console.error("AI extraction failed", error);
-        toast({ variant: 'destructive', title: 'Extraction Failed', description: 'Could not extract details from the image.' });
+        toast({ variant: 'destructive', title: 'Extraction Failed', description: 'Could not extract details from the image. The AI model might be busy, please try again.' });
       } finally {
         setIsExtracting(false);
         if(fileInputRef.current) fileInputRef.current.value = "";
@@ -173,6 +279,47 @@ export default function NewPurchasePage() {
         toast({ variant: 'destructive', title: 'File Error', description: 'Could not read the selected file.' });
         setIsExtracting(false);
     };
+  }
+
+  const handleAiConfirm = (data: ExtractPurchaseInfoOutput) => {
+    if (data.vendorName) {
+        const existingVendor = vendors.find(v => v.vendorName.toLowerCase() === data.vendorName!.toLowerCase());
+        if (existingVendor) {
+            setVendorId(existingVendor.id);
+        } else {
+            toast({ title: 'New Vendor Detected', description: `"${data.vendorName}" is not in your vendor list. You can add it now.`});
+        }
+    }
+    if (data.orderDate) {
+        try {
+            setOrderDate(parse(data.orderDate, 'dd/MM/yyyy', new Date()));
+        } catch (e) {
+             toast({ variant: 'destructive', title: 'Invalid Date', description: 'AI extracted an invalid date format.' });
+        }
+    }
+    if (data.items) {
+        const newItems: PurchaseItem[] = data.items.map(item => {
+             const existingProduct = products.find(p => p.name.toLowerCase() === item.productName.toLowerCase());
+             return {
+                id: `item-${Date.now()}-${Math.random()}`,
+                productId: existingProduct ? existingProduct.id : `new_${Date.now()}-${Math.random()}`,
+                productName: item.productName,
+                quantity: item.quantity,
+                purchasePrice: item.purchasePrice,
+                total: item.total,
+                isNew: !existingProduct,
+             }
+        });
+        setItems(newItems);
+    }
+
+    setGst(data.gst || 0);
+    setDeliveryCharges(data.deliveryCharges || 0);
+    setPaymentDone(data.paymentDone || 0);
+    
+    toast({ title: 'Success!', description: 'Purchase details have been auto-filled.'});
+    setIsAiReviewOpen(false);
+    setAiData(null);
   }
   
     const handleNewVendorSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -273,15 +420,6 @@ export default function NewPurchasePage() {
     }
   };
 
-  const productOptions = useMemo(() => {
-    return [
-      ...products.map(p => ({
-        value: p.id,
-        label: `${p.name} (${p.batchCode})`,
-      })),
-      { value: 'add_new', label: 'Add New Item' }
-    ]
-  }, [products]);
 
   return (
     <AppLayout>
@@ -413,27 +551,13 @@ export default function NewPurchasePage() {
                         <div key={item.id} className="grid grid-cols-12 gap-4 items-end">
                             <div className="grid gap-3 col-span-12 sm:col-span-4">
                                 {index === 0 && <Label className="hidden sm:block">Item</Label>}
-                                {item.isNew ? (
-                                    <Input 
-                                        type="text" 
-                                        placeholder="Enter new item name" 
-                                        value={item.productName} 
-                                        onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
-                                    />
-                                ) : (
-                                    <Select value={item.productId} onValueChange={(value) => handleItemChange(index, 'productId', value)}>
-                                      <SelectTrigger>
-                                        <SelectValue placeholder="Select an item" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {productOptions.map(p => (
-                                          <SelectItem key={p.value} value={p.value}>
-                                            {p.label}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
-                                )}
+                                <Input 
+                                    type="text" 
+                                    placeholder="Enter new item name" 
+                                    value={item.productName} 
+                                    onChange={(e) => handleItemChange(index, 'productName', e.target.value)}
+                                    disabled={!item.isNew}
+                                />
                             </div>
                             <div className="grid gap-3 col-span-4 sm:col-span-2">
                                {index === 0 && <Label className="hidden sm:block">Qty</Label>}
@@ -454,10 +578,13 @@ export default function NewPurchasePage() {
                             </div>
                         </div>
                         ))}
-                        <Button type="button" variant="outline" onClick={handleAddItem} className="w-full sm:w-auto">
-                            <PlusCircle className="mr-2" />
-                            Add Item
-                        </Button>
+                        <div className="flex gap-2">
+                            <ProductSearchDialog onSelectProducts={handleAddProductsFromSearch} addedProductIds={addedProductIds} />
+                            <Button type="button" variant="outline" onClick={() => handleAddItem(true)}>
+                                <PlusCircle className="mr-2" />
+                                Add New Item
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -501,6 +628,12 @@ export default function NewPurchasePage() {
           </div>
         </form>
       </div>
+      <AiReviewDialog
+        open={isAiReviewOpen}
+        onOpenChange={setIsAiReviewOpen}
+        aiData={aiData}
+        onConfirm={handleAiConfirm}
+      />
     </AppLayout>
   );
 }
