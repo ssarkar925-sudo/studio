@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
+import {generate} from 'genkit/ai';
 
 const ExtractPurchaseInfoInputSchema = z.object({
   photoDataUri: z
@@ -39,14 +40,13 @@ export type ExtractPurchaseInfoOutput = z.infer<typeof ExtractedPurchaseInfoSche
 export async function extractPurchaseInfoFromBill(
   input: ExtractPurchaseInfoInput
 ): Promise<ExtractPurchaseInfoOutput> {
-  return extractPurchaseInfoFlow(input);
-}
-
-const prompt = ai.definePrompt({
-  name: 'extractPurchaseInfoPrompt',
-  input: {schema: ExtractPurchaseInfoInputSchema},
-  output: {schema: ExtractedPurchaseInfoSchema},
-  prompt: `You are an expert at extracting structured information from images of invoices and bills. Analyze the provided image and extract the following details. If a value is not present or is illegible, omit the field. Do not fail if there are OCR errors; extract what you can.
+   try {
+      const {output} = await generate({
+          model: 'googleai/gemini-1.5-flash',
+          output: {
+            schema: ExtractedPurchaseInfoSchema,
+          },
+          prompt: `You are an expert at extracting structured information from images of invoices and bills. Analyze the provided image and extract the following details. If a value is not present or is illegible, omit the field. Do not fail if there are OCR errors; extract what you can.
 
 - The vendor's name.
 - The date of the order. Format it as dd/MM/yyyy (e.g., '02/07/2024').
@@ -57,26 +57,19 @@ const prompt = ai.definePrompt({
 - The amount paid, if mentioned.
 
 Photo: {{media url=photoDataUri}}`,
-});
+          input: {
+            photoDataUri: input.photoDataUri,
+          },
+      });
 
-const extractPurchaseInfoFlow = ai.defineFlow(
-  {
-    name: 'extractPurchaseInfoFlow',
-    inputSchema: ExtractPurchaseInfoInputSchema,
-    outputSchema: ExtractedPurchaseInfoSchema,
-  },
-  async (input) => {
-     try {
-      const { output } = await prompt(input, { model: 'googleai/gemini-1.5-flash' });
       return output!;
     } catch (e: any) {
       console.error("=============================================");
-      console.error("[extractPurchaseInfoFlow] Error:", e);
-      console.error("[extractPurchaseInfoFlow] Error Message:", e.message);
-      console.error("[extractPurchaseInfoFlow] API Key available:", !!process.env.GEMINI_API_KEY);
+      console.error("[extractPurchaseInfoFromBill] Critical Error:", e);
+      console.error("[extractPurchaseInfoFromBill] Error Message:", e.message);
+      console.error("[extractPurchaseInfoFromBill] API Key available:", !!process.env.GEMINI_API_KEY);
       console.error("=============================================");
       // Re-throw the error to be caught by the calling function
-      throw new Error('Failed to extract details from image. Please check the server logs for more information.');
+      throw new Error('Extraction failed. Please check the server logs for more information.');
     }
-  }
-);
+}
