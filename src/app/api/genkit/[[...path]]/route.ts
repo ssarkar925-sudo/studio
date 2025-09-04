@@ -29,3 +29,4 @@ const handler = createNextJSHandler({
 
 export const GET = handler;
 export const POST = handler;
+

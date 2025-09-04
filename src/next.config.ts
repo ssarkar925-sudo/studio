@@ -2,6 +2,7 @@
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
+  output: 'export',
   /* config options here */
   typescript: {
     ignoreBuildErrors: true,
@@ -12,6 +13,7 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: {
         allowedOrigins: ["*.cloudworkstations.dev", "*.firebaseapp.com", "*.web.app", "*.netlify.app"],
+        bodySizeLimit: '2mb',
     },
   },
   images: {
@@ -29,6 +31,10 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
+  },
+  // This setting helps resolve the build error for dynamic pages.
+  generateStaticParams: async () => {
+    return [];
   },
 };
 
