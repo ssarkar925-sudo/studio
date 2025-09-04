@@ -6,7 +6,7 @@
  * It is configured with a longer max-duration to accommodate
  * potentially long-running AI tasks.
  */
-import { createNextJSHandler } from '@genkit-ai/next';
+import { createNextJSHandler } from '@genkit-ai/next/server';
 import {defineFlow} from 'genkit';
 
 export const maxDuration = 120; // 2 minutes
@@ -29,5 +29,3 @@ const handler = createNextJSHandler({
 
 export const GET = handler;
 export const POST = handler;
-
-
