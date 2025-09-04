@@ -16,7 +16,8 @@ import { CalendarIcon, PlusCircle, Trash2, Upload, Loader2, UserPlus, Search } f
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { Calendar } from '@/components/ui/calendar';
-import { extractPurchaseInfoFromBill, ExtractPurchaseInfoOutput } from '@/ai/flows/extract-purchase-info-flow';
+import { extractPurchaseInfoFromBill } from '@/ai/flows/extract-purchase-info-flow';
+import type { ExtractPurchaseInfoOutput } from '@/ai/flows/schemas';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useAuth } from '@/components/auth-provider';
 import { Textarea } from '@/components/ui/textarea';

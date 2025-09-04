@@ -1,30 +1,13 @@
+
 'use server';
 /**
  * @fileOverview A flow to suggest invoice templates based on business type.
  *
  * - suggestInvoiceTemplates - A function that suggests templates.
- * - SuggestInvoiceTemplatesInput - The input type for the function.
- * - SuggestInvoiceTemplatesOutput - The return type for the function.
  */
 
 import { ai } from '@/ai/genkit';
-import { z } from 'zod';
-
-export const SuggestInvoiceTemplatesInputSchema = z.object({
-  businessType: z.string().describe('A description of the user\'s business (e.g., "freelance photographer").'),
-});
-export type SuggestInvoiceTemplatesInput = z.infer<
-  typeof SuggestInvoiceTemplatesInputSchema
->;
-
-export const SuggestInvoiceTemplatesOutputSchema = z.object({
-  templateSuggestions: z
-    .array(z.string())
-    .describe('A list of 3-5 suggested invoice template types.'),
-});
-export type SuggestInvoiceTemplatesOutput = z.infer<
-  typeof SuggestInvoiceTemplatesOutputSchema
->;
+import { SuggestInvoiceTemplatesInputSchema, SuggestInvoiceTemplatesOutputSchema, type SuggestInvoiceTemplatesInput, type SuggestInvoiceTemplatesOutput } from './schemas';
 
 const prompt = ai.definePrompt({
   name: 'suggestInvoiceTemplatesPrompt',

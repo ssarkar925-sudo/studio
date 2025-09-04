@@ -8,7 +8,8 @@ import { DollarSign, FileText, Clock, Bot, Send, Users, Store, Truck, PackageX, 
 import { DashboardClient } from '@/app/dashboard-client';
 import { useFirestoreData } from '@/hooks/use-firestore-data';
 import { useEffect, useState, useMemo, useRef, Suspense } from 'react';
-import { analyzeDashboard, AnalyzeDashboardOutput, ChatMessage } from '@/ai/flows/analyze-dashboard-flow';
+import { analyzeDashboard } from '@/ai/flows/analyze-dashboard-flow';
+import type { AnalyzeDashboardOutput, ChatMessage } from '@/ai/flows/schemas';
 import { subMonths, format, parse, startOfMonth } from 'date-fns';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';

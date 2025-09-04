@@ -4,37 +4,10 @@
  * @fileOverview A flow to extract purchase information from a bill image.
  *
  * - extractPurchaseInfoFromBill - A function that extracts structured data from a bill image.
- * - ExtractPurchaseInfoInput - The input type for the function.
- * - ExtractPurchaseInfoOutput - The return type for the function.
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'zod';
-
-const ExtractPurchaseInfoInputSchema = z.object({
-  photoDataUri: z
-    .string()
-    .describe(
-      "A photo of a bill or invoice, as a data URI that must include a MIME type and use Base64 encoding. Expected format: 'data:<mimetype>;base64,<encoded_data>'"
-    ),
-});
-export type ExtractPurchaseInfoInput = z.infer<typeof ExtractPurchaseInfoInputSchema>;
-
-const ExtractedPurchaseInfoSchema = z.object({
-  vendorName: z.string().optional().describe('The name of the vendor or seller.'),
-  orderDate: z.string().optional().describe("The date of the order in 'dd/MM/yyyy' format (e.g., '02/07/2024')."),
-  items: z.array(z.object({
-    productName: z.string().describe('The name of the item.'),
-    quantity: z.number().describe('The quantity of the item.'),
-    purchasePrice: z.number().describe('The price per unit of the item.'),
-    total: z.number().describe('The total price for this line item (quantity * purchasePrice).')
-  })).describe('An array of items from the bill.'),
-  gst: z.number().optional().describe('The GST percentage if available.'),
-  deliveryCharges: z.number().optional().describe('The delivery charges if available.'),
-  totalAmount: z.number().optional().describe('The grand total amount of the bill.'),
-  paymentDone: z.number().optional().describe('The amount paid if mentioned.'),
-});
-export type ExtractPurchaseInfoOutput = z.infer<typeof ExtractedPurchaseInfoSchema>;
+import { ExtractPurchaseInfoInputSchema, ExtractedPurchaseInfoSchema, type ExtractPurchaseInfoInput, type ExtractPurchaseInfoOutput } from './schemas';
 
 
 // This is the exported server action that the application will call.
