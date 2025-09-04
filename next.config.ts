@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
         allowedOrigins: ["*.cloudworkstations.dev", "*.firebaseapp.com", "*.web.app", "*.netlify.app"],
         bodySizeLimit: '2mb',
     },
+    // This setting helps resolve the build error for dynamic pages.
+    generateStaticParams: async () => {
+        return [];
+    },
   },
   images: {
     remotePatterns: [
@@ -31,10 +35,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       },
     ],
-  },
-  // This setting helps resolve the build error for dynamic pages.
-  generateStaticParams: async () => {
-    return [];
   },
 };
 
