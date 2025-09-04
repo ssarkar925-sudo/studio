@@ -32,6 +32,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // This setting helps resolve the build error for dynamic pages.
+  generateStaticParams: async () => {
+    return [];
+  },
 };
 
 export default nextConfig;

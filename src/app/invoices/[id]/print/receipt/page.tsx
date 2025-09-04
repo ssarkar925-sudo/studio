@@ -8,11 +8,6 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState, useRef } from 'react';
 import { Separator } from '@/components/ui/separator';
 
-// This function is required for Next.js to export dynamic routes.
-export async function generateStaticParams() {
-  return [];
-}
-
 export default function PrintReceiptPage() {
   const params = useParams();
   const invoiceId = Array.isArray(params.id) ? params.id[0] : params.id;
