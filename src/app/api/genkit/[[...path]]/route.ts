@@ -8,12 +8,15 @@
  */
 import { createNextJSHandler } from '@genkit-ai/next';
 import { defaultFlow } from '@/ai/flows';
+import { analyzeDashboard } from '@/ai/flows/analyze-dashboard-flow';
+import { extractPurchaseInfoFromBill } from '@/ai/flows/extract-purchase-info-flow';
+import { suggestInvoiceTemplates } from '@/ai/flows/suggest-invoice-templates';
 
 export const maxDuration = 120; // 2 minutes
 
 export const GET = createNextJSHandler({
-    flows: [defaultFlow],
+    flows: [defaultFlow, analyzeDashboard, extractPurchaseInfoFromBill, suggestInvoiceTemplates],
 });
 export const POST = createNextJSHandler({
-    flows: [defaultFlow],
+    flows: [defaultFlow, analyzeDashboard, extractPurchaseInfoFromBill, suggestInvoiceTemplates],
 });
