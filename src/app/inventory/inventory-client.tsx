@@ -38,7 +38,7 @@ export function InventoryClient({ activeTab, products: initialProducts, purchase
     return <StockHistory products={initialProducts || []} />;
 }
 
-type SortKey = keyof Product | 'purchasePrice' | 'sellingPrice';
+type SortKey = keyof Product | 'purchasePrice' | 'sellingPrice' | 'stock';
 type SortDirection = 'asc' | 'desc';
 
 function StockHistory({ products }: { products: Product[]}) {
@@ -60,6 +60,12 @@ function StockHistory({ products }: { products: Product[]}) {
         }
         if (typeof bValue === 'string') {
           bValue = bValue.toLowerCase();
+        }
+        
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+            if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
         }
 
         if (aValue < bValue) {
@@ -131,7 +137,7 @@ function StockHistory({ products }: { products: Product[]}) {
     if (sortConfig.key !== key) {
         return <ArrowUpDown className="ml-2 h-4 w-4 opacity-50" />;
     }
-    return sortConfig.direction === 'asc' ? <span>▲</span> : <span>▼</span>;
+    return sortConfig.direction === 'asc' ? <span className="ml-2">▲</span> : <span className="ml-2">▼</span>;
   };
 
   const allProductsSelected = useMemo(() => selectedProducts.length > 0 && selectedProducts.length === visibleProducts.length, [selectedProducts, visibleProducts]);
