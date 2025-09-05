@@ -6,29 +6,35 @@
  * - suggestInvoiceTemplates - A function that suggests templates.
  */
 
-import { ai } from '@/ai/genkit';
+import {ai} from '@/ai/genkit';
 import { SuggestInvoiceTemplatesInputSchema, SuggestInvoiceTemplatesOutputSchema, type SuggestInvoiceTemplatesInput, type SuggestInvoiceTemplatesOutput } from './schemas';
+import { defineFlow } from 'genkit/flow';
+import { generate } from 'genkit/ai';
+import { geminiPro } from '@genkit-ai/googleai';
 
-const prompt = ai.definePrompt({
-  name: 'suggestInvoiceTemplatesPrompt',
-  input: { schema: SuggestInvoiceTemplatesInputSchema },
-  output: { schema: SuggestInvoiceTemplatesOutputSchema },
-  prompt: `You are an expert business consultant. Based on the following business type, suggest 3-5 types of invoice templates that would be suitable.
 
-Business Type: {{{businessType}}}
-
-Suggestions:`,
-});
-
-const suggestInvoiceTemplatesFlow = ai.defineFlow(
+export const suggestInvoiceTemplatesFlow = defineFlow(
   {
     name: 'suggestInvoiceTemplatesFlow',
     inputSchema: SuggestInvoiceTemplatesInputSchema,
     outputSchema: SuggestInvoiceTemplatesOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt(input);
-    return output!;
+    const prompt = `You are an expert business consultant. Based on the following business type, suggest 3-5 types of invoice templates that would be suitable.
+
+Business Type: ${input.businessType}
+
+Suggestions:`;
+
+    const llmResponse = await generate({
+      prompt: prompt,
+      model: geminiPro,
+      output: {
+        schema: SuggestInvoiceTemplatesOutputSchema,
+      }
+    });
+
+    return llmResponse.output()!;
   }
 );
 

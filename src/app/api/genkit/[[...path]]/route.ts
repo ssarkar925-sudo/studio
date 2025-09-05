@@ -6,15 +6,15 @@
  * It is configured with a longer max-duration to accommodate
  * potentially long-running AI tasks.
  */
-import { createNextJSHandler } from '@genkit-ai/next/server';
+import { GenkitConnection } from '@genkit-ai/next';
 import { defaultFlow } from '@/ai/flows';
-import { analyzeDashboard } from '@/ai/flows/analyze-dashboard-flow';
-import { extractPurchaseInfoFromBill } from '@/ai/flows/extract-purchase-info-flow';
-import { suggestInvoiceTemplates } from '@/ai/flows/suggest-invoice-templates';
+import { analyzeDashboardFlow } from '@/ai/flows/analyze-dashboard-flow';
+import { extractPurchaseInfoFlow } from '@/ai/flows/extract-purchase-info-flow';
+import { suggestInvoiceTemplatesFlow } from '@/ai/flows/suggest-invoice-templates';
 
 export const maxDuration = 120; // 2 minutes
 
-export const { GET, POST } = createNextJSHandler({
-    flows: [defaultFlow, analyzeDashboard, extractPurchaseInfoFromBill, suggestInvoiceTemplates],
+export const { GET, POST } = new GenkitConnection({
+    flows: [defaultFlow, analyzeDashboardFlow, extractPurchaseInfoFlow, suggestInvoiceTemplatesFlow],
     // The cors parameter is not required for this use case
 });
