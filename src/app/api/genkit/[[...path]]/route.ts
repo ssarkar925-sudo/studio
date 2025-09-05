@@ -1,4 +1,3 @@
-
 /**
  * @fileoverview Genkit API route.
  *
@@ -16,4 +15,5 @@ export const maxDuration = 120; // 2 minutes
 
 export const { GET, POST } = createNextJSHandler({
     flows: [defaultFlow, analyzeDashboard, extractPurchaseInfoFromBill, suggestInvoiceTemplates],
+    // The cors parameter is not required for this use case
 });
