@@ -6,7 +6,6 @@
  * It is configured with a longer max-duration to accommodate
  * potentially long-running AI tasks.
  */
-import { GenkitConnection } from '@genkit-ai/next';
 import { defaultFlow } from '@/ai/flows';
 import { analyzeDashboardFlow } from '@/ai/flows/analyze-dashboard-flow';
 import { extractPurchaseInfoFlow } from '@/ai/flows/extract-purchase-info-flow';
