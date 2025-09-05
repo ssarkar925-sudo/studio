@@ -1,7 +1,7 @@
 
 'use server';
 
-import { defineFlow } from 'genkit/flow';
+import { defineFlow } from 'genkit';
 
 export const defaultFlow = defineFlow(
     {

@@ -8,9 +8,7 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import { ExtractPurchaseInfoInputSchema, ExtractedPurchaseInfoSchema, type ExtractPurchaseInfoInput, type ExtractPurchaseInfoOutput } from './schemas';
-import { defineFlow, prompt } from 'genkit/flow';
-import { generate, part } from 'genkit/ai';
-import { geminiPro } from '@genkit-ai/googleai';
+import { defineFlow, prompt } from 'genkit';
 
 export const extractPurchaseInfoFlow = defineFlow(
     {
@@ -29,19 +27,19 @@ export const extractPurchaseInfoFlow = defineFlow(
 - The grand total amount.
 - The amount paid, if mentioned.`;
         
-        const llmResponse = await generate({
+        const llmResponse = await ai.generate({
             prompt: p,
-            model: geminiPro,
+            model: 'googleai/gemini-pro-vision',
             config: {
                 temperature: 0.1,
             },
             output: {
               schema: ExtractedPurchaseInfoSchema
             },
-            input: [part.media(input.photoDataUri)],
+            input: [{media: {url: input.photoDataUri}}],
         });
 
-        const output = llmResponse.output();
+        const output = llmResponse.output;
         if (!output) {
           throw new Error("The AI model returned no output.");
         }

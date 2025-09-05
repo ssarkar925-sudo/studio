@@ -8,9 +8,7 @@
 
 import {ai} from '@/ai/genkit';
 import { SuggestInvoiceTemplatesInputSchema, SuggestInvoiceTemplatesOutputSchema, type SuggestInvoiceTemplatesInput, type SuggestInvoiceTemplatesOutput } from './schemas';
-import { defineFlow } from 'genkit/flow';
-import { generate } from 'genkit/ai';
-import { geminiPro } from '@genkit-ai/googleai';
+import { defineFlow } from 'genkit';
 
 
 export const suggestInvoiceTemplatesFlow = defineFlow(
@@ -26,15 +24,15 @@ Business Type: ${input.businessType}
 
 Suggestions:`;
 
-    const llmResponse = await generate({
+    const llmResponse = await ai.generate({
       prompt: prompt,
-      model: geminiPro,
+      model: 'googleai/gemini-pro',
       output: {
         schema: SuggestInvoiceTemplatesOutputSchema,
       }
     });
 
-    return llmResponse.output()!;
+    return llmResponse.output!;
   }
 );
 

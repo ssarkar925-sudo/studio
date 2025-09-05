@@ -7,9 +7,7 @@
  */
 import {ai} from '@/ai/genkit';
 import { AnalyzeDashboardInputSchema, AnalyzeDashboardOutputSchema, type AnalyzeDashboardInput, type AnalyzeDashboardOutput } from './schemas';
-import { defineFlow } from 'genkit/flow';
-import { generate } from 'genkit/ai';
-import { geminiPro } from '@genkit-ai/googleai';
+import { defineFlow } from 'genkit';
 
 
 export async function analyzeDashboard(
@@ -48,14 +46,14 @@ ${input.query ? `User Question: ${input.query}` : ''}
 Your response:
 `;
 
-    const llmResponse = await generate({
+    const llmResponse = await ai.generate({
       prompt: prompt,
-      model: geminiPro,
+      model: 'googleai/gemini-pro',
       output: {
         schema: AnalyzeDashboardOutputSchema
       }
     });
 
-    return llmResponse.output()!;
+    return llmResponse.output!;
   }
 );
