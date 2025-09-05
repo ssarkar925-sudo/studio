@@ -1,9 +1,9 @@
 
 'use server';
 
-import { defineFlow } from 'genkit';
+import {ai} from '@/ai/genkit';
 
-export const defaultFlow = defineFlow(
+export const defaultFlow = ai.defineFlow(
     {
         name: 'default',
         inputSchema: undefined,

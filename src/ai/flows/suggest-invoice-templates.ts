@@ -8,10 +8,9 @@
 
 import {ai} from '@/ai/genkit';
 import { SuggestInvoiceTemplatesInputSchema, SuggestInvoiceTemplatesOutputSchema, type SuggestInvoiceTemplatesInput, type SuggestInvoiceTemplatesOutput } from './schemas';
-import { defineFlow } from 'genkit';
 
 
-export const suggestInvoiceTemplatesFlow = defineFlow(
+export const suggestInvoiceTemplatesFlow = ai.defineFlow(
   {
     name: 'suggestInvoiceTemplatesFlow',
     inputSchema: SuggestInvoiceTemplatesInputSchema,

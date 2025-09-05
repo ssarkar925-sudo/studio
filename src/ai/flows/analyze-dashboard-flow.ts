@@ -7,7 +7,6 @@
  */
 import {ai} from '@/ai/genkit';
 import { AnalyzeDashboardInputSchema, AnalyzeDashboardOutputSchema, type AnalyzeDashboardInput, type AnalyzeDashboardOutput } from './schemas';
-import { defineFlow } from 'genkit';
 
 
 export async function analyzeDashboard(
@@ -16,7 +15,7 @@ export async function analyzeDashboard(
     return analyzeDashboardFlow(input);
 }
 
-export const analyzeDashboardFlow = defineFlow(
+export const analyzeDashboardFlow = ai.defineFlow(
   {
     name: 'analyzeDashboardFlow',
     inputSchema: AnalyzeDashboardInputSchema,
