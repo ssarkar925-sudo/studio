@@ -14,6 +14,9 @@
     "android": "npx cap run android",
     "build:android": "npm run build && npx cap sync android"
   },
+  "engines": {
+    "node": "20"
+  },
   "dependencies": {
     "@capacitor/android": "^6.1.0",
     "@capacitor/core": "^6.1.0",
