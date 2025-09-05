@@ -14,7 +14,13 @@ import { suggestInvoiceTemplatesFlow } from '@/ai/flows/suggest-invoice-template
 
 export const maxDuration = 120; // 2 minutes
 
-export const { GET, POST } = new GenkitConnection({
-    flows: [defaultFlow, analyzeDashboardFlow, extractPurchaseInfoFlow, suggestInvoiceTemplatesFlow],
-    // The cors parameter is not required for this use case
-});
+// NOTE: @genkit-ai/next is not used in this project due to dependency conflicts.
+// The API routes are not active. This file remains for future reference.
+
+export async function GET() {
+  return new Response('Genkit server is running, but API endpoint is disabled.', { status: 200 });
+}
+
+export async function POST() {
+    return new Response('Genkit API endpoint is disabled.', { status: 404 });
+}

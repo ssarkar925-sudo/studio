@@ -6,9 +6,21 @@
  * It is configured with a longer max-duration to accommodate
  * potentially long-running AI tasks.
  */
+import { GenkitConnection } from '@genkit-ai/next';
+import { defaultFlow } from '@/ai/flows';
+import { analyzeDashboardFlow } from '@/ai/flows/analyze-dashboard-flow';
+import { extractPurchaseInfoFlow } from '@/ai/flows/extract-purchase-info-flow';
+import { suggestInvoiceTemplatesFlow } from '@/ai/flows/suggest-invoice-templates';
 
-// NOTE: This file is not used when using the Next.js Genkit plugin.
-// It is here for reference if you were to deploy Genkit separately.
+export const maxDuration = 120; // 2 minutes
+
+// NOTE: @genkit-ai/next is not used in this project due to dependency conflicts.
+// The API routes are not active. This file remains for future reference.
+
 export async function GET() {
-  return new Response('Genkit server is running', { status: 200 });
+  return new Response('Genkit server is running, but API endpoint is disabled.', { status: 200 });
+}
+
+export async function POST() {
+    return new Response('Genkit API endpoint is disabled.', { status: 404 });
 }
