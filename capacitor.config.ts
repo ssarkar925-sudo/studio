@@ -1,3 +1,4 @@
+
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
@@ -5,7 +6,9 @@ const config: CapacitorConfig = {
   appName: 'SC Billing',
   webDir: 'out',
   server: {
-    androidScheme: 'https'
+    url: 'http://10.0.2.2:9002',
+    cleartext: true,
+    androidScheme: 'http'
   }
 };
 
