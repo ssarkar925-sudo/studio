@@ -11,7 +11,7 @@ type Dao<T> = {
 
 // Admin DAO has a different subscribe signature
 type AdminDao = {
-    subscribe: (callback: (data: any[]) => void, onError: (error: Error) => void) => () => void;
+    subscribe: (callback: (data: any[]) => void, onError?: (error: Error) => void) => () => void;
     id: 'adminUsersDAO' | 'featureFlagsDAO';
 }
 
