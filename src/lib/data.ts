@@ -206,7 +206,7 @@ const userProfileDAO = {
 
 // Admin DAO to get all user profiles regardless of userId
 const adminUsersDAO = {
-    id: 'adminUsersDAO',
+    id: 'adminUsersDAO' as const,
     subscribe: (
         callback: (data: UserProfile[]) => void,
         onError?: (error: Error) => void
