@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'SC Billing',
   webDir: 'out',
   server: {
-    url: 'http://10.0.2.2:9002',
+    url: 'http://10.0.2.2:3000',
     cleartext: true,
     androidScheme: 'http'
   }
