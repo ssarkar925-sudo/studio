@@ -27,7 +27,10 @@ export const extractPurchaseInfoFlow = ai.defineFlow(
 - The amount paid, if mentioned.`;
         
         const llmResponse = await ai.generate({
-            prompt: p,
+            prompt: [
+              { text: p },
+              { media: { url: input.photoDataUri } }
+            ],
             model: 'googleai/gemini-pro-vision',
             config: {
                 temperature: 0.1,
@@ -35,7 +38,6 @@ export const extractPurchaseInfoFlow = ai.defineFlow(
             output: {
               schema: ExtractedPurchaseInfoSchema
             },
-            input: [{media: {url: input.photoDataUri}}],
         });
 
         const output = llmResponse.output;
