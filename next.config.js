@@ -2,6 +2,7 @@
 const nextConfig = {
   /* config options here */
   output: 'export',
+  pageExtensions: ['page.tsx', 'page.ts'],
   typescript: {
     ignoreBuildErrors: true,
   },
