@@ -1,4 +1,3 @@
-
 {
   "name": "nextn",
   "version": "0.1.0",
@@ -13,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "android": "npx cap run android",
     "init:android": "rimraf android && npx cap add android",
-    "build:android": "npm run build && npm run init:android && npx cap sync android"
+    "build:android": "npm run build && npm run init:android && npx cap sync android",
+    "finalize:android": "echo 'Run this command after the build succeeds to restore the development config.'"
   },
   "engines": {
     "node": "20"
