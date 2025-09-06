@@ -41,7 +41,7 @@ export function DashboardClient({ invoices }: { invoices: Invoice[] }) {
 
     invoices.forEach(invoice => {
       try {
-        const issueDate = parse(invoice.issueDate, 'PPP', new Date());
+        const issueDate = parse(invoice.issueDate, 'dd/MM/yyyy', new Date());
         const monthData = months.find(m => 
             issueDate.getMonth() === m.start.getMonth() && 
             issueDate.getFullYear() === m.start.getFullYear()
@@ -120,7 +120,7 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
   }
   const sortedInvoices = [...invoices].sort((a,b) => {
       try {
-        return parse(b.issueDate, 'PPP', new Date()).getTime() - parse(a.issueDate, 'PPP', new Date()).getTime()
+        return parse(b.issueDate, 'dd/MM/yyyy', new Date()).getTime() - parse(a.issueDate, 'dd/MM/yyyy', new Date()).getTime()
       } catch {
         return 0;
       }
@@ -151,15 +151,12 @@ function RecentInvoices({ invoices }: { invoices: Invoice[] }) {
 }
 
 function InvoiceStatusBadge({ status }: { status: Invoice['status'] }) {
-  const variant = {
-    Paid: 'default',
+    const variant = {
+    Paid: 'success',
     Pending: 'secondary',
     Overdue: 'destructive',
-  }[status] as 'default' | 'secondary' | 'destructive';
+    Partial: 'warning',
+  }[status] as 'success' | 'secondary' | 'destructive' | 'warning';
 
-  return (
-    <Badge variant={variant} className="mt-1 capitalize">
-      {status.toLowerCase()}
-    </Badge>
-  );
+  return <Badge variant={variant} className="capitalize mt-1">{status.toLowerCase()}</Badge>;
 }
