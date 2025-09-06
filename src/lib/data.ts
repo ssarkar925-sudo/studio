@@ -127,7 +127,7 @@ function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: 
                 createdAt: serverTimestamp(),
             }
             const docRef = await addDoc(collectionRef, newItem);
-            return { ...item, id: docRef.id, createdAt: new Date() } as T;
+            return { ...item, id: docRef.id, createdAt: new Date() } as unknown as T;
         } catch (error) {
              console.error(`Error writing to Firestore collection “${collectionName}”:`, error);
              throw error;
