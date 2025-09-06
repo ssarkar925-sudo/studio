@@ -139,7 +139,7 @@ export default function EditPurchasePage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if(isSaving) return;
+    if(isSaving || !purchaseId) return;
     
     const vendor = vendors.find(v => v.id === vendorId);
 
