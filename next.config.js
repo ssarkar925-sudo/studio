@@ -31,6 +31,16 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config, { isServer }) => {
+    // This will ignore the genkit api route during the build process,
+    // which is necessary for the static export to succeed.
+    config.plugins.push(
+      new (require('webpack').IgnorePlugin)({
+        resourceRegExp: /src\/app\/api\/genkit/,
+      })
+    );
+    return config;
+  },
 };
 
 module.exports = nextConfig;
