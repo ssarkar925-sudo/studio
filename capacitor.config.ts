@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'SC Billing',
   webDir: 'out',
   server: {
-    url: 'http://YOUR_COMPUTER_IP:9002',
+    url: 'http://192.168.0.236:9002',
     cleartext: true,
   },
 };
