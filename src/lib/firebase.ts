@@ -1,7 +1,7 @@
 
-import { initializeApp, getApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeApp, getApp, getApps, type FirebaseApp } from 'firebase/app';
+import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 // Use environment variables for Firebase config
 const firebaseConfig = {
@@ -14,10 +14,25 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
-// Initialize Firebase
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-const db = getFirestore(app);
-const auth = getAuth(app);
+// Conditionally initialize Firebase only when all env vars are present.
+// This prevents build errors in environments where keys are not yet set.
+if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+  auth = getAuth(app);
+  db = getFirestore(app);
+} else {
+    // Provide a dummy implementation or handle the error appropriately for server-side rendering without keys
+    console.warn("Firebase environment variables are not fully set. Firebase functionality will be limited.");
+    // @ts-ignore
+    app = {};
+    // @ts-ignore
+    auth = {};
+    // @ts-ignore
+    db = {};
+}
 
 export { app, db, auth };
