@@ -12,7 +12,8 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "android": "npx cap run android",
-    "build:android": "npm run build && npx cap sync android"
+    "init:android": "rimraf android && npx cap add android",
+    "build:android": "npm run build && npm run init:android && npx cap sync android"
   },
   "engines": {
     "node": "20"
