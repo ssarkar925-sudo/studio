@@ -12,6 +12,7 @@ import { extractPurchaseInfoFlow } from '@/ai/flows/extract-purchase-info-flow';
 import { suggestInvoiceTemplatesFlow } from '@/ai/flows/suggest-invoice-templates';
 
 export const maxDuration = 120; // 2 minutes
+export const dynamic = 'force-static';
 
 // NOTE: @genkit-ai/next is not used in this project due to dependency conflicts.
 // The API routes are not active. This file remains for future reference.
