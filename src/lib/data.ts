@@ -117,10 +117,17 @@ export type FeatureFlag = {
     enabled: boolean;
 };
 
+// A helper function to check if db is initialized
+const isDbInitialized = () => {
+    return Object.keys(db).length > 0;
+}
+
 function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: FieldValue}>(collectionName: string) {
-    const collectionRef = collection(db, collectionName);
+    const getCollectionRef = () => isDbInitialized() ? collection(db, collectionName) : null;
 
     const add = async (item: Omit<T, 'id' | 'createdAt'> & { userId: string }) => {
+        const collectionRef = getCollectionRef();
+        if (!collectionRef) return Promise.reject("Firestore is not initialized.");
         try {
             const newItem = {
                 ...item,
@@ -135,6 +142,7 @@ function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: 
     }
     
     const update = async (id: string, updatedItem: Partial<Omit<T, 'id' | 'userId'>>) => {
+        if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
         try {
             const docRef = doc(db, collectionName, id);
             await updateDoc(docRef, updatedItem);
@@ -145,6 +153,7 @@ function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: 
     };
 
     const remove = async (id: string) => {
+       if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
        try {
             const docRef = doc(db, collectionName, id);
             await deleteDoc(docRef);
@@ -155,12 +164,15 @@ function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: 
     }
     
      const get = async (id: string): Promise<T | null> => {
+        if (!isDbInitialized()) return null;
         const docRef = doc(db, collectionName, id);
         const docSnap = await getDoc(docRef);
         return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as T : null;
     }
 
     const load = async (): Promise<T[]> => {
+        const collectionRef = getCollectionRef();
+        if (!collectionRef) return [];
         const snapshot = await getDocs(collectionRef);
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as T));
     };
@@ -170,6 +182,11 @@ function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: 
       callback: (data: T[]) => void,
       onError?: (error: Error) => void
     ): Unsubscribe => {
+        const collectionRef = getCollectionRef();
+        if (!collectionRef) {
+            callback([]);
+            return () => {}; // Return a no-op unsubscribe function
+        }
         const q = query(collectionRef, where("userId", "==", userId));
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -190,15 +207,18 @@ function createFirestoreDAO<T extends {id: string, userId?: string, createdAt?: 
 // User Profile DAO is special as it uses the auth UID as the document ID
 const userProfileDAO = {
     get: async (userId: string): Promise<UserProfile | null> => {
+        if (!isDbInitialized()) return null;
         const docRef = doc(db, 'userProfile', userId);
         const docSnap = await getDoc(docRef);
         return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } as UserProfile : null;
     },
     update: async (userId: string, data: Partial<Omit<UserProfile, 'id'>>) => {
+        if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
         const docRef = doc(db, 'userProfile', userId);
         await updateDoc(docRef, data);
     },
     remove: async (userId: string) => {
+        if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
         const docRef = doc(db, 'userProfile', userId);
         await deleteDoc(docRef);
     }
@@ -211,6 +231,10 @@ const adminUsersDAO = {
         callback: (data: UserProfile[]) => void,
         onError?: (error: Error) => void
     ): Unsubscribe => {
+        if (!isDbInitialized()) {
+            callback([]);
+            return () => {};
+        }
         const collectionRef = collection(db, 'userProfile');
         const unsubscribe = onSnapshot(collectionRef, (querySnapshot) => {
             const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserProfile));
@@ -240,6 +264,7 @@ const createInvoicesDAO = () => {
     const baseDAO = createFirestoreDAO<Invoice>('invoices');
 
     const addInvoice = async (invoiceData: Omit<Invoice, 'id' | 'status' | 'createdAt'> & { status?: Invoice['status'], userId: string }) => {
+        if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
         return runTransaction(db, async (transaction) => {
             const customerRef = doc(db, 'customers', invoiceData.customer.id);
             const customerDoc = await transaction.get(customerRef);
@@ -301,6 +326,7 @@ const createInvoicesDAO = () => {
     };
 
     const updateInvoice = async (invoiceId: string, updatedData: Partial<Omit<Invoice, 'id'>>, originalInvoice: Invoice) => {
+        if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
         return runTransaction(db, async (transaction) => {
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const currentInvoiceDoc = await transaction.get(invoiceRef);
@@ -370,6 +396,7 @@ const createInvoicesDAO = () => {
     };
     
      const removeInvoice = async (invoiceId: string) => {
+        if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
         return runTransaction(db, async (transaction) => {
             const invoiceRef = doc(db, 'invoices', invoiceId);
             const invoiceDoc = await transaction.get(invoiceRef);
@@ -425,6 +452,7 @@ const createInvoicesDAO = () => {
     };
 
     const deleteAllForUser = async (userId: string) => {
+        if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
         const q = query(collection(db, 'invoices'), where("userId", "==", userId));
         const snapshot = await getDocs(q);
         const batch = writeBatch(db);
@@ -450,6 +478,10 @@ const featureFlagsDAO = {
         callback: (data: FeatureFlag[]) => void,
         onError?: (error: Error) => void
     ): Unsubscribe => {
+        if (!isDbInitialized()) {
+            callback([]);
+            return () => {};
+        }
         const collectionRef = collection(db, 'featureFlags');
         const unsubscribe = onSnapshot(collectionRef, (querySnapshot) => {
             if (querySnapshot.empty) {
@@ -475,6 +507,7 @@ const featureFlagsDAO = {
         return unsubscribe;
     },
     update: async (id: string, updatedItem: Partial<Omit<FeatureFlag, 'id'>>) => {
+        if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
         try {
             const docRef = doc(db, 'featureFlags', id);
             await updateDoc(docRef, updatedItem);
@@ -492,6 +525,7 @@ export const businessProfileDAO = createFirestoreDAO<BusinessProfile>('businessP
 export { userProfileDAO, adminUsersDAO, featureFlagsDAO };
 
 export const deleteAllUserData = async (userId: string) => {
+    if (!isDbInitialized()) return Promise.reject("Firestore is not initialized.");
     console.log(`Deleting all data for user ${userId}`);
     const batch = writeBatch(db);
 
