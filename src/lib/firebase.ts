@@ -13,21 +13,9 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-
-// Check if we are in the browser and all firebase keys are present
-if (typeof window !== 'undefined' && Object.values(firebaseConfig).every(Boolean)) {
-  app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-  auth = getAuth(app);
-  db = getFirestore(app);
-} else {
-  // If we are on the server or keys are missing, use dummy objects
-  // This allows the build to succeed without crashing
-  app = {} as FirebaseApp;
-  auth = {} as Auth;
-  db = {} as Firestore;
-}
+// Initialize Firebase
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 export { app, db, auth };
