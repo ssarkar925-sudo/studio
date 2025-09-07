@@ -13,9 +13,24 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
-const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
-const auth: Auth = getAuth(app);
-const db: Firestore = getFirestore(app);
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+
+// This function checks if the code is running in a browser environment.
+const isBrowser = () => typeof window !== 'undefined';
+
+if (isBrowser()) {
+  // If in the browser, initialize Firebase normally.
+  app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+} else {
+  // If on the server (during build), create dummy objects.
+  app = {} as FirebaseApp;
+  auth = {} as Auth;
+  db = {} as Firestore;
+}
+
 
 export { app, db, auth };
