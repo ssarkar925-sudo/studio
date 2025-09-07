@@ -1,32 +1,29 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
     ext {
-        // SDK and tools
         compileSdkVersion = 34
         minSdkVersion = 22
         targetSdkVersion = 34
-
-        // App dependencies
-        appCompatVersion = '1.6.1'
-        coreKtxVersion = '1.12.0'
-        constraintLayoutVersion = '2.1.4'
+        coreSplashScreenVersion = '1.0.0'
+        androidxActivityVersion = '1.8.2'
+        androidxAppCompatVersion = '1.6.1'
+        androidxCoordinatorLayoutVersion = '1.2.0'
+        androidxCoreVersion = '1.12.0'
+        androidxFragmentVersion = '1.6.2'
         junitVersion = '4.13.2'
-        espressoCoreVersion = '3.5.1'
-        materialVersion = '1.11.0'
-        androidXlegacyV4Version = '1.0.0'
-        playServicesLocationVersion = '21.2.0'
-        junitAndroidExtVersion = '1.1.5'
-        capacitorVersion = '6'
-        capacitorAndroidVersion = '6.1.0'
-        androidxBrowserVersion = '1.8.0'
+        androidxJunitVersion = '1.1.5'
+        androidxEspressoCoreVersion = '3.5.1'
+        cordovaAndroidVersion = '12.0.0'
     }
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.4.1'
-        classpath 'com.google.gms:google-services:4.4.1'
+        classpath 'com.android.tools.build:gradle:8.5.1'
+        classpath 'com.google.gms:google-services:4.4.2'
+        // NOTE: Do not place your application dependencies here; they belong
+        // in the individual module build.gradle files
     }
 }
 
@@ -34,6 +31,17 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+    //This is a workaround for a bug in the AGP that will be fixed in a future version.
+    //For more details see: https://github.com/ionic-team/capacitor/issues/6447
+    configurations.all {
+        resolutionStrategy {
+            force 'androidx.core:core-ktx:1.12.0'
+        }
+    }
+    // Enforce Java 17 compatibility
+    tasks.withType(JavaCompile).configureEach {
+        options.release.set(17)
     }
 }
 
